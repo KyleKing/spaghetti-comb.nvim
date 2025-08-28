@@ -24,12 +24,30 @@ end
 
 local function get_floating_window_config()
     local config = require("spaghetti-comb").get_config()
-    local relations_config = config.relations
+    local relations_config = config and config.relations
+
+    if not relations_config then relations_config = { width = 50, height = 20, position = "right" } end
 
     local width = relations_config.width
     local height = relations_config.height
 
-    local ui = vim.api.nvim_list_uis()[1]
+    local uis = vim.api.nvim_list_uis()
+    local ui = uis[1]
+
+    if not ui then
+        return {
+            relative = "editor",
+            width = 50,
+            height = 20,
+            row = 5,
+            col = 5,
+            style = "minimal",
+            border = "rounded",
+            title = " Relations Panel ",
+            title_pos = "center",
+        }
+    end
+
     local screen_width = ui.width
     local screen_height = ui.height
 
@@ -244,15 +262,140 @@ function M.refresh_content()
     require("spaghetti-comb.ui.highlights").apply_highlights(floating_state.buf_id)
 end
 
-function M.navigate_to_selected() utils.info("Navigate to selected - not yet implemented") end
+function M.get_selected_item()
+    if not floating_state.is_visible or not floating_state.buf_id then return nil end
 
-function M.explore_selected() utils.info("Explore selected - not yet implemented") end
+    local cursor = vim.api.nvim_win_get_cursor(floating_state.win_id)
+    local line_num = cursor[1]
 
-function M.toggle_preview() utils.info("Toggle preview - not yet implemented") end
+    local current_entry = navigation.peek()
+    if not current_entry then return nil end
 
-function M.toggle_bookmark() utils.info("Toggle bookmark - not yet implemented") end
+    local all_items = {}
 
-function M.show_coupling_metrics() utils.info("Show coupling metrics - not yet implemented") end
+    if current_entry.references then
+        for _, ref in ipairs(current_entry.references) do
+            table.insert(all_items, ref)
+        end
+    end
+
+    if current_entry.definitions then
+        for _, def in ipairs(current_entry.definitions) do
+            table.insert(all_items, def)
+        end
+    end
+
+    if current_entry.incoming_calls then
+        for _, call in ipairs(current_entry.incoming_calls) do
+            table.insert(all_items, call)
+        end
+    end
+
+    if current_entry.outgoing_calls then
+        for _, call in ipairs(current_entry.outgoing_calls) do
+            table.insert(all_items, call)
+        end
+    end
+
+    local item_index = 0
+    local lines = vim.api.nvim_buf_get_lines(floating_state.buf_id, 0, -1, false)
+
+    for i = 1, line_num do
+        local line = lines[i] or ""
+        if line:match("^[├└]─ 📄") then
+            item_index = item_index + 1
+            if i == line_num then return all_items[item_index] end
+        end
+    end
+
+    return nil
+end
+
+function M.navigate_to_selected()
+    local item = M.get_selected_item()
+    if not item then
+        utils.warn("No item selected or no valid location found")
+        return
+    end
+
+    if not item.path or not item.line then
+        utils.warn("Invalid location data")
+        return
+    end
+
+    vim.cmd("edit " .. vim.fn.fnameescape(item.path))
+    vim.api.nvim_win_set_cursor(0, { item.line, item.col - 1 })
+    vim.cmd("normal! zz")
+
+    utils.info(string.format("Navigated to %s:%d", item.relative_path or item.path, item.line))
+end
+
+function M.explore_selected()
+    local item = M.get_selected_item()
+    if not item then
+        utils.warn("No item selected or no valid location found")
+        return
+    end
+
+    if not item.path or not item.line then
+        utils.warn("Invalid location data")
+        return
+    end
+
+    vim.cmd("edit " .. vim.fn.fnameescape(item.path))
+    vim.api.nvim_win_set_cursor(0, { item.line, item.col - 1 })
+    vim.cmd("normal! zz")
+
+    vim.schedule(function() require("spaghetti-comb.analyzer").analyze_current_symbol() end)
+
+    utils.info(string.format("Exploring symbol at %s:%d", item.relative_path or item.path, item.line))
+end
+
+function M.toggle_preview()
+    local item = M.get_selected_item()
+    if not item then
+        utils.warn("No item selected")
+        return
+    end
+
+    utils.info("Code preview expansion not yet implemented")
+end
+
+function M.toggle_bookmark()
+    local item = M.get_selected_item()
+    if not item then
+        utils.warn("No item selected")
+        return
+    end
+
+    item.bookmarked = not item.bookmarked
+
+    local status = item.bookmarked and "added" or "removed"
+    utils.info(string.format("Bookmark %s for %s", status, item.relative_path or item.path))
+
+    M.refresh_content()
+end
+
+function M.show_coupling_metrics()
+    local item = M.get_selected_item()
+    if not item then
+        utils.warn("No item selected")
+        return
+    end
+
+    local coupling_score = item.coupling_score or 0.0
+    local coupling_level = "low"
+
+    if coupling_score > 0.7 then
+        coupling_level = "high"
+    elseif coupling_score > 0.4 then
+        coupling_level = "medium"
+    end
+
+    utils.info(
+        string.format("Coupling: %.2f (%s) for %s", coupling_score, coupling_level, item.relative_path or item.path)
+    )
+end
 
 function M.is_visible() return floating_state.is_visible end
 

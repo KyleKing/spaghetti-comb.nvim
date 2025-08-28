@@ -5,7 +5,13 @@ local M = {}
 
 local function get_lsp_clients()
     local bufnr = vim.api.nvim_get_current_buf()
-    local clients = vim.lsp.get_active_clients({ bufnr = bufnr })
+    local clients
+
+    if vim.lsp.get_clients then
+        clients = vim.lsp.get_clients({ bufnr = bufnr })
+    else
+        clients = vim.lsp.get_active_clients({ bufnr = bufnr })
+    end
 
     if #clients == 0 then
         utils.warn("No active LSP clients found for current buffer")
@@ -49,14 +55,14 @@ local function get_text_document_params()
 end
 
 function M.process_lsp_response(method, response)
-    if not response then return {} end
-
     local processed = {
         method = method,
         locations = {},
         symbol_info = {},
         context = {},
     }
+
+    if not response then return processed end
 
     if type(response) == "table" then
         if response.uri and response.range then
@@ -68,7 +74,7 @@ function M.process_lsp_response(method, response)
                     utils.get_line_text(vim.uri_to_bufnr(response.uri), response.range.start.line)
                 )
             )
-        elseif vim.tbl_islist(response) then
+        elseif vim.islist(response) then
             for _, item in ipairs(response) do
                 if item.uri and item.range then
                     table.insert(
@@ -277,6 +283,139 @@ function M.get_call_hierarchy_outgoing()
     end)
 end
 
+function M.find_references_fallback(symbol_text)
+    if not symbol_text or symbol_text == "" then return {} end
+
+    utils.info("Using grep fallback for finding references")
+
+    local cwd = vim.fn.getcwd()
+    local cmd = string.format("grep -rn --exclude-dir=node_modules --exclude-dir=.git '%s' %s", symbol_text, cwd)
+
+    local output = vim.fn.system(cmd)
+    if vim.v.shell_error ~= 0 then return {} end
+
+    local results = {}
+    for line in output:gmatch("[^\r\n]+") do
+        local file, line_num, text = line:match("([^:]+):(%d+):(.*)")
+        if file and line_num and text then
+            local abs_path = vim.fn.fnamemodify(file, ":p")
+            table.insert(
+                results,
+                utils.create_location_item(utils.path_to_uri(abs_path), {
+                    start = { line = tonumber(line_num) - 1, character = 0 },
+                    ["end"] = { line = tonumber(line_num) - 1, character = #text },
+                }, text:gsub("^%s*", ""))
+            )
+        end
+    end
+
+    return results
+end
+
+function M.find_definitions_treesitter(symbol_text, bufnr)
+    local parser = vim.treesitter.get_parser(bufnr)
+    if not parser then return {} end
+
+    local tree = parser:parse()[1]
+    local root = tree:root()
+    local language = utils.get_buffer_language()
+
+    local query_strings = {
+        typescript = string.format([[(function_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+        javascript = string.format([[(function_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+        python = string.format([[(function_definition name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+        rust = string.format([[(function_item name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+        go = string.format([[(function_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+    }
+
+    local query_string = query_strings[language]
+    if not query_string then return {} end
+
+    local ok, query = pcall(vim.treesitter.query.parse, language, query_string)
+    if not ok then return {} end
+
+    local results = {}
+    for id, node, metadata in query:iter_captures(root, bufnr, 0, -1) do
+        local start_row, start_col, end_row, end_col = node:range()
+        local text = vim.treesitter.get_node_text(node, bufnr)
+
+        table.insert(
+            results,
+            utils.create_location_item(utils.path_to_uri(vim.api.nvim_buf_get_name(bufnr)), {
+                start = { line = start_row, character = start_col },
+                ["end"] = { line = end_row, character = end_col },
+            }, text)
+        )
+    end
+
+    return results
+end
+
+function M.find_references_with_fallback(symbol_info, callback)
+    local params = get_text_document_params()
+    params.context = { includeDeclaration = true }
+
+    make_lsp_request("textDocument/references", params, function(result, err)
+        local processed
+
+        if err or not result then
+            utils.warn("LSP references failed, using fallback methods")
+            local fallback_results = M.find_references_fallback(symbol_info.text)
+            processed = {
+                method = "textDocument/references",
+                locations = fallback_results,
+                symbol_info = {},
+                context = { fallback = true },
+            }
+        else
+            processed = M.process_lsp_response("textDocument/references", result)
+        end
+
+        if #processed.locations == 0 then
+            utils.info("No references found for symbol: " .. symbol_info.text)
+            callback(processed)
+            return
+        end
+
+        navigation.update_current_entry({ references = processed.locations })
+        callback(processed)
+
+        utils.info(string.format("Found %d references for %s", #processed.locations, symbol_info.text))
+    end)
+end
+
+function M.find_definitions_with_fallback(symbol_info, callback)
+    local params = get_text_document_params()
+
+    make_lsp_request("textDocument/definition", params, function(result, err)
+        local processed
+
+        if err or not result then
+            utils.warn("LSP definition failed, using treesitter fallback")
+            local fallback_results = M.find_definitions_treesitter(symbol_info.text, symbol_info.bufnr)
+            processed = {
+                method = "textDocument/definition",
+                locations = fallback_results,
+                symbol_info = {},
+                context = { fallback = true },
+            }
+        else
+            processed = M.process_lsp_response("textDocument/definition", result)
+        end
+
+        if #processed.locations == 0 then
+            utils.info("No definition found for symbol: " .. symbol_info.text)
+            callback(processed)
+            return
+        end
+
+        navigation.update_current_entry({ definitions = processed.locations })
+        callback(processed)
+
+        utils.info(string.format("Found %d definitions for %s", #processed.locations, symbol_info.text))
+    end)
+end
+
 function M.analyze_current_symbol()
     local symbol_info = utils.get_cursor_symbol()
     if not symbol_info then
@@ -286,7 +425,29 @@ function M.analyze_current_symbol()
 
     navigation.push(symbol_info)
 
-    M.find_references()
+    local all_data = { locations = {} }
+    local completed_requests = 0
+    local total_requests = 2
+
+    local function check_completion()
+        completed_requests = completed_requests + 1
+        if completed_requests >= total_requests then require("spaghetti-comb.ui.floating").show_relations(all_data) end
+    end
+
+    M.find_references_with_fallback(symbol_info, function(processed)
+        for _, loc in ipairs(processed.locations) do
+            table.insert(all_data.locations, loc)
+        end
+        check_completion()
+    end)
+
+    M.find_definitions_with_fallback(symbol_info, function(processed)
+        for _, loc in ipairs(processed.locations) do
+            table.insert(all_data.locations, loc)
+        end
+        check_completion()
+    end)
+
     M.get_call_hierarchy_incoming()
     M.get_call_hierarchy_outgoing()
 end

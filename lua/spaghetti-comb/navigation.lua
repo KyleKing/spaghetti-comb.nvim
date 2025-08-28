@@ -8,7 +8,11 @@ local navigation_stack = {
 }
 
 function M.init(stack)
-    if stack then navigation_stack = stack end
+    if stack then
+        navigation_stack = stack
+        if not navigation_stack.current_index then navigation_stack.current_index = 0 end
+        if not navigation_stack.entries then navigation_stack.entries = {} end
+    end
 end
 
 function M.create_entry(symbol_info)

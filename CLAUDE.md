@@ -15,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make format` - Format code using stylua (fix mode)
 - `make typecheck` - Run selene type checking
 - `make luals` - Run lua-language-server type checking (not yet implemented)
+- `pre-commit run --all-files` - general formatting
 
 ### Documentation
 

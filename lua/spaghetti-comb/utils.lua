@@ -5,21 +5,27 @@ function M.get_cursor_symbol()
     local line = cursor[1] - 1
     local col = cursor[2]
     local bufnr = vim.api.nvim_get_current_buf()
+    local filetype = vim.api.nvim_buf_get_option(bufnr, "filetype")
 
     local node = vim.treesitter.get_node({
         bufnr = bufnr,
         pos = { line, col },
     })
 
-    if not node then return nil end
+    if not node then return M.get_word_under_cursor() end
 
     local text = vim.treesitter.get_node_text(node, bufnr)
+    local symbol_type = M.classify_symbol_type(node, filetype)
+
     return {
         text = text,
         node = node,
         line = line,
         col = col,
         bufnr = bufnr,
+        type = symbol_type,
+        language = M.get_buffer_language(),
+        context = M.get_symbol_context(node, bufnr),
     }
 end
 
@@ -105,5 +111,209 @@ function M.error(msg) M.log(vim.log.levels.ERROR, msg) end
 function M.warn(msg) M.log(vim.log.levels.WARN, msg) end
 
 function M.info(msg) M.log(vim.log.levels.INFO, msg) end
+
+function M.get_word_under_cursor()
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local line = cursor[1] - 1
+    local col = cursor[2]
+    local bufnr = vim.api.nvim_get_current_buf()
+
+    local line_text = vim.api.nvim_buf_get_lines(bufnr, line, line + 1, false)[1] or ""
+
+    local start_col = col
+    local end_col = col
+
+    while start_col > 0 and line_text:sub(start_col, start_col):match("[%w_]") do
+        start_col = start_col - 1
+    end
+    start_col = start_col + 1
+
+    while end_col <= #line_text and line_text:sub(end_col + 1, end_col + 1):match("[%w_]") do
+        end_col = end_col + 1
+    end
+
+    local text = line_text:sub(start_col, end_col)
+
+    if text == "" or not text:match("^[%w_]+$") then return nil end
+
+    return {
+        text = text,
+        node = nil,
+        line = line,
+        col = start_col - 1,
+        bufnr = bufnr,
+        type = "identifier",
+        language = M.get_buffer_language(),
+        context = nil,
+    }
+end
+
+function M.classify_symbol_type(node, filetype)
+    if not node then return "unknown" end
+
+    local node_type = node:type()
+
+    local type_mappings = {
+        typescript = {
+            identifier = "identifier",
+            function_declaration = "function",
+            method_definition = "method",
+            class_declaration = "class",
+            interface_declaration = "interface",
+            type_alias_declaration = "type",
+            variable_declaration = "variable",
+            call_expression = "call",
+            property_identifier = "property",
+        },
+        javascript = {
+            identifier = "identifier",
+            function_declaration = "function",
+            method_definition = "method",
+            class_declaration = "class",
+            variable_declaration = "variable",
+            call_expression = "call",
+            property_identifier = "property",
+        },
+        python = {
+            identifier = "identifier",
+            function_definition = "function",
+            class_definition = "class",
+            call = "call",
+            attribute = "attribute",
+        },
+        rust = {
+            identifier = "identifier",
+            function_item = "function",
+            struct_item = "struct",
+            enum_item = "enum",
+            impl_item = "impl",
+            trait_item = "trait",
+            call_expression = "call",
+        },
+        go = {
+            identifier = "identifier",
+            function_declaration = "function",
+            type_declaration = "type",
+            method_declaration = "method",
+            call_expression = "call",
+        },
+    }
+
+    local mapping = type_mappings[filetype] or {}
+    return mapping[node_type] or node_type
+end
+
+function M.get_symbol_context(node, bufnr)
+    if not node then return nil end
+
+    local parent = node:parent()
+    local context = {}
+
+    while parent do
+        local parent_type = parent:type()
+        local parent_text = vim.treesitter.get_node_text(parent, bufnr)
+
+        if parent_type:match("function") or parent_type:match("class") or parent_type:match("method") then
+            table.insert(context, {
+                type = parent_type,
+                text = parent_text:sub(1, 50),
+            })
+        end
+
+        parent = parent:parent()
+        if #context >= 3 then break end
+    end
+
+    return context
+end
+
+function M.extract_symbol_info(symbol_data, language)
+    if not symbol_data then return {} end
+
+    local extractors = {
+        typescript = M.extract_typescript_symbol_info,
+        javascript = M.extract_javascript_symbol_info,
+        python = M.extract_python_symbol_info,
+        rust = M.extract_rust_symbol_info,
+        go = M.extract_go_symbol_info,
+    }
+
+    local extractor = extractors[language] or M.extract_generic_symbol_info
+    return extractor(symbol_data)
+end
+
+function M.extract_typescript_symbol_info(data)
+    local info = M.extract_generic_symbol_info(data)
+
+    if data.node then
+        local node_type = data.node:type()
+        if node_type == "call_expression" then
+            info.is_function_call = true
+        elseif node_type:match("interface") then
+            info.is_interface = true
+        elseif node_type:match("type") then
+            info.is_type_definition = true
+        end
+    end
+
+    return info
+end
+
+function M.extract_javascript_symbol_info(data) return M.extract_typescript_symbol_info(data) end
+
+function M.extract_python_symbol_info(data)
+    local info = M.extract_generic_symbol_info(data)
+
+    if data.node then
+        local node_type = data.node:type()
+        if node_type == "call" then
+            info.is_function_call = true
+        elseif node_type == "attribute" then
+            info.is_attribute_access = true
+        end
+    end
+
+    return info
+end
+
+function M.extract_rust_symbol_info(data)
+    local info = M.extract_generic_symbol_info(data)
+
+    if data.node then
+        local node_type = data.node:type()
+        if node_type:match("impl") then
+            info.is_implementation = true
+        elseif node_type:match("trait") then
+            info.is_trait = true
+        end
+    end
+
+    return info
+end
+
+function M.extract_go_symbol_info(data)
+    local info = M.extract_generic_symbol_info(data)
+
+    if data.node then
+        local node_type = data.node:type()
+        if node_type == "call_expression" then info.is_function_call = true end
+    end
+
+    return info
+end
+
+function M.extract_generic_symbol_info(data)
+    return {
+        symbol = data.text,
+        type = data.type or "unknown",
+        language = data.language,
+        file = vim.api.nvim_buf_get_name(data.bufnr),
+        line = data.line + 1,
+        col = data.col + 1,
+        context = data.context,
+        timestamp = os.time(),
+        bookmarked = false,
+    }
+end
 
 return M
