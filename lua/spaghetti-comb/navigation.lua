@@ -165,6 +165,35 @@ function M.update_current_entry(updates)
         current[key] = value
     end
 
+    -- Calculate coupling score when we have enough data
+    if current.references or current.definitions or current.incoming_calls or current.outgoing_calls then
+        local coupling_metrics = require("spaghetti-comb.coupling.metrics")
+        local symbol_info = {
+            text = current.symbol,
+            file = current.file,
+            line = current.line,
+            type = current.type,
+            context = current.context,
+        }
+
+        local coupling_score = coupling_metrics.calculate_coupling_score(
+            symbol_info,
+            current.references,
+            current.definitions,
+            current.incoming_calls,
+            current.outgoing_calls
+        )
+
+        current.coupling_score = coupling_score
+        current.coupling_metrics = coupling_metrics.get_coupling_metrics(
+            symbol_info,
+            current.references,
+            current.definitions,
+            current.incoming_calls,
+            current.outgoing_calls
+        )
+    end
+
     return true
 end
 

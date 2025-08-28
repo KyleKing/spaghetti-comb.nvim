@@ -58,31 +58,56 @@ function M.process_lsp_response(method, response)
 
     if type(response) == "table" then
         if response.uri and response.range then
-            table.insert(
-                processed.locations,
-                utils.create_location_item(
-                    response.uri,
-                    response.range,
-                    utils.get_line_text(vim.uri_to_bufnr(response.uri), response.range.start.line)
-                )
+            local location = utils.create_location_item(
+                response.uri,
+                response.range,
+                utils.get_line_text(vim.uri_to_bufnr(response.uri), response.range.start.line)
             )
+            location.coupling_score = M.calculate_location_coupling(location)
+            table.insert(processed.locations, location)
         elseif vim.islist(response) then
             for _, item in ipairs(response) do
                 if item.uri and item.range then
-                    table.insert(
-                        processed.locations,
-                        utils.create_location_item(
-                            item.uri,
-                            item.range,
-                            utils.get_line_text(vim.uri_to_bufnr(item.uri), item.range.start.line)
-                        )
+                    local location = utils.create_location_item(
+                        item.uri,
+                        item.range,
+                        utils.get_line_text(vim.uri_to_bufnr(item.uri), item.range.start.line)
                     )
+                    location.coupling_score = M.calculate_location_coupling(location)
+                    table.insert(processed.locations, location)
                 end
             end
         end
     end
 
     return processed
+end
+
+function M.calculate_location_coupling(location)
+    if not location or not location.path then return 0.0 end
+
+    local coupling_metrics = require("spaghetti-comb.coupling.metrics")
+
+    -- Create a simplified symbol info for the location
+    local symbol_info = {
+        text = location.text or "",
+        file = location.path,
+        line = location.line,
+        type = "reference",
+    }
+
+    -- For individual locations, we have limited data, so use a simpler calculation
+    local base_score = 0.3 -- Base coupling for any reference
+
+    -- Add coupling based on file distance from current file
+    local current_file = vim.api.nvim_buf_get_name(0)
+    if location.path ~= current_file then base_score = base_score + 0.2 end
+
+    -- Add coupling based on module boundaries
+    local module_coupling = coupling_metrics.analyze_module_boundaries(symbol_info, { { path = current_file } })
+    base_score = base_score + (module_coupling * 0.3)
+
+    return math.min(1.0, base_score)
 end
 
 function M.find_references()
