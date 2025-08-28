@@ -11,16 +11,16 @@ If you've downloaded this plugin locally instead of cloning from git, you can in
 Add the following to your Neovim configuration:
 
 ```lua
-local add, now, later = MiniDeps.add, MiniDeps.now, MiniDeps.later
-
--- Install from local directory
-add({
-    source = "/path/to/your/local/call-graph.nvim",
-    depends = {},
-})
+local add, _now, later = MiniDeps.add, MiniDeps.now, MiniDeps.later
 
 -- Setup the plugin
-now(function()
+later(function()
+    add({
+        -- Install from local directory replacing with the actual path
+        source = "file:///Users/kyleking/Developer/local-code/spaghetti-comb.nvim",
+        depends = {},
+    })
+
     require("spaghetti-comb").setup({
         -- Configuration options (optional)
         relations = {
@@ -43,15 +43,13 @@ now(function()
 end)
 ```
 
-Replace `/path/to/your/local/call-graph.nvim` with the actual path where you've placed the plugin directory.
-
 ### Alternative: Manual Plugin Path
 
 You can also add the plugin directory directly to Neovim's runtime path:
 
 ```lua
 -- Add to your init.lua
-vim.opt.runtimepath:append("/path/to/your/local/call-graph.nvim")
+vim.opt.runtimepath:append("/path/to/your/local/spaghetti-comb.nvim")
 
 -- Then setup normally
 require("spaghetti-comb").setup()
