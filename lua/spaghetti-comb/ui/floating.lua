@@ -102,43 +102,85 @@ local function setup_floating_window_keymaps(buf_id)
     vim.keymap.set("n", "<Esc>", function() M.close_relations() end, opts)
 end
 
-local function format_location_line(location, index, show_coupling)
+local function format_location_line(location, index, show_coupling, include_preview)
     local icon = "📄"
     local coupling_str = ""
+    local bookmark_str = ""
 
     if show_coupling and location.coupling_score then
         coupling_str = string.format(" [C:%.1f]", location.coupling_score)
     end
 
-    return string.format(
-        "%s %s:%d%s",
+    if location.bookmarked then bookmark_str = "★ " end
+
+    local base_line = string.format(
+        "%s%s %s:%d%s",
+        bookmark_str,
         icon,
         location.relative_path or location.path or "unknown",
         location.line,
         coupling_str
     )
+
+    if not include_preview then return base_line end
+
+    local preview = require("spaghetti-comb.ui.preview")
+    local item_key = preview.get_item_key(location)
+    if not item_key then return base_line end
+
+    local is_expanded = preview.is_item_expanded(item_key)
+    if not is_expanded then return base_line end
+
+    local preview_lines = preview.create_expandable_preview_content(location, is_expanded, 3)
+    if #preview_lines <= 1 then return base_line end
+
+    local result_lines = { base_line }
+    for i = 2, #preview_lines do
+        table.insert(result_lines, preview_lines[i])
+    end
+
+    return table.concat(result_lines, "\n")
 end
 
 local function render_relations_content(data)
     local lines = {}
     local current_entry = navigation.peek()
+    local config = require("spaghetti-comb").get_config()
+    local show_previews = config and config.relations and config.relations.auto_preview
 
     if current_entry then
         table.insert(lines, string.format("Relations for '%s':", current_entry.symbol))
         table.insert(lines, "")
     end
 
+    local function add_location_with_previews(location_list, prefix, show_coupling)
+        for i, location in ipairs(location_list) do
+            local formatted = format_location_line(location, i, show_coupling, show_previews)
+            local location_lines = vim.split(formatted, "\n", { plain = true })
+
+            for j, line in ipairs(location_lines) do
+                if j == 1 then
+                    table.insert(lines, prefix .. line)
+                else
+                    table.insert(lines, line)
+                end
+            end
+        end
+    end
+
     if data and data.locations then
         if data.method == "textDocument/references" then
             table.insert(lines, string.format("References (%d):", #data.locations))
-            for i, location in ipairs(data.locations) do
-                table.insert(lines, "├─ " .. format_location_line(location, i, true))
-            end
+            add_location_with_previews(data.locations, "├─ ", true)
         elseif data.method == "textDocument/definition" then
             table.insert(lines, string.format("Definitions (%d):", #data.locations))
-            for i, location in ipairs(data.locations) do
-                table.insert(lines, "└─ " .. format_location_line(location, i, false))
-            end
+            add_location_with_previews(data.locations, "└─ ", false)
+        elseif data.method == "callHierarchy/incomingCalls" then
+            table.insert(lines, string.format("Incoming Calls (%d):", #data.locations))
+            add_location_with_previews(data.locations, "├─ ", true)
+        elseif data.method == "callHierarchy/outgoingCalls" then
+            table.insert(lines, string.format("Outgoing Calls (%d):", #data.locations))
+            add_location_with_previews(data.locations, "├─ ", true)
         end
         table.insert(lines, "")
     end
@@ -146,41 +188,34 @@ local function render_relations_content(data)
     if current_entry then
         if current_entry.references and #current_entry.references > 0 then
             table.insert(lines, string.format("References (%d):", #current_entry.references))
-            for i, ref in ipairs(current_entry.references) do
-                table.insert(lines, "├─ " .. format_location_line(ref, i, true))
-            end
+            add_location_with_previews(current_entry.references, "├─ ", true)
             table.insert(lines, "")
         end
 
         if current_entry.definitions and #current_entry.definitions > 0 then
             table.insert(lines, string.format("Definitions (%d):", #current_entry.definitions))
-            for i, def in ipairs(current_entry.definitions) do
-                table.insert(lines, "└─ " .. format_location_line(def, i, false))
-            end
+            add_location_with_previews(current_entry.definitions, "└─ ", false)
             table.insert(lines, "")
         end
 
         if current_entry.incoming_calls and #current_entry.incoming_calls > 0 then
             table.insert(lines, string.format("Incoming Calls (%d):", #current_entry.incoming_calls))
-            for i, call in ipairs(current_entry.incoming_calls) do
-                table.insert(lines, "├─ " .. format_location_line(call, i, true))
-            end
+            add_location_with_previews(current_entry.incoming_calls, "├─ ", true)
             table.insert(lines, "")
         end
 
         if current_entry.outgoing_calls and #current_entry.outgoing_calls > 0 then
             table.insert(lines, string.format("Outgoing Calls (%d):", #current_entry.outgoing_calls))
-            for i, call in ipairs(current_entry.outgoing_calls) do
-                table.insert(lines, "├─ " .. format_location_line(call, i, true))
-            end
+            add_location_with_previews(current_entry.outgoing_calls, "├─ ", true)
             table.insert(lines, "")
         end
     end
 
-    if #lines == 0 then
+    if #lines <= 2 then
         table.insert(lines, "No relations found")
         table.insert(lines, "")
         table.insert(lines, "Try positioning cursor on a symbol and running :SpaghettiCombShow")
+        table.insert(lines, "Press <Tab> on a relation to expand/collapse preview")
     end
 
     return lines
@@ -358,7 +393,19 @@ function M.toggle_preview()
         return
     end
 
-    utils.info("Code preview expansion not yet implemented")
+    local item_key = require("spaghetti-comb.ui.preview").get_item_key(item)
+    if not item_key then
+        utils.warn("Cannot create preview key for selected item")
+        return
+    end
+
+    local preview = require("spaghetti-comb.ui.preview")
+    local is_expanded = preview.toggle_item_expansion(item_key)
+
+    M.refresh_content()
+
+    local status = is_expanded and "expanded" or "collapsed"
+    utils.info(string.format("Preview %s for %s", status, item.relative_path or item.path))
 end
 
 function M.toggle_bookmark()

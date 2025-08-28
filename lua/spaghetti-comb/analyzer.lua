@@ -1,5 +1,6 @@
 local utils = require("spaghetti-comb.utils")
 local navigation = require("spaghetti-comb.navigation")
+local error_handler = require("spaghetti-comb.error_handling")
 
 local M = {}
 
@@ -22,23 +23,14 @@ local function get_lsp_clients()
 end
 
 local function make_lsp_request(method, params, callback)
-    local clients = get_lsp_clients()
-    if not clients then
-        callback(nil, "No LSP clients available")
-        return
-    end
+    local symbol_info = utils.get_cursor_symbol()
+    local context = {
+        bufnr = vim.api.nvim_get_current_buf(),
+        symbol_text = symbol_info and symbol_info.text,
+        method = method,
+    }
 
-    local client = clients[1]
-
-    client.request(method, params, function(err, result)
-        if err then
-            utils.error(string.format("LSP request failed: %s", err.message or tostring(err)))
-            callback(nil, err)
-            return
-        end
-
-        callback(result, nil)
-    end)
+    error_handler.safe_lsp_call(method, params, callback, context)
 end
 
 local function get_text_document_params()
@@ -94,32 +86,62 @@ function M.process_lsp_response(method, response)
 end
 
 function M.find_references()
-    local symbol_info = utils.get_cursor_symbol()
-    if not symbol_info then
+    local symbol_info = error_handler.safe_call(
+        function() return utils.get_cursor_symbol() end,
+        { function_name = "find_references" }
+    )
+
+    if not symbol_info or not symbol_info.text then
         utils.warn("No symbol found under cursor")
         return
     end
 
-    local params = get_text_document_params()
-    params.context = { includeDeclaration = true }
+    local params = error_handler.safe_call(function()
+        local p = get_text_document_params()
+        p.context = { includeDeclaration = true }
+        return p
+    end, { symbol_info = symbol_info })
+
+    if not params then
+        utils.error("Failed to create text document parameters")
+        return
+    end
 
     make_lsp_request("textDocument/references", params, function(result, err)
         if err then
-            utils.error("Failed to find references: " .. tostring(err))
+            local fallback_result = M.find_references_fallback(symbol_info.text)
+            if #fallback_result > 0 then
+                local processed = {
+                    method = "textDocument/references",
+                    locations = fallback_result,
+                    fallback_used = true,
+                }
+
+                navigation.push(symbol_info)
+                navigation.update_current_entry({ references = processed.locations })
+                require("spaghetti-comb.ui.floating").show_relations(processed)
+                utils.info(string.format("Found %d references (fallback) for %s", #fallback_result, symbol_info.text))
+            else
+                utils.error("Failed to find references with both LSP and fallback methods")
+            end
             return
         end
 
-        local processed = M.process_lsp_response("textDocument/references", result)
+        local processed = error_handler.safe_call(
+            function() return M.process_lsp_response("textDocument/references", result) end,
+            { result = result, symbol_info = symbol_info }
+        )
 
-        if #processed.locations == 0 then
+        if not processed or #processed.locations == 0 then
             utils.info("No references found for symbol: " .. symbol_info.text)
             return
         end
 
-        navigation.push(symbol_info)
-        navigation.update_current_entry({ references = processed.locations })
-
-        require("spaghetti-comb.ui.floating").show_relations(processed)
+        error_handler.safe_call(function()
+            navigation.push(symbol_info)
+            navigation.update_current_entry({ references = processed.locations })
+            require("spaghetti-comb.ui.floating").show_relations(processed)
+        end, { processed = processed, symbol_info = symbol_info })
 
         utils.info(string.format("Found %d references for %s", #processed.locations, symbol_info.text))
     end)
@@ -304,10 +326,109 @@ end
 function M.find_references_fallback(symbol_text)
     if not symbol_text or symbol_text == "" then return {} end
 
-    utils.info("Using grep fallback for finding references")
+    utils.info("Using enhanced fallback for finding references")
+
+    local results = {}
+
+    -- Try ripgrep first (faster and more accurate)
+    local rg_results = M.find_references_with_ripgrep(symbol_text)
+    if #rg_results > 0 then return rg_results end
+
+    -- Fall back to regular grep
+    local cwd = vim.fn.getcwd()
+    local language_extensions = M.get_language_file_extensions()
+    local extension_pattern = table.concat(language_extensions, " -o -name ")
+
+    local cmd = string.format(
+        "find %s -type f \\( -name %s \\) -not -path '*/node_modules/*' -not -path '*/.git/*' -exec grep -Hn '%s' {} \\;",
+        vim.fn.shellescape(cwd),
+        extension_pattern,
+        vim.fn.shellescape(symbol_text)
+    )
+
+    local output = vim.fn.system(cmd)
+    if vim.v.shell_error ~= 0 then
+        -- Last resort: use basic grep
+        return M.find_references_basic_grep(symbol_text)
+    end
+
+    for line in output:gmatch("[^\r\n]+") do
+        local file, line_num, text = line:match("([^:]+):(%d+):(.*)")
+        if file and line_num and text then
+            local abs_path = vim.fn.fnamemodify(file, ":p")
+            if vim.fn.filereadable(abs_path) == 1 then
+                table.insert(
+                    results,
+                    utils.create_location_item(utils.path_to_uri(abs_path), {
+                        start = { line = tonumber(line_num) - 1, character = 0 },
+                        ["end"] = { line = tonumber(line_num) - 1, character = #text },
+                    }, text:gsub("^%s*", ""))
+                )
+            end
+        end
+    end
+
+    return results
+end
+
+function M.find_references_with_ripgrep(symbol_text)
+    if vim.fn.executable("rg") == 0 then return {} end
 
     local cwd = vim.fn.getcwd()
-    local cmd = string.format("grep -rn --exclude-dir=node_modules --exclude-dir=.git '%s' %s", symbol_text, cwd)
+    local language_extensions = M.get_language_file_extensions()
+    local extension_args = {}
+
+    for _, ext in ipairs(language_extensions) do
+        table.insert(extension_args, "--glob")
+        table.insert(extension_args, "*" .. ext)
+    end
+
+    local cmd = {
+        "rg",
+        "--line-number",
+        "--column",
+        "--no-heading",
+        "--color=never",
+        "--smart-case",
+    }
+
+    for _, arg in ipairs(extension_args) do
+        table.insert(cmd, arg)
+    end
+
+    table.insert(cmd, vim.fn.shellescape(symbol_text))
+    table.insert(cmd, cwd)
+
+    local output = vim.fn.system(table.concat(cmd, " "))
+    if vim.v.shell_error ~= 0 then return {} end
+
+    local results = {}
+    for line in output:gmatch("[^\r\n]+") do
+        local file, line_num, col_num, text = line:match("([^:]+):(%d+):(%d+):(.*)")
+        if file and line_num and col_num and text then
+            local abs_path = vim.fn.fnamemodify(file, ":p")
+            if vim.fn.filereadable(abs_path) == 1 then
+                table.insert(
+                    results,
+                    utils.create_location_item(utils.path_to_uri(abs_path), {
+                        start = { line = tonumber(line_num) - 1, character = tonumber(col_num) - 1 },
+                        ["end"] = { line = tonumber(line_num) - 1, character = tonumber(col_num) - 1 + #symbol_text },
+                    }, text:gsub("^%s*", ""))
+                )
+            end
+        end
+    end
+
+    return results
+end
+
+function M.find_references_basic_grep(symbol_text)
+    local cwd = vim.fn.getcwd()
+    local cmd = string.format(
+        "grep -rn --exclude-dir=node_modules --exclude-dir=.git '%s' %s",
+        vim.fn.shellescape(symbol_text),
+        vim.fn.shellescape(cwd)
+    )
 
     local output = vim.fn.system(cmd)
     if vim.v.shell_error ~= 0 then return {} end
@@ -317,53 +438,192 @@ function M.find_references_fallback(symbol_text)
         local file, line_num, text = line:match("([^:]+):(%d+):(.*)")
         if file and line_num and text then
             local abs_path = vim.fn.fnamemodify(file, ":p")
-            table.insert(
-                results,
-                utils.create_location_item(utils.path_to_uri(abs_path), {
-                    start = { line = tonumber(line_num) - 1, character = 0 },
-                    ["end"] = { line = tonumber(line_num) - 1, character = #text },
-                }, text:gsub("^%s*", ""))
-            )
+            if vim.fn.filereadable(abs_path) == 1 then
+                table.insert(
+                    results,
+                    utils.create_location_item(utils.path_to_uri(abs_path), {
+                        start = { line = tonumber(line_num) - 1, character = 0 },
+                        ["end"] = { line = tonumber(line_num) - 1, character = #text },
+                    }, text:gsub("^%s*", ""))
+                )
+            end
         end
     end
 
     return results
 end
 
+function M.get_language_file_extensions()
+    local current_language = utils.get_buffer_language()
+
+    local extension_map = {
+        typescript = { "*.ts", "*.tsx", "*.d.ts" },
+        javascript = { "*.js", "*.jsx", "*.mjs", "*.cjs" },
+        python = { "*.py", "*.pyx", "*.pyi" },
+        rust = { "*.rs" },
+        go = { "*.go" },
+        lua = { "*.lua" },
+        c = { "*.c", "*.h" },
+        cpp = { "*.cpp", "*.cxx", "*.cc", "*.hpp", "*.hxx" },
+        java = { "*.java" },
+        kotlin = { "*.kt", "*.kts" },
+        swift = { "*.swift" },
+        ruby = { "*.rb" },
+        php = { "*.php" },
+        bash = { "*.sh", "*.bash" },
+        zsh = { "*.zsh" },
+    }
+
+    local extensions = extension_map[current_language] or { "*.*" }
+
+    -- Always include common config and documentation files
+    table.insert(extensions, "*.json")
+    table.insert(extensions, "*.yaml")
+    table.insert(extensions, "*.yml")
+    table.insert(extensions, "*.toml")
+    table.insert(extensions, "*.md")
+
+    return extensions
+end
+
 function M.find_definitions_treesitter(symbol_text, bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+
     local parser = vim.treesitter.get_parser(bufnr)
     if not parser then return {} end
 
     local tree = parser:parse()[1]
+    if not tree then return {} end
+
     local root = tree:root()
     local language = utils.get_buffer_language()
 
-    local query_strings = {
-        typescript = string.format([[(function_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
-        javascript = string.format([[(function_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
-        python = string.format([[(function_definition name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
-        rust = string.format([[(function_item name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
-        go = string.format([[(function_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+    -- Enhanced query patterns for multiple definition types
+    local query_patterns = {
+        typescript = {
+            string.format([[(function_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(method_definition name: (property_identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(class_declaration name: (type_identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(interface_declaration name: (type_identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(type_alias_declaration name: (type_identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(variable_declarator name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+        },
+        javascript = {
+            string.format([[(function_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(method_definition name: (property_identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(class_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(variable_declarator name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+        },
+        python = {
+            string.format([[(function_definition name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(class_definition name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(assignment left: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+        },
+        rust = {
+            string.format([[(function_item name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(struct_item name: (type_identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(enum_item name: (type_identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(impl_item trait: (type_identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(trait_item name: (type_identifier) @name (#eq? @name "%s"))]], symbol_text),
+        },
+        go = {
+            string.format([[(function_declaration name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(method_declaration name: (field_identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(type_declaration name: (type_identifier) @name (#eq? @name "%s"))]], symbol_text),
+        },
+        lua = {
+            string.format([[(function_statement name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format([[(local_function name: (identifier) @name (#eq? @name "%s"))]], symbol_text),
+            string.format(
+                [[(assignment_statement (variable_list name: (identifier) @name (#eq? @name "%s")))]],
+                symbol_text
+            ),
+        },
     }
 
-    local query_string = query_strings[language]
-    if not query_string then return {} end
-
-    local ok, query = pcall(vim.treesitter.query.parse, language, query_string)
-    if not ok then return {} end
+    local patterns = query_patterns[language] or {}
+    if #patterns == 0 then return {} end
 
     local results = {}
-    for id, node, metadata in query:iter_captures(root, bufnr, 0, -1) do
-        local start_row, start_col, end_row, end_col = node:range()
-        local text = vim.treesitter.get_node_text(node, bufnr)
+    local seen_locations = {}
 
-        table.insert(
-            results,
-            utils.create_location_item(utils.path_to_uri(vim.api.nvim_buf_get_name(bufnr)), {
-                start = { line = start_row, character = start_col },
-                ["end"] = { line = end_row, character = end_col },
-            }, text)
-        )
+    for _, pattern in ipairs(patterns) do
+        local ok, query = pcall(vim.treesitter.query.parse, language, pattern)
+        if ok and query then
+            for id, node, metadata in query:iter_captures(root, bufnr, 0, -1) do
+                local start_row, start_col, end_row, end_col = node:range()
+                local node_text = vim.treesitter.get_node_text(node, bufnr)
+
+                -- Avoid duplicate results
+                local location_key = string.format("%d:%d", start_row, start_col)
+                if not seen_locations[location_key] then
+                    seen_locations[location_key] = true
+
+                    table.insert(
+                        results,
+                        utils.create_location_item(utils.path_to_uri(vim.api.nvim_buf_get_name(bufnr)), {
+                            start = { line = start_row, character = start_col },
+                            ["end"] = { line = end_row, character = end_col },
+                        }, node_text)
+                    )
+                end
+            end
+        end
+    end
+
+    return results
+end
+
+function M.find_definitions_across_project(symbol_text)
+    local results = {}
+    local cwd = vim.fn.getcwd()
+    local language_extensions = M.get_language_file_extensions()
+
+    -- Build file pattern for find command
+    local find_patterns = {}
+    for _, ext in ipairs(language_extensions) do
+        table.insert(find_patterns, "-name")
+        table.insert(find_patterns, ext)
+        table.insert(find_patterns, "-o")
+    end
+    -- Remove the last "-o"
+    if #find_patterns > 0 then table.remove(find_patterns) end
+
+    local cmd = {
+        "find",
+        cwd,
+        "-type",
+        "f",
+        "(",
+    }
+    for _, pattern in ipairs(find_patterns) do
+        table.insert(cmd, pattern)
+    end
+    table.insert(cmd, ")")
+    table.insert(cmd, "-not")
+    table.insert(cmd, "-path")
+    table.insert(cmd, "*/node_modules/*")
+    table.insert(cmd, "-not")
+    table.insert(cmd, "-path")
+    table.insert(cmd, "*/.git/*")
+
+    local find_output = vim.fn.system(table.concat(cmd, " "))
+    if vim.v.shell_error ~= 0 then return {} end
+
+    local files = vim.split(find_output, "\n", { plain = true })
+    local max_files = 50 -- Limit to avoid performance issues
+
+    for i, file in ipairs(files) do
+        if i > max_files then break end
+        if file and file ~= "" and vim.fn.filereadable(file) == 1 then
+            local bufnr = vim.fn.bufnr(file, true)
+            if bufnr ~= -1 then
+                local file_results = M.find_definitions_treesitter(symbol_text, bufnr)
+                for _, result in ipairs(file_results) do
+                    table.insert(results, result)
+                end
+            end
+        end
     end
 
     return results
