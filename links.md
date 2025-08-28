@@ -1,0 +1,2 @@
+- Full example mini.test implementation: https://github.com/MagicDuck/grug-far.nvim/tree/main
+- Template repo originally used for this project: https://github.com/shortcuts/neovim-plugin-boilerplate
