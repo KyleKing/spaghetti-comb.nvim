@@ -23,9 +23,15 @@ local function serialize_session()
     local stack_info = navigation.get_stack_info()
 
     local session_data = {
-        version = "1.0",
+        version = "1.1",
         timestamp = os.time(),
         working_directory = vim.fn.getcwd(),
+        window_layout = {
+            current_win = vim.api.nvim_get_current_win(),
+            current_buf = vim.api.nvim_get_current_buf(),
+            current_tab = vim.api.nvim_get_current_tabpage(),
+            layout_info = vim.fn.winrestcmd(),
+        },
         navigation_stack = {
             current_index = stack_info.current_index,
             entries = stack_entries,
@@ -34,6 +40,8 @@ local function serialize_session()
             project_root = utils.get_project_root(),
             nvim_version = vim.version(),
             total_entries = #stack_entries,
+            session_id = string.format("%s_%d", vim.fn.hostname(), os.time()),
+            git_branch = utils.get_git_branch(),
         },
     }
 
@@ -121,6 +129,10 @@ function M.load_session(name)
         if nav_stack.current_index and nav_stack.current_index > 0 then
             navigation.jump_to_index(nav_stack.current_index)
         end
+    end
+
+    if session_data.window_layout and session_data.window_layout.layout_info then
+        pcall(function() vim.cmd(session_data.window_layout.layout_info) end)
     end
 
     utils.info(string.format("Session loaded from: %s (%d entries)", session_file, #(nav_stack.entries or {})))
@@ -216,7 +228,55 @@ function M.get_session_info(name)
         total_entries = session_data.metadata and session_data.metadata.total_entries or 0,
         file_size = stat and stat.size or 0,
         file_mtime = stat and stat.mtime.sec or 0,
+        session_id = session_data.metadata and session_data.metadata.session_id,
+        git_branch = session_data.metadata and session_data.metadata.git_branch,
     }
+end
+
+function M.auto_backup_session()
+    local stack_info = navigation.get_stack_info()
+    if stack_info.total_entries == 0 then return false end
+
+    local backup_name = string.format("auto_%s_%d", os.date("%Y%m%d_%H%M%S"), math.random(1000, 9999))
+
+    return M.save_session(backup_name)
+end
+
+function M.restore_context_from_entry(entry)
+    if not entry or not entry.context then return false end
+
+    local context = entry.context
+
+    if context.working_dir and vim.fn.isdirectory(context.working_dir) == 1 then
+        vim.cmd("cd " .. vim.fn.fnameescape(context.working_dir))
+    end
+
+    if context.view then pcall(vim.fn.winrestview, context.view) end
+
+    if context.win_config and context.win_config.relative and context.win_config.relative ~= "" then
+        local current_win = vim.api.nvim_get_current_win()
+        pcall(vim.api.nvim_win_set_config, current_win, context.win_config)
+    end
+
+    return true
+end
+
+function M.clean_old_auto_sessions(max_age_days)
+    max_age_days = max_age_days or 7
+    local cutoff_time = os.time() - (max_age_days * 24 * 60 * 60)
+
+    local sessions = M.list_sessions()
+    local cleaned_count = 0
+
+    for _, session in ipairs(sessions) do
+        if session.name:match("^auto_") and session.mtime < cutoff_time then
+            if M.delete_session(session.name) then cleaned_count = cleaned_count + 1 end
+        end
+    end
+
+    if cleaned_count > 0 then utils.info(string.format("Cleaned %d old auto-backup sessions", cleaned_count)) end
+
+    return cleaned_count
 end
 
 return M

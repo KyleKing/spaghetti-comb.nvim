@@ -287,4 +287,88 @@ function M.get_navigation_summary()
     }
 end
 
+function M.get_bidirectional_context(max_back, max_forward)
+    max_back = max_back or 10
+    max_forward = max_forward or 10
+
+    local current_entry = M.peek()
+    local back_entries = {}
+    local forward_entries = {}
+
+    local start_back = math.max(1, navigation_stack.current_index - max_back)
+    for i = navigation_stack.current_index - 1, start_back, -1 do
+        local entry = navigation_stack.entries[i]
+        if entry then
+            table.insert(back_entries, {
+                index = i,
+                symbol = entry.symbol,
+                file = entry.file,
+                relative_path = utils.get_relative_path(entry.file),
+                line = entry.line,
+                timestamp = entry.timestamp,
+                bookmarked = entry.bookmarked or false,
+                distance = navigation_stack.current_index - i,
+            })
+        end
+    end
+
+    local end_forward = math.min(#navigation_stack.entries, navigation_stack.current_index + max_forward)
+    for i = navigation_stack.current_index + 1, end_forward do
+        local entry = navigation_stack.entries[i]
+        if entry then
+            table.insert(forward_entries, {
+                index = i,
+                symbol = entry.symbol,
+                file = entry.file,
+                relative_path = utils.get_relative_path(entry.file),
+                line = entry.line,
+                timestamp = entry.timestamp,
+                bookmarked = entry.bookmarked or false,
+                distance = i - navigation_stack.current_index,
+            })
+        end
+    end
+
+    return {
+        current = current_entry and {
+            index = navigation_stack.current_index,
+            symbol = current_entry.symbol,
+            file = current_entry.file,
+            relative_path = utils.get_relative_path(current_entry.file),
+            line = current_entry.line,
+            timestamp = current_entry.timestamp,
+            bookmarked = current_entry.bookmarked or false,
+        } or nil,
+        back_entries = back_entries,
+        forward_entries = forward_entries,
+        can_go_back = M.can_navigate_back(),
+        can_go_forward = M.can_navigate_forward(),
+        total_back = navigation_stack.current_index - 1,
+        total_forward = #navigation_stack.entries - navigation_stack.current_index,
+    }
+end
+
+function M.navigate_by_offset(offset)
+    local target_index = navigation_stack.current_index + offset
+    if target_index < 1 or target_index > #navigation_stack.entries then
+        utils.warn(string.format("Cannot navigate %d steps from current position", offset))
+        return nil
+    end
+
+    return M.jump_to_index(target_index)
+end
+
+function M.navigate_to_relative_position(direction, steps)
+    steps = steps or 1
+
+    if direction == "back" then
+        return M.navigate_by_offset(-steps)
+    elseif direction == "forward" then
+        return M.navigate_by_offset(steps)
+    else
+        utils.error(string.format("Invalid navigation direction: %s", direction))
+        return nil
+    end
+end
+
 return M

@@ -316,4 +316,41 @@ function M.extract_generic_symbol_info(data)
     }
 end
 
+function M.get_project_root()
+    local current_dir = vim.fn.getcwd()
+
+    local markers = { ".git", "package.json", "Cargo.toml", "go.mod", "pyproject.toml", "setup.py" }
+
+    local function find_root(path)
+        for _, marker in ipairs(markers) do
+            if vim.fn.isdirectory(path .. "/" .. marker) == 1 or vim.fn.filereadable(path .. "/" .. marker) == 1 then
+                return path
+            end
+        end
+
+        local parent = vim.fn.fnamemodify(path, ":h")
+        if parent == path then return nil end
+
+        return find_root(parent)
+    end
+
+    return find_root(current_dir) or current_dir
+end
+
+function M.get_git_branch()
+    local git_dir = vim.fn.finddir(".git", vim.fn.getcwd() .. ";")
+    if git_dir == "" then return nil end
+
+    local branch_file = git_dir .. "/HEAD"
+    if vim.fn.filereadable(branch_file) == 0 then return nil end
+
+    local head_content = vim.fn.readfile(branch_file)
+    if not head_content or #head_content == 0 then return nil end
+
+    local head_line = head_content[1]
+    local branch = head_line:match("ref: refs/heads/(.+)")
+
+    return branch or "HEAD"
+end
+
 return M

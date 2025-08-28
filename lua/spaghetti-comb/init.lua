@@ -36,6 +36,9 @@ local default_config = {
         call_hierarchy_outgoing = "<leader>sco",
         show_navigation_history = "<leader>sh",
         bookmark_current = "<leader>sb",
+        bidirectional_context = "<leader>sc",
+        auto_backup = "<leader>sab",
+        clean_sessions = "<leader>scs",
     },
     coupling = {
         enabled = true,
@@ -152,6 +155,69 @@ local function setup_commands()
         function() require("spaghetti-comb.analyzer").analyze_current_symbol() end,
         { desc = "Analyze current symbol (show all relations)" }
     )
+
+    vim.api.nvim_create_user_command("SpaghettiCombNavigateByOffset", function(opts)
+        local offset = tonumber(opts.args)
+        if not offset then
+            require("spaghetti-comb.utils").warn("Invalid offset: " .. opts.args)
+            return
+        end
+        require("spaghetti-comb.navigation").navigate_by_offset(offset)
+    end, { desc = "Navigate by offset in stack", nargs = 1 })
+
+    vim.api.nvim_create_user_command("SpaghettiCombBidirectionalContext", function()
+        local context = require("spaghetti-comb.navigation").get_bidirectional_context(5, 5)
+        local lines = { "Navigation Context:" }
+
+        if context.current then
+            table.insert(
+                lines,
+                string.format(
+                    "Current: %s at %s:%d",
+                    context.current.symbol,
+                    context.current.relative_path,
+                    context.current.line
+                )
+            )
+        end
+
+        if #context.back_entries > 0 then
+            table.insert(lines, "\nBack entries:")
+            for _, entry in ipairs(context.back_entries) do
+                table.insert(
+                    lines,
+                    string.format("  -%d: %s at %s:%d", entry.distance, entry.symbol, entry.relative_path, entry.line)
+                )
+            end
+        end
+
+        if #context.forward_entries > 0 then
+            table.insert(lines, "\nForward entries:")
+            for _, entry in ipairs(context.forward_entries) do
+                table.insert(
+                    lines,
+                    string.format("  +%d: %s at %s:%d", entry.distance, entry.symbol, entry.relative_path, entry.line)
+                )
+            end
+        end
+
+        vim.notify(table.concat(lines, "\n"))
+    end, { desc = "Show bidirectional navigation context" })
+
+    vim.api.nvim_create_user_command("SpaghettiCombAutoBackup", function()
+        local success = require("spaghetti-comb.persistence.storage").auto_backup_session()
+        if success then
+            require("spaghetti-comb.utils").info("Auto-backup session created")
+        else
+            require("spaghetti-comb.utils").warn("No navigation stack to backup")
+        end
+    end, { desc = "Create automatic backup session" })
+
+    vim.api.nvim_create_user_command(
+        "SpaghettiCombCleanOldSessions",
+        function() require("spaghetti-comb.persistence.storage").clean_old_auto_sessions() end,
+        { desc = "Clean old auto-backup sessions" }
+    )
 end
 
 local function setup_keymaps()
@@ -187,6 +253,24 @@ local function setup_keymaps()
         keymaps.bookmark_current,
         "<cmd>SpaghettiCombBookmarkCurrent<cr>",
         { desc = "Bookmark current" }
+    )
+    vim.keymap.set(
+        "n",
+        keymaps.bidirectional_context,
+        "<cmd>SpaghettiCombBidirectionalContext<cr>",
+        { desc = "Show bidirectional navigation context" }
+    )
+    vim.keymap.set(
+        "n",
+        keymaps.auto_backup,
+        "<cmd>SpaghettiCombAutoBackup<cr>",
+        { desc = "Create auto-backup session" }
+    )
+    vim.keymap.set(
+        "n",
+        keymaps.clean_sessions,
+        "<cmd>SpaghettiCombCleanOldSessions<cr>",
+        { desc = "Clean old sessions" }
     )
 end
 
