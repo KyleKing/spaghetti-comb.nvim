@@ -1,0 +1,8 @@
+{
+  "diagnostics.globals": ["vim", "MiniTest"],
+  "runtime.version": "LuaJIT",
+  "workspace.library": [
+    "/usr/local/share/nvim/runtime/lua",
+    ".ci/neovim/share/nvim/runtime/lua"
+  ]
+}

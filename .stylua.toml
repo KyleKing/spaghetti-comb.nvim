@@ -1,0 +1,8 @@
+# Options: https://github.com/JohnnyMorganz/StyLua?tab=readme-ov-file#options
+# Styleguide: https://github.com/luarocks/lua-style-guide
+
+column_width = 100
+indent_type = "Spaces"
+indent_width = 4
+no_call_parentheses = false
+quote_style = "AutoPreferDouble"
