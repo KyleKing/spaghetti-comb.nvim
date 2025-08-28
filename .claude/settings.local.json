@@ -1,6 +1,11 @@
 {
   "permissions": {
-    "allow": ["Bash(make deps/mini.nvim)", "Bash(make:*)", "Bash(nvim:*)"],
+    "allow": [
+      "Bash(make deps/mini.nvim)",
+      "Bash(make:*)",
+      "Bash(nvim:*)",
+      "WebFetch(domain:github.com)"
+    ],
     "ask": [],
     "deny": []
   }

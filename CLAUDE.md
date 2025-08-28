@@ -13,6 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `make lint` - Check code formatting using stylua
 - `make format` - Format code using stylua (fix mode)
+- `make typecheck` - Run selene type checking
 - `make luals` - Run lua-language-server type checking (not yet implemented)
 
 ### Documentation
