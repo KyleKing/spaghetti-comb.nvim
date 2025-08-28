@@ -11,9 +11,9 @@ local SpaghettiComb = {
 
 local default_config = {
     relations = {
-        width = 50,
-        height = 20,
-        position = "right",
+        height = 15,
+        focus_height = 30,
+        position = "bottom",
         auto_preview = true,
         show_coupling = true,
     },
@@ -53,7 +53,7 @@ local function merge_config(user_config) return vim.tbl_deep_extend("force", def
 local function setup_commands()
     vim.api.nvim_create_user_command(
         "SpaghettiCombShow",
-        function() require("spaghetti-comb.ui.floating").show_relations() end,
+        function() require("spaghetti-comb.ui.relations").show_relations() end,
         { desc = "Show Relations panel for symbol under cursor" }
     )
 
@@ -83,7 +83,7 @@ local function setup_commands()
 
     vim.api.nvim_create_user_command(
         "SpaghettiCombToggle",
-        function() require("spaghetti-comb.ui.floating").toggle_relations() end,
+        function() require("spaghetti-comb.ui.relations").toggle_relations() end,
         { desc = "Toggle Relations panel visibility" }
     )
 

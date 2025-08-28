@@ -27,7 +27,7 @@ lua/
 │   ├── analyzer.lua          -- LSP-based code analysis and symbol extraction
 │   ├── navigation.lua        -- Navigation stack management and history
 │   ├── ui/
-│   │   ├── floating.lua      -- Floating window management for Relations panel
+│   │   ├── relations.lua     -- Split window management for Relations panel
 │   │   ├── highlights.lua    -- Syntax highlighting and visual styling
 │   │   └── preview.lua       -- Code preview expansion functionality
 │   ├── coupling/
@@ -80,41 +80,73 @@ local SpaghettiComb = {
 - `<CR>` - Navigate to selected item
 - `<C-]>` - Navigate deeper (explore selected symbol)
 - `<C-o>` - Navigate back in stack
-- `<Tab>` - Expand/collapse code preview
+- `<Tab>` - Toggle focus mode (expand window + side preview)
 - `m` - Toggle bookmark for selected item
 - `c` - Show coupling metrics for selected item
 - `q` - Close Relations panel
 
 ### UI Layout
 
+**Normal Mode** (horizontal split):
 ```
-┌─ Main Buffer ──────────────────┐  ┌─ Relations Panel ──────────────────┐
-│ function calculateTotal() {     │  │ Relations for 'calculateTotal':    │
-│   const tax = getTax();         │  │                                    │
-│   const discount = getDiscount();│  │ References (3):                   │
-│   return base + tax - discount; │  │ ├─ 📄 checkout.ts:42 [C:0.7]     │
-│ }  <-- cursor                   │  │ ├─ 📄 invoice.ts:18 [C:0.4]      │
-│                                 │  │ └─ 📄 report.ts:95 [C:0.2]       │
-│                                 │  │                                    │
-│                                 │  │ Definitions (1):                   │
-│                                 │  │ └─ 📄 utils/calc.ts:25            │
-│                                 │  │                                    │
-│                                 │  │ Outgoing Calls (2):               │
-│                                 │  │ ├─ getTax() [C:0.8]               │
-│                                 │  │ └─ getDiscount() [C:0.3]          │
-│                                 │  │                                    │
-│                                 │  │ [Preview: getTax() expanded]       │
-│                                 │  │ function getTax(amount: number) {  │
-│                                 │  │   return amount * TAX_RATE;       │
-│                                 │  │ }                                  │
-└─────────────────────────────────┘  └────────────────────────────────────┘
+┌─ Main Buffer ──────────────────────────────────────┐
+│ function calculateTotal() {                        │
+│   const tax = getTax();                            │
+│   const discount = getDiscount();                  │
+│   return base + tax - discount;                    │
+│ }  <-- cursor                                      │
+│                                                    │
+│                                                    │
+├─ Relations Panel ──────────────────────────────────┤
+│ Relations for 'calculateTotal':                    │
+│                                                    │
+│ References (3):                                    │
+│ ├─ 📄 checkout.ts:42 [C:0.7]                     │
+│ ├─ 📄 invoice.ts:18 [C:0.4]                      │
+│ └─ 📄 report.ts:95 [C:0.2]                       │
+│                                                    │
+│ Definitions (1):                                   │
+│ └─ 📄 utils/calc.ts:25                            │
+│                                                    │
+│ Outgoing Calls (2):                               │
+│ ├─ getTax() [C:0.8]                               │
+│ └─ getDiscount() [C:0.3]          <Tab> = Focus   │
+└────────────────────────────────────────────────────┘
+```
+
+**Focus Mode** (expanded with side preview):
+```
+┌─ Main Buffer ──────────────────────────────────────┐
+│ function calculateTotal() {                        │
+│   const tax = getTax();                            │
+│   return base + tax - discount;                    │
+│ }  <-- cursor                                      │
+├─ Relations Panel ───────────────┬─ Preview ────────┤
+│ Relations for 'calculateTotal': │ [Preview: getTax │
+│                                 │  function getTax │
+│ References (3):                 │  1 │ function get│
+│ ├─ 📄 checkout.ts:42 [C:0.7]   │  2 │   return amo│
+│ ├─ 📄 invoice.ts:18 [C:0.4]    │  3 │ }           │
+│ └─ 📄 report.ts:95 [C:0.2]     │                  │
+│                                 │ Use j/k to navig│
+│ Definitions (1):                │ in relations pan│
+│ └─ 📄 utils/calc.ts:25          │ to update previe│
+│                                 │                  │
+│ Outgoing Calls (2):             │ <Tab> = Exit Foc│
+│ ├─ getTax() [C:0.8]       <--   │                  │
+│ └─ getDiscount() [C:0.3]        │                  │
+│                                 │                  │
+│ <Tab> = Exit Focus              │                  │
+└─────────────────────────────────┴──────────────────┘
 ```
 
 **Legend:**
 
 - `[C:0.7]` - Coupling metric (0.0 = loose, 1.0 = tight)
 - 📄 - File icon
-- Expandable previews show code context
+- Use vim motions (j/k, arrow keys) to navigate in relations panel
+- Focus mode provides expanded view with automatic preview updates
+- Split window behavior similar to vim's `:help` command
 
 ## LSP Integration Strategy
 
@@ -218,13 +250,13 @@ local navigation_stack = {
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure (Week 1)
+### Phase 1: Core Infrastructure ✅ (Week 1)
 
 **Implementation Goals:**
 
 - Set up plugin structure and initialization system
 - Implement basic LSP client integration for TypeScript/JavaScript
-- Create floating window management system for Relations panel
+- Create split window management system for Relations panel
 - Add fundamental navigation stack operations (push/pop/peek)
 
 **Testing Goals:**
@@ -237,7 +269,7 @@ local navigation_stack = {
 **Deliverables:**
 
 - Working plugin structure with proper Neovim integration
-- Basic floating window that can display text
+- Split window system with focus mode and preview functionality
 - Navigation stack with history preservation
 - Test suite covering core functionality
 
@@ -399,11 +431,11 @@ local navigation_stack = {
 require('spaghetti-comb').setup({
   -- Relations panel configuration
   relations = {
-    width = 50,
-    height = 20,
-    position = 'right',
-    auto_preview = true,
-    show_coupling = true
+    height = 15,              -- Normal split height
+    focus_height = 30,        -- Expanded height in focus mode
+    position = 'bottom',      -- Split position
+    auto_preview = true,      -- Auto-update preview in focus mode
+    show_coupling = true      -- Show coupling metrics
   },
 
   -- Language-specific settings
@@ -418,7 +450,7 @@ require('spaghetti-comb').setup({
   -- Key mappings
   keymaps = {
     show_relations = '<leader>sr',
-    toggle_preview = '<Tab>',
+    toggle_focus_mode = '<Tab>',
     bookmark_item = 'm',
     save_session = '<leader>ss'
   },

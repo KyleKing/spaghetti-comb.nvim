@@ -27,11 +27,11 @@ T["setup()"]["works with default config"] = function()
 end
 
 T["setup()"]["merges user config"] = function()
-    child.lua([[SpaghettiComb.setup({ relations = { width = 60 } })]])
+    child.lua([[SpaghettiComb.setup({ relations = { focus_height = 40 } })]])
     local config = child.lua_get([[SpaghettiComb.get_config()]])
 
-    eq(config.relations.width, 60)
-    eq(config.relations.height, 20) -- default should be preserved
+    eq(config.relations.focus_height, 40)
+    eq(config.relations.height, 15) -- default should be preserved
 end
 
 T["setup()"]["creates user commands"] = function()

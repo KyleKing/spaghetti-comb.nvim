@@ -29,6 +29,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Neovim plugin for code exploration called "Spaghetti Comb" - designed to help developers untangle complex codebases by visualizing code relationships and dependencies.
 
+The plugin uses a **split window architecture** similar to vim's `:help` command, with a **focus mode** that expands the window and adds a side-by-side preview panel.
+
 ### Current Implementation Status
 
 The plugin is in active development with basic infrastructure completed (Phase 1). The plugin structure follows standard Neovim plugin patterns with a modular architecture.
@@ -41,18 +43,24 @@ The codebase follows a standard Neovim plugin architecture:
 1. **Modular structure** separating domains:
     - `analyzer.lua` - LSP-based code analysis and symbol extraction
     - `navigation.lua` - Navigation stack management and history
-    - `ui/` - User interface components (floating windows, highlights, previews)
+    - `ui/` - User interface components (split windows, highlights, previews)
+        - `relations.lua` - Split window management with focus mode
+        - `preview.lua` - Code preview functionality
+        - `highlights.lua` - Syntax highlighting
     - `coupling/` - Code coupling analysis and metrics
     - `persistence/` - Session storage and bookmarks
     - `utils.lua` - Shared utilities
 
-### Key Features (Planned)
+### Key Features (Implemented)
 
-- **Relations Panel**: Floating window showing code relationships (references, definitions, call hierarchy)
+- **Relations Panel**: Split window showing code relationships (references, definitions, call hierarchy)
+- **Focus Mode**: Press `<Tab>` to expand relations window and show side-by-side code preview
+- **Vim Motion Navigation**: Full vim navigation support (j/k, arrows, etc.) within relations panel
 - **Navigation Stack**: Bidirectional exploration history with context preservation
 - **LSP Integration**: Multi-language support (TypeScript, JavaScript, Python, Rust, Go)
 - **Coupling Analysis**: Numerical evaluation of code relationships with visual indicators
 - **Session Persistence**: Save/load exploration sessions and bookmarks
+- **Advanced Filtering**: Search, sort, and filter relations by various criteria
 
 ### Testing Framework
 

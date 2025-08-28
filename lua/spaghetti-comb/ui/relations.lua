@@ -3,10 +3,14 @@ local navigation = require("spaghetti-comb.navigation")
 
 local M = {}
 
-local floating_state = {
-    win_id = nil,
-    buf_id = nil,
+local split_state = {
+    relations_win_id = nil,
+    relations_buf_id = nil,
+    preview_win_id = nil,
+    preview_buf_id = nil,
     is_visible = false,
+    is_focused = false,
+    original_win_id = nil,
     current_data = nil,
     filter_state = {
         search_term = "",
@@ -18,7 +22,7 @@ local floating_state = {
     },
 }
 
-local function create_floating_buffer()
+local function create_relations_buffer()
     local buf_id = vim.api.nvim_create_buf(false, true)
 
     vim.api.nvim_buf_set_option(buf_id, "buftype", "nofile")
@@ -30,64 +34,26 @@ local function create_floating_buffer()
     return buf_id
 end
 
-local function get_floating_window_config()
+local function get_split_window_config()
     local config = require("spaghetti-comb").get_config()
     local relations_config = config and config.relations
 
-    if not relations_config then relations_config = { width = 50, height = 20, position = "right" } end
-
-    local width = relations_config.width
-    local height = relations_config.height
-
-    local uis = vim.api.nvim_list_uis()
-    local ui = uis[1]
-
-    if not ui then
-        return {
-            relative = "editor",
-            width = 50,
-            height = 20,
-            row = 5,
-            col = 5,
-            style = "minimal",
-            border = "rounded",
-            title = " Relations Panel ",
-            title_pos = "center",
-        }
-    end
-
-    local screen_width = ui.width
-    local screen_height = ui.height
-
-    local win_width = math.min(width, screen_width - 4)
-    local win_height = math.min(height, screen_height - 4)
-
-    local row, col
-    if relations_config.position == "right" then
-        row = math.floor((screen_height - win_height) / 2)
-        col = screen_width - win_width - 2
-    elseif relations_config.position == "left" then
-        row = math.floor((screen_height - win_height) / 2)
-        col = 2
-    else
-        row = math.floor((screen_height - win_height) / 2)
-        col = math.floor((screen_width - win_width) / 2)
+    if not relations_config then 
+        relations_config = { 
+            height = 15, 
+            position = "bottom",
+            focus_height = 30
+        } 
     end
 
     return {
-        relative = "editor",
-        width = win_width,
-        height = win_height,
-        row = row,
-        col = col,
-        style = "minimal",
-        border = "rounded",
-        title = " Relations Panel ",
-        title_pos = "center",
+        height = relations_config.height or 15,
+        focus_height = relations_config.focus_height or 30,
+        position = relations_config.position or "bottom"
     }
 end
 
-local function setup_floating_window_keymaps(buf_id)
+local function setup_split_window_keymaps(buf_id)
     local opts = { buffer = buf_id, silent = true }
 
     vim.keymap.set("n", "<CR>", function() M.navigate_to_selected() end, opts)
@@ -99,7 +65,7 @@ local function setup_floating_window_keymaps(buf_id)
         M.refresh_content()
     end, opts)
 
-    vim.keymap.set("n", "<Tab>", function() M.toggle_preview() end, opts)
+    vim.keymap.set("n", "<Tab>", function() M.toggle_focus_mode() end, opts)
 
     vim.keymap.set("n", "m", function() M.toggle_bookmark() end, opts)
 
@@ -161,7 +127,7 @@ local function format_location_line(location, show_coupling, include_preview)
 end
 
 local function filter_locations(locations)
-    local filter = floating_state.filter_state
+    local filter = split_state.filter_state
     local filtered = {}
 
     for _, location in ipairs(locations) do
@@ -245,7 +211,7 @@ local function filter_locations(locations)
 end
 
 local function get_filter_status_line()
-    local filter = floating_state.filter_state
+    local filter = split_state.filter_state
     local status_parts = {}
 
     if filter.search_term ~= "" then table.insert(status_parts, "search: " .. filter.search_term) end
@@ -359,7 +325,7 @@ local function render_relations_content(data)
         table.insert(lines, "Keybindings:")
         table.insert(lines, "  <Enter> - Navigate to location")
         table.insert(lines, "  <C-]>   - Explore symbol at location")
-        table.insert(lines, "  <Tab>   - Toggle code preview")
+        table.insert(lines, "  <Tab>   - Toggle focus mode (expand window + preview)")
         table.insert(lines, "  m       - Toggle bookmark")
         table.insert(lines, "  c       - Show coupling metrics")
         table.insert(lines, "  /       - Search relations")
@@ -373,37 +339,54 @@ local function render_relations_content(data)
     return lines
 end
 
-function M.create_floating_window()
-    if floating_state.is_visible then return floating_state.win_id, floating_state.buf_id end
+function M.create_split_window()
+    if split_state.is_visible then return split_state.relations_win_id, split_state.relations_buf_id end
 
-    local buf_id = create_floating_buffer()
-    local win_config = get_floating_window_config()
-    local win_id = vim.api.nvim_open_win(buf_id, false, win_config)
+    split_state.original_win_id = vim.api.nvim_get_current_win()
+    local buf_id = create_relations_buffer()
+    local config = get_split_window_config()
+    
+    -- Create horizontal split at bottom
+    vim.cmd("botright " .. config.height .. "split")
+    local win_id = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_buf(win_id, buf_id)
 
     vim.api.nvim_win_set_option(win_id, "wrap", false)
     vim.api.nvim_win_set_option(win_id, "cursorline", true)
     vim.api.nvim_win_set_option(win_id, "number", false)
     vim.api.nvim_win_set_option(win_id, "relativenumber", false)
+    vim.api.nvim_win_set_option(win_id, "winfixheight", true)
 
-    setup_floating_window_keymaps(buf_id)
+    setup_split_window_keymaps(buf_id)
 
-    floating_state.win_id = win_id
-    floating_state.buf_id = buf_id
-    floating_state.is_visible = true
+    split_state.relations_win_id = win_id
+    split_state.relations_buf_id = buf_id
+    split_state.is_visible = true
 
     vim.api.nvim_create_autocmd({ "WinClosed" }, {
         pattern = tostring(win_id),
         callback = function() M.close_relations() end,
         once = true,
     })
+    
+    -- Auto-update preview when cursor moves in relations window
+    vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+        buffer = buf_id,
+        callback = function() M.update_preview_content() end,
+    })
+
+    -- Return to original window
+    if split_state.original_win_id and vim.api.nvim_win_is_valid(split_state.original_win_id) then
+        vim.api.nvim_set_current_win(split_state.original_win_id)
+    end
 
     return win_id, buf_id
 end
 
 function M.show_relations(data)
-    local _, buf_id = M.create_floating_window()
+    local _, buf_id = M.create_split_window()
 
-    floating_state.current_data = data
+    split_state.current_data = data
 
     local lines = render_relations_content(data)
 
@@ -417,20 +400,31 @@ function M.show_relations(data)
 end
 
 function M.close_relations()
-    if floating_state.win_id and vim.api.nvim_win_is_valid(floating_state.win_id) then
-        vim.api.nvim_win_close(floating_state.win_id, true)
+    if split_state.preview_win_id and vim.api.nvim_win_is_valid(split_state.preview_win_id) then
+        pcall(vim.api.nvim_win_close, split_state.preview_win_id, true)
+    end
+    
+    if split_state.relations_win_id and vim.api.nvim_win_is_valid(split_state.relations_win_id) then
+        -- Check if it's safe to close the window (more than one window exists)
+        local windows = vim.api.nvim_list_wins()
+        if #windows > 1 then
+            pcall(vim.api.nvim_win_close, split_state.relations_win_id, true)
+        end
     end
 
-    floating_state.win_id = nil
-    floating_state.buf_id = nil
-    floating_state.is_visible = false
-    floating_state.current_data = nil
+    split_state.relations_win_id = nil
+    split_state.relations_buf_id = nil
+    split_state.preview_win_id = nil
+    split_state.preview_buf_id = nil
+    split_state.is_visible = false
+    split_state.is_focused = false
+    split_state.current_data = nil
 
     utils.info("Relations panel closed")
 end
 
 function M.toggle_relations()
-    if floating_state.is_visible then
+    if split_state.is_visible then
         M.close_relations()
     else
         require("spaghetti-comb.analyzer").analyze_current_symbol()
@@ -438,21 +432,21 @@ function M.toggle_relations()
 end
 
 function M.refresh_content()
-    if not floating_state.is_visible then return end
+    if not split_state.is_visible then return end
 
-    local lines = render_relations_content(floating_state.current_data)
+    local lines = render_relations_content(split_state.current_data)
 
-    vim.api.nvim_buf_set_option(floating_state.buf_id, "modifiable", true)
-    vim.api.nvim_buf_set_lines(floating_state.buf_id, 0, -1, false, lines)
-    vim.api.nvim_buf_set_option(floating_state.buf_id, "modifiable", false)
+    vim.api.nvim_buf_set_option(split_state.relations_buf_id, "modifiable", true)
+    vim.api.nvim_buf_set_lines(split_state.relations_buf_id, 0, -1, false, lines)
+    vim.api.nvim_buf_set_option(split_state.relations_buf_id, "modifiable", false)
 
-    require("spaghetti-comb.ui.highlights").apply_highlights(floating_state.buf_id)
+    require("spaghetti-comb.ui.highlights").apply_highlights(split_state.relations_buf_id)
 end
 
 function M.get_selected_item()
-    if not floating_state.is_visible or not floating_state.buf_id then return nil end
+    if not split_state.is_visible or not split_state.buf_id then return nil end
 
-    local cursor = vim.api.nvim_win_get_cursor(floating_state.win_id)
+    local cursor = vim.api.nvim_win_get_cursor(split_state.win_id)
     local line_num = cursor[1]
 
     local current_entry = navigation.peek()
@@ -485,7 +479,7 @@ function M.get_selected_item()
     end
 
     local item_index = 0
-    local lines = vim.api.nvim_buf_get_lines(floating_state.buf_id, 0, -1, false)
+    local lines = vim.api.nvim_buf_get_lines(split_state.buf_id, 0, -1, false)
 
     for i = 1, line_num do
         local line = lines[i] or ""
@@ -538,26 +532,112 @@ function M.explore_selected()
     utils.info(string.format("Exploring symbol at %s:%d", item.relative_path or item.path, item.line))
 end
 
-function M.toggle_preview()
+function M.toggle_focus_mode()
+    if not split_state.is_visible then
+        utils.warn("Relations window is not visible")
+        return
+    end
+
+    if split_state.is_focused then
+        M.exit_focus_mode()
+    else
+        M.enter_focus_mode()
+    end
+end
+
+function M.enter_focus_mode()
+    if not split_state.is_visible or split_state.is_focused then
+        return
+    end
+
+    local config = get_split_window_config()
+    
+    -- Resize relations window to focus height
+    vim.api.nvim_win_set_height(split_state.relations_win_id, config.focus_height)
+    
+    -- Create preview window to the right of relations window
+    vim.api.nvim_set_current_win(split_state.relations_win_id)
+    vim.cmd("vertical botright 60split")
+    
+    local preview_win_id = vim.api.nvim_get_current_win()
+    local preview_buf_id = vim.api.nvim_create_buf(false, true)
+    
+    vim.api.nvim_win_set_buf(preview_win_id, preview_buf_id)
+    vim.api.nvim_buf_set_option(preview_buf_id, "buftype", "nofile")
+    vim.api.nvim_buf_set_option(preview_buf_id, "swapfile", false)
+    vim.api.nvim_buf_set_option(preview_buf_id, "bufhidden", "wipe")
+    vim.api.nvim_buf_set_option(preview_buf_id, "filetype", "spaghetti-comb-preview")
+    vim.api.nvim_buf_set_name(preview_buf_id, "SpaghettiComb Preview")
+    
+    vim.api.nvim_win_set_option(preview_win_id, "wrap", false)
+    vim.api.nvim_win_set_option(preview_win_id, "number", true)
+    vim.api.nvim_win_set_option(preview_win_id, "relativenumber", false)
+    
+    split_state.preview_win_id = preview_win_id
+    split_state.preview_buf_id = preview_buf_id
+    split_state.is_focused = true
+    
+    -- Set cursor back to relations window
+    vim.api.nvim_set_current_win(split_state.relations_win_id)
+    
+    -- Update preview content for current selection
+    M.update_preview_content()
+    
+    utils.info("Focus mode enabled - relations window expanded with preview")
+end
+
+function M.exit_focus_mode()
+    if not split_state.is_focused then
+        return
+    end
+
+    -- Close preview window
+    if split_state.preview_win_id and vim.api.nvim_win_is_valid(split_state.preview_win_id) then
+        pcall(vim.api.nvim_win_close, split_state.preview_win_id, true)
+    end
+    
+    -- Resize relations window back to normal height
+    if split_state.relations_win_id and vim.api.nvim_win_is_valid(split_state.relations_win_id) then
+        local config = get_split_window_config()
+        pcall(vim.api.nvim_win_set_height, split_state.relations_win_id, config.height)
+    end
+    
+    split_state.preview_win_id = nil
+    split_state.preview_buf_id = nil
+    split_state.is_focused = false
+    
+    utils.info("Focus mode disabled - relations window restored to normal size")
+end
+
+function M.update_preview_content()
+    if not split_state.is_focused or not split_state.preview_buf_id then
+        return
+    end
+
+    -- Check if preview buffer is still valid
+    if not vim.api.nvim_buf_is_valid(split_state.preview_buf_id) then
+        return
+    end
+
     local item = M.get_selected_item()
     if not item then
-        utils.warn("No item selected")
+        local placeholder_lines = {
+            "No item selected",
+            "",
+            "Use arrow keys or j/k to navigate in the relations window",
+            "Press <Tab> to exit focus mode"
+        }
+        pcall(vim.api.nvim_buf_set_option, split_state.preview_buf_id, "modifiable", true)
+        pcall(vim.api.nvim_buf_set_lines, split_state.preview_buf_id, 0, -1, false, placeholder_lines)
+        pcall(vim.api.nvim_buf_set_option, split_state.preview_buf_id, "modifiable", false)
         return
     end
 
-    local item_key = require("spaghetti-comb.ui.preview").get_item_key(item)
-    if not item_key then
-        utils.warn("Cannot create preview key for selected item")
-        return
-    end
-
-    local preview = require("spaghetti-comb.ui.preview")
-    local is_expanded = preview.toggle_item_expansion(item_key)
-
-    M.refresh_content()
-
-    local status = is_expanded and "expanded" or "collapsed"
-    utils.info(string.format("Preview %s for %s", status, item.relative_path or item.path))
+    local preview_lines = require("spaghetti-comb.ui.preview").create_preview_content(item, 10)
+    
+    pcall(vim.api.nvim_buf_set_option, split_state.preview_buf_id, "modifiable", true)
+    pcall(vim.api.nvim_buf_set_lines, split_state.preview_buf_id, 0, -1, false, preview_lines)
+    pcall(vim.api.nvim_buf_set_option, split_state.preview_buf_id, "modifiable", false)
 end
 
 function M.toggle_bookmark()
@@ -591,7 +671,7 @@ end
 function M.start_search()
     vim.ui.input({ prompt = "Search relations: " }, function(input)
         if input then
-            floating_state.filter_state.search_term = input
+            split_state.filter_state.search_term = input
             M.refresh_content()
             utils.info("Search filter applied: " .. input)
         end
@@ -600,7 +680,7 @@ end
 
 function M.cycle_coupling_filter()
     local filters = { "all", "high", "medium", "low" }
-    local current = floating_state.filter_state.coupling_filter
+    local current = split_state.filter_state.coupling_filter
     local current_index = 1
 
     for i, filter in ipairs(filters) do
@@ -611,7 +691,7 @@ function M.cycle_coupling_filter()
     end
 
     local next_index = (current_index % #filters) + 1
-    floating_state.filter_state.coupling_filter = filters[next_index]
+    split_state.filter_state.coupling_filter = filters[next_index]
 
     M.refresh_content()
     utils.info("Coupling filter: " .. filters[next_index])
@@ -619,7 +699,7 @@ end
 
 function M.cycle_sort_mode()
     local sorts = { "default", "coupling", "file", "line" }
-    local current = floating_state.filter_state.sort_by
+    local current = split_state.filter_state.sort_by
     local current_index = 1
 
     for i, sort in ipairs(sorts) do
@@ -634,10 +714,10 @@ function M.cycle_sort_mode()
 
     -- Toggle sort order if we're on the same sort mode
     if new_sort == current and new_sort ~= "default" then
-        floating_state.filter_state.sort_order = floating_state.filter_state.sort_order == "asc" and "desc" or "asc"
+        split_state.filter_state.sort_order = split_state.filter_state.sort_order == "asc" and "desc" or "asc"
     else
-        floating_state.filter_state.sort_by = new_sort
-        floating_state.filter_state.sort_order = "asc"
+        split_state.filter_state.sort_by = new_sort
+        split_state.filter_state.sort_order = "asc"
     end
 
     M.refresh_content()
@@ -645,20 +725,20 @@ function M.cycle_sort_mode()
     if new_sort == "default" then
         utils.info("Sort mode: default")
     else
-        utils.info("Sort mode: " .. new_sort .. " (" .. floating_state.filter_state.sort_order .. ")")
+        utils.info("Sort mode: " .. new_sort .. " (" .. split_state.filter_state.sort_order .. ")")
     end
 end
 
 function M.toggle_bookmarked_filter()
-    floating_state.filter_state.show_bookmarked_only = not floating_state.filter_state.show_bookmarked_only
+    split_state.filter_state.show_bookmarked_only = not split_state.filter_state.show_bookmarked_only
     M.refresh_content()
 
-    local status = floating_state.filter_state.show_bookmarked_only and "enabled" or "disabled"
+    local status = split_state.filter_state.show_bookmarked_only and "enabled" or "disabled"
     utils.info("Bookmarked only filter " .. status)
 end
 
 function M.reset_filters()
-    floating_state.filter_state = {
+    split_state.filter_state = {
         search_term = "",
         coupling_filter = "all",
         file_type_filter = "all",
@@ -692,23 +772,25 @@ function M.show_coupling_metrics()
     )
 end
 
-function M.is_visible() return floating_state.is_visible end
+function M.is_visible() return split_state.is_visible end
 
-function M.get_filter_state() return vim.deepcopy(floating_state.filter_state) end
+function M.is_focused() return split_state.is_focused end
+
+function M.get_filter_state() return vim.deepcopy(split_state.filter_state) end
 
 function M.set_filter_state(new_filter_state)
-    floating_state.filter_state = vim.tbl_extend("force", floating_state.filter_state, new_filter_state)
-    if floating_state.is_visible then M.refresh_content() end
+    split_state.filter_state = vim.tbl_extend("force", split_state.filter_state, new_filter_state)
+    if split_state.is_visible then M.refresh_content() end
 end
 
 function M.get_filtered_item_count()
-    if not floating_state.current_data then return 0 end
+    if not split_state.current_data then return 0 end
 
     local total_count = 0
     local current_entry = navigation.peek()
 
-    if floating_state.current_data.locations then
-        total_count = total_count + #filter_locations(floating_state.current_data.locations)
+    if split_state.current_data.locations then
+        total_count = total_count + #filter_locations(split_state.current_data.locations)
     end
 
     if current_entry then
