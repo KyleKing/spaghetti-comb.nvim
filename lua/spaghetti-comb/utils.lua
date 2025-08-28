@@ -101,16 +101,56 @@ function M.debounce(fn, ms)
     end
 end
 
-function M.log(level, msg)
+-- Global logging configuration
+local log_config = {
+    silent_mode = false,
+    show_debug = false,
+    show_trace = false,
+}
+
+function M.set_log_config(config) log_config = vim.tbl_extend("force", log_config, config or {}) end
+
+function M.get_log_config() return vim.deepcopy(log_config) end
+
+function M.log(level, msg, opts)
+    opts = opts or {}
+
     if type(msg) == "table" then msg = vim.inspect(msg) end
-    vim.notify("[SpaghettiComb] " .. msg, level)
+
+    -- Skip logging if silent mode is enabled and this isn't an error/warning
+    if log_config.silent_mode and level < vim.log.levels.WARN then return end
+
+    -- Skip debug messages unless explicitly enabled
+    if level == vim.log.levels.DEBUG and not log_config.show_debug then return end
+
+    -- Skip trace messages unless explicitly enabled
+    if level == vim.log.levels.TRACE and not log_config.show_trace then return end
+
+    local prefix = opts.no_prefix and "" or "[SpaghettiComb] "
+    vim.notify(prefix .. msg, level)
 end
 
-function M.error(msg) M.log(vim.log.levels.ERROR, msg) end
+function M.error(msg, opts) M.log(vim.log.levels.ERROR, msg, opts) end
 
-function M.warn(msg) M.log(vim.log.levels.WARN, msg) end
+function M.warn(msg, opts) M.log(vim.log.levels.WARN, msg, opts) end
 
-function M.info(msg) M.log(vim.log.levels.INFO, msg) end
+function M.info(msg, opts) M.log(vim.log.levels.INFO, msg, opts) end
+
+function M.debug(msg, opts) M.log(vim.log.levels.DEBUG, msg, opts) end
+
+function M.trace(msg, opts) M.log(vim.log.levels.TRACE, msg, opts) end
+
+-- Convenience functions for common logging patterns
+function M.log_action(action, details)
+    if log_config.silent_mode then return end
+    M.debug(string.format("Action: %s - %s", action, details or ""))
+end
+
+function M.log_navigation(msg) M.trace("Navigation: " .. msg) end
+
+function M.log_ui_change(msg) M.trace("UI: " .. msg) end
+
+function M.log_lsp_error(msg) M.debug("[lsp_error] " .. msg) end
 
 function M.get_word_under_cursor()
     local cursor = vim.api.nvim_win_get_cursor(0)

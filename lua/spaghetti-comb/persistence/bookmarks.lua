@@ -79,7 +79,7 @@ function M.add_bookmark(location, name, collection)
     -- Check for duplicates
     local existing_id = M.find_duplicate_bookmark(bookmark)
     if existing_id then
-        utils.info("Bookmark already exists: " .. bookmark.name)
+        utils.debug("Bookmark already exists: " .. bookmark.name)
         return existing_id
     end
 
@@ -89,7 +89,7 @@ function M.add_bookmark(location, name, collection)
 
     if bookmarks_state.auto_save then M.save_bookmarks() end
 
-    utils.info("Bookmark added: " .. bookmark.name)
+    utils.log_action("bookmark_added", bookmark.name)
     return bookmark.id
 end
 
@@ -132,7 +132,7 @@ function M.remove_bookmark(location_or_id)
 
     if bookmarks_state.auto_save then M.save_bookmarks() end
 
-    utils.info("Bookmark removed: " .. bookmark.name)
+    utils.log_action("bookmark_removed", bookmark.name)
     return true
 end
 
@@ -302,7 +302,7 @@ function M.create_collection(name, description)
 
     if bookmarks_state.auto_save then M.save_bookmarks() end
 
-    utils.info("Collection created: " .. name)
+    utils.log_action("collection_created", name)
     return true
 end
 
@@ -331,7 +331,7 @@ function M.delete_collection(name)
 
     if bookmarks_state.auto_save then M.save_bookmarks() end
 
-    utils.info("Collection deleted: " .. name)
+    utils.log_action("collection_deleted", name)
     return true
 end
 
@@ -366,7 +366,7 @@ function M.move_bookmark_to_collection(bookmark_id, target_collection)
 
     if bookmarks_state.auto_save then M.save_bookmarks() end
 
-    utils.info(string.format("Bookmark moved to %s: %s", target_collection, bookmark.name))
+    utils.log_action("bookmark_moved", string.format("%s -> %s", bookmark.name, target_collection))
     return true
 end
 
@@ -382,7 +382,7 @@ function M.add_bookmark_tag(bookmark_id, tag)
 
         if bookmarks_state.auto_save then M.save_bookmarks() end
 
-        utils.info("Tag added to bookmark: " .. tag)
+        utils.log_action("tag_added", tag)
     end
 
     return true
@@ -449,7 +449,7 @@ function M.clear_all_bookmarks()
 
     if bookmarks_state.auto_save then M.save_bookmarks() end
 
-    utils.info("All bookmarks cleared")
+    utils.log_action("bookmarks_cleared", "all")
 end
 
 -- Initialize bookmarks on module load

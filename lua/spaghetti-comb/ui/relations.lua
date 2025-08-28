@@ -396,7 +396,7 @@ function M.show_relations(data)
 
     require("spaghetti-comb.ui.highlights").apply_highlights(buf_id)
 
-    utils.info("Relations panel opened")
+    utils.log_ui_change("Relations panel opened")
 end
 
 function M.close_relations()
@@ -418,7 +418,7 @@ function M.close_relations()
     split_state.is_focused = false
     split_state.current_data = nil
 
-    utils.info("Relations panel closed")
+    utils.log_ui_change("Relations panel closed")
 end
 
 function M.toggle_relations()
@@ -493,12 +493,12 @@ end
 function M.navigate_to_selected()
     local item = M.get_selected_item()
     if not item then
-        utils.warn("No item selected or no valid location found")
+        utils.debug("No item selected or no valid location found")
         return
     end
 
     if not item.path or not item.line then
-        utils.warn("Invalid location data")
+        utils.debug("Invalid location data")
         return
     end
 
@@ -506,18 +506,18 @@ function M.navigate_to_selected()
     vim.api.nvim_win_set_cursor(0, { item.line, item.col - 1 })
     vim.cmd("normal! zz")
 
-    utils.info(string.format("Navigated to %s:%d", item.relative_path or item.path, item.line))
+    utils.log_navigation(string.format("Navigated to %s:%d", item.relative_path or item.path, item.line))
 end
 
 function M.explore_selected()
     local item = M.get_selected_item()
     if not item then
-        utils.warn("No item selected or no valid location found")
+        utils.debug("No item selected or no valid location found")
         return
     end
 
     if not item.path or not item.line then
-        utils.warn("Invalid location data")
+        utils.debug("Invalid location data")
         return
     end
 
@@ -527,12 +527,12 @@ function M.explore_selected()
 
     vim.schedule(function() require("spaghetti-comb.analyzer").analyze_current_symbol() end)
 
-    utils.info(string.format("Exploring symbol at %s:%d", item.relative_path or item.path, item.line))
+    utils.log_navigation(string.format("Exploring symbol at %s:%d", item.relative_path or item.path, item.line))
 end
 
 function M.toggle_focus_mode()
     if not split_state.is_visible then
-        utils.warn("Relations window is not visible")
+        utils.debug("Relations window is not visible")
         return
     end
 
@@ -579,7 +579,7 @@ function M.enter_focus_mode()
     -- Update preview content for current selection
     M.update_preview_content()
 
-    utils.info("Focus mode enabled - relations window expanded with preview")
+    utils.log_ui_change("Focus mode enabled - relations window expanded with preview")
 end
 
 function M.exit_focus_mode()
@@ -600,7 +600,7 @@ function M.exit_focus_mode()
     split_state.preview_buf_id = nil
     split_state.is_focused = false
 
-    utils.info("Focus mode disabled - relations window restored to normal size")
+    utils.log_ui_change("Focus mode disabled - relations window restored to normal size")
 end
 
 function M.update_preview_content()
@@ -633,7 +633,7 @@ end
 function M.toggle_bookmark()
     local item = M.get_selected_item()
     if not item then
-        utils.warn("No item selected")
+        utils.debug("No item selected")
         return
     end
 
@@ -644,14 +644,14 @@ function M.toggle_bookmark()
         -- Remove existing bookmark
         if bookmarks.remove_bookmark(existing_bookmark_id) then
             item.bookmarked = false
-            utils.info(string.format("Bookmark removed for %s", item.relative_path or item.path))
+            utils.log_action("bookmark_removed", item.relative_path or item.path)
         end
     else
         -- Add new bookmark
         local bookmark_id = bookmarks.add_bookmark(item)
         if bookmark_id then
             item.bookmarked = true
-            utils.info(string.format("Bookmark added for %s", item.relative_path or item.path))
+            utils.log_action("bookmark_added", item.relative_path or item.path)
         end
     end
 
@@ -663,7 +663,7 @@ function M.start_search()
         if input then
             split_state.filter_state.search_term = input
             M.refresh_content()
-            utils.info("Search filter applied: " .. input)
+            utils.log_action("search_filter_applied", input)
         end
     end)
 end
@@ -684,7 +684,7 @@ function M.cycle_coupling_filter()
     split_state.filter_state.coupling_filter = filters[next_index]
 
     M.refresh_content()
-    utils.info("Coupling filter: " .. filters[next_index])
+    utils.log_action("coupling_filter_changed", filters[next_index])
 end
 
 function M.cycle_sort_mode()
@@ -713,9 +713,9 @@ function M.cycle_sort_mode()
     M.refresh_content()
 
     if new_sort == "default" then
-        utils.info("Sort mode: default")
+        utils.log_action("sort_mode_changed", "default")
     else
-        utils.info("Sort mode: " .. new_sort .. " (" .. split_state.filter_state.sort_order .. ")")
+        utils.log_action("sort_mode_changed", new_sort .. " (" .. split_state.filter_state.sort_order .. ")")
     end
 end
 
@@ -724,7 +724,7 @@ function M.toggle_bookmarked_filter()
     M.refresh_content()
 
     local status = split_state.filter_state.show_bookmarked_only and "enabled" or "disabled"
-    utils.info("Bookmarked only filter " .. status)
+    utils.log_action("bookmark_filter_toggled", status)
 end
 
 function M.reset_filters()
@@ -738,13 +738,13 @@ function M.reset_filters()
     }
 
     M.refresh_content()
-    utils.info("All filters reset")
+    utils.log_action("filters_reset", "all")
 end
 
 function M.show_coupling_metrics()
     local item = M.get_selected_item()
     if not item then
-        utils.warn("No item selected")
+        utils.debug("No item selected")
         return
     end
 
@@ -757,8 +757,9 @@ function M.show_coupling_metrics()
         coupling_level = "medium"
     end
 
-    utils.info(
-        string.format("Coupling: %.2f (%s) for %s", coupling_score, coupling_level, item.relative_path or item.path)
+    utils.log_action(
+        "coupling_metrics_shown",
+        string.format("%.2f (%s) for %s", coupling_score, coupling_level, item.relative_path or item.path)
     )
 end
 

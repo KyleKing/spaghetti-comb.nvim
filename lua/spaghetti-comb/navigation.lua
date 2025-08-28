@@ -61,14 +61,14 @@ function M.push(symbol_info)
 
     navigation_stack.entries[navigation_stack.current_index] = entry
 
-    utils.info(string.format("Pushed %s to navigation stack (index: %d)", entry.symbol, navigation_stack.current_index))
+    utils.log_navigation(string.format("Pushed %s to stack (index: %d)", entry.symbol, navigation_stack.current_index))
 
     return true
 end
 
 function M.pop()
     if navigation_stack.current_index <= 1 then
-        utils.warn("Already at the beginning of navigation stack")
+        utils.debug("Already at the beginning of navigation stack")
         return nil
     end
 
@@ -76,7 +76,7 @@ function M.pop()
     local entry = navigation_stack.entries[navigation_stack.current_index]
 
     if entry then
-        utils.info(string.format("Popped to %s (index: %d)", entry.symbol, navigation_stack.current_index))
+        utils.log_navigation(string.format("Popped to %s (index: %d)", entry.symbol, navigation_stack.current_index))
     end
 
     return entry
@@ -90,7 +90,7 @@ end
 
 function M.navigate_next()
     if navigation_stack.current_index >= #navigation_stack.entries then
-        utils.warn("Already at the end of navigation stack")
+        utils.debug("Already at the end of navigation stack")
         return nil
     end
 
@@ -99,7 +99,7 @@ function M.navigate_next()
 
     if entry then
         M.jump_to_entry(entry)
-        utils.info(string.format("Navigated forward to %s (index: %d)", entry.symbol, navigation_stack.current_index))
+        utils.log_navigation(string.format("Forward to %s (index: %d)", entry.symbol, navigation_stack.current_index))
     end
 
     return entry
@@ -157,7 +157,7 @@ end
 function M.update_current_entry(updates)
     local current = M.peek()
     if not current then
-        utils.warn("No current entry to update")
+        utils.debug("No current entry to update")
         return false
     end
 
@@ -208,7 +208,7 @@ end
 function M.clear_stack()
     navigation_stack.current_index = 0
     navigation_stack.entries = {}
-    utils.info("Navigation stack cleared")
+    utils.log_navigation("Stack cleared")
 end
 
 function M.get_stack_entries() return vim.deepcopy(navigation_stack.entries) end
@@ -268,7 +268,7 @@ function M.jump_to_index(index)
 
     if entry then
         M.jump_to_entry(entry)
-        utils.info(string.format("Jumped to %s (index: %d)", entry.symbol, index))
+        utils.log_navigation(string.format("Jumped to %s (index: %d)", entry.symbol, index))
     end
 
     return entry

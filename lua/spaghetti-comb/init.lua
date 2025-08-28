@@ -17,6 +17,11 @@ local default_config = {
         auto_preview = true,
         show_coupling = true,
     },
+    logging = {
+        silent_mode = true, -- Reduce noise by default
+        show_debug = false, -- Show debug messages
+        show_trace = false, -- Show trace messages
+    },
     languages = {
         typescript = { enabled = true, coupling_analysis = true },
         javascript = { enabled = true, coupling_analysis = true },
@@ -276,6 +281,11 @@ end
 
 function M.setup(user_config)
     SpaghettiComb.config = merge_config(user_config)
+
+    -- Configure logging based on user settings
+    if SpaghettiComb.config.logging then
+        require("spaghetti-comb.utils").set_log_config(SpaghettiComb.config.logging)
+    end
 
     setup_commands()
     setup_keymaps()

@@ -75,7 +75,7 @@ function M.handle_error(error_msg, context, fallback_fn)
     elseif severity >= ERROR_SEVERITY.MEDIUM then
         utils.warn(string.format("[%s] %s", error_type, error_msg))
     else
-        utils.info(string.format("[%s] %s", error_type, error_msg))
+        utils.debug(string.format("[%s] %s", error_type, error_msg))
     end
 
     if fallback_fn and type(fallback_fn) == "function" then
@@ -89,12 +89,12 @@ end
 function M.get_default_fallback(error_type, context)
     local fallbacks = {
         [ERROR_TYPES.LSP_ERROR] = function(ctx)
-            utils.info("Falling back to treesitter and grep-based analysis")
+            utils.debug("Falling back to treesitter and grep-based analysis")
             return { locations = {}, fallback_used = "treesitter_grep" }
         end,
         [ERROR_TYPES.FILE_ERROR] = function(ctx) return { locations = {}, error = "File not accessible" } end,
         [ERROR_TYPES.TREESITTER_ERROR] = function(ctx)
-            utils.info("Falling back to basic text matching")
+            utils.debug("Falling back to basic text matching")
             return { locations = {}, fallback_used = "text_matching" }
         end,
         [ERROR_TYPES.PARSING_ERROR] = function(ctx) return { locations = {}, error = "Unable to parse content" } end,
@@ -220,7 +220,7 @@ function M.clear_error_history()
     error_state.recent_errors = {}
     error_state.error_count = 0
     error_state.last_error_time = 0
-    utils.info("Error history cleared")
+    utils.debug("Error history cleared")
 end
 
 function M.get_recent_errors(limit)

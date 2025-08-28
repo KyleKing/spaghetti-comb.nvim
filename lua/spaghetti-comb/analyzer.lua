@@ -15,7 +15,7 @@ local function get_lsp_clients()
     end
 
     if #clients == 0 then
-        utils.warn("No active LSP clients found for current buffer")
+        utils.log_lsp_error("No active LSP clients found for current buffer")
         return nil
     end
 
@@ -117,7 +117,7 @@ function M.find_references()
     )
 
     if not symbol_info or not symbol_info.text then
-        utils.warn("No symbol found under cursor")
+        utils.debug("No symbol found under cursor")
         return
     end
 
@@ -145,7 +145,7 @@ function M.find_references()
                 navigation.push(symbol_info)
                 navigation.update_current_entry({ references = processed.locations })
                 require("spaghetti-comb.ui.relations").show_relations(processed)
-                utils.info(string.format("Found %d references (fallback) for %s", #fallback_result, symbol_info.text))
+                utils.debug(string.format("Found %d references (fallback) for %s", #fallback_result, symbol_info.text))
             else
                 utils.error("Failed to find references with both LSP and fallback methods")
             end
@@ -158,7 +158,7 @@ function M.find_references()
         )
 
         if not processed or #processed.locations == 0 then
-            utils.info("No references found for symbol: " .. symbol_info.text)
+            utils.debug("No references found for symbol: " .. symbol_info.text)
             return
         end
 
@@ -168,14 +168,14 @@ function M.find_references()
             require("spaghetti-comb.ui.relations").show_relations(processed)
         end, { processed = processed, symbol_info = symbol_info })
 
-        utils.info(string.format("Found %d references for %s", #processed.locations, symbol_info.text))
+        utils.debug(string.format("Found %d references for %s", #processed.locations, symbol_info.text))
     end)
 end
 
 function M.go_to_definition()
     local symbol_info = utils.get_cursor_symbol()
     if not symbol_info then
-        utils.warn("No symbol found under cursor")
+        utils.debug("No symbol found under cursor")
         return
     end
 
@@ -190,7 +190,7 @@ function M.go_to_definition()
         local processed = M.process_lsp_response("textDocument/definition", result)
 
         if #processed.locations == 0 then
-            utils.info("No definition found for symbol: " .. symbol_info.text)
+            utils.debug("No definition found for symbol: " .. symbol_info.text)
             return
         end
 
@@ -203,13 +203,8 @@ function M.go_to_definition()
             vim.api.nvim_win_set_cursor(0, { location.line, location.col - 1 })
             vim.cmd("normal! zz")
 
-            utils.info(
-                string.format(
-                    "Navigated to definition of %s at %s:%d",
-                    symbol_info.text,
-                    location.relative_path,
-                    location.line
-                )
+            utils.log_navigation(
+                string.format("Definition of %s at %s:%d", symbol_info.text, location.relative_path, location.line)
             )
 
             require("spaghetti-comb.ui.relations").show_relations(processed)
@@ -220,7 +215,7 @@ end
 function M.find_implementations()
     local symbol_info = utils.get_cursor_symbol()
     if not symbol_info then
-        utils.warn("No symbol found under cursor")
+        utils.debug("No symbol found under cursor")
         return
     end
 
@@ -235,7 +230,7 @@ function M.find_implementations()
         local processed = M.process_lsp_response("textDocument/implementation", result)
 
         if #processed.locations == 0 then
-            utils.info("No implementations found for symbol: " .. symbol_info.text)
+            utils.debug("No implementations found for symbol: " .. symbol_info.text)
             return
         end
 
@@ -243,14 +238,14 @@ function M.find_implementations()
 
         require("spaghetti-comb.ui.relations").show_relations(processed)
 
-        utils.info(string.format("Found %d implementations for %s", #processed.locations, symbol_info.text))
+        utils.debug(string.format("Found %d implementations for %s", #processed.locations, symbol_info.text))
     end)
 end
 
 function M.get_call_hierarchy_incoming()
     local symbol_info = utils.get_cursor_symbol()
     if not symbol_info then
-        utils.warn("No symbol found under cursor")
+        utils.debug("No symbol found under cursor")
         return
     end
 
@@ -258,7 +253,7 @@ function M.get_call_hierarchy_incoming()
 
     make_lsp_request("textDocument/prepareCallHierarchy", params, function(result, err)
         if err or not result or #result == 0 then
-            utils.warn("Call hierarchy not available for this symbol")
+            utils.log_lsp_error("Call hierarchy not available for this symbol")
             return
         end
 
@@ -294,7 +289,7 @@ function M.get_call_hierarchy_incoming()
             }
 
             require("spaghetti-comb.ui.relations").show_relations(processed)
-            utils.info(string.format("Found %d incoming calls for %s", #calls, symbol_info.text))
+            utils.debug(string.format("Found %d incoming calls for %s", #calls, symbol_info.text))
         end)
     end)
 end
@@ -302,7 +297,7 @@ end
 function M.get_call_hierarchy_outgoing()
     local symbol_info = utils.get_cursor_symbol()
     if not symbol_info then
-        utils.warn("No symbol found under cursor")
+        utils.debug("No symbol found under cursor")
         return
     end
 
@@ -310,7 +305,7 @@ function M.get_call_hierarchy_outgoing()
 
     make_lsp_request("textDocument/prepareCallHierarchy", params, function(result, err)
         if err or not result or #result == 0 then
-            utils.warn("Call hierarchy not available for this symbol")
+            utils.log_lsp_error("Call hierarchy not available for this symbol")
             return
         end
 
@@ -343,7 +338,7 @@ function M.get_call_hierarchy_outgoing()
             }
 
             require("spaghetti-comb.ui.relations").show_relations(processed)
-            utils.info(string.format("Found %d outgoing calls for %s", #calls, symbol_info.text))
+            utils.debug(string.format("Found %d outgoing calls for %s", #calls, symbol_info.text))
         end)
     end)
 end
@@ -351,7 +346,7 @@ end
 function M.find_references_fallback(symbol_text)
     if not symbol_text or symbol_text == "" then return {} end
 
-    utils.info("Using enhanced fallback for finding references")
+    utils.debug("Using enhanced fallback for finding references")
 
     local results = {}
 
@@ -662,7 +657,7 @@ function M.find_references_with_fallback(symbol_info, callback)
         local processed
 
         if err or not result then
-            utils.warn("LSP references failed, using fallback methods")
+            utils.log_lsp_error("LSP references failed, using fallback methods")
             local fallback_results = M.find_references_fallback(symbol_info.text)
             processed = {
                 method = "textDocument/references",
@@ -675,7 +670,7 @@ function M.find_references_with_fallback(symbol_info, callback)
         end
 
         if #processed.locations == 0 then
-            utils.info("No references found for symbol: " .. symbol_info.text)
+            utils.debug("No references found for symbol: " .. symbol_info.text)
             callback(processed)
             return
         end
@@ -683,7 +678,7 @@ function M.find_references_with_fallback(symbol_info, callback)
         navigation.update_current_entry({ references = processed.locations })
         callback(processed)
 
-        utils.info(string.format("Found %d references for %s", #processed.locations, symbol_info.text))
+        utils.debug(string.format("Found %d references for %s", #processed.locations, symbol_info.text))
     end)
 end
 
@@ -694,7 +689,7 @@ function M.find_definitions_with_fallback(symbol_info, callback)
         local processed
 
         if err or not result then
-            utils.warn("LSP definition failed, using treesitter fallback")
+            utils.log_lsp_error("LSP definition failed, using treesitter fallback")
             local fallback_results = M.find_definitions_treesitter(symbol_info.text, symbol_info.bufnr)
             processed = {
                 method = "textDocument/definition",
@@ -707,7 +702,7 @@ function M.find_definitions_with_fallback(symbol_info, callback)
         end
 
         if #processed.locations == 0 then
-            utils.info("No definition found for symbol: " .. symbol_info.text)
+            utils.debug("No definition found for symbol: " .. symbol_info.text)
             callback(processed)
             return
         end
@@ -715,14 +710,14 @@ function M.find_definitions_with_fallback(symbol_info, callback)
         navigation.update_current_entry({ definitions = processed.locations })
         callback(processed)
 
-        utils.info(string.format("Found %d definitions for %s", #processed.locations, symbol_info.text))
+        utils.debug(string.format("Found %d definitions for %s", #processed.locations, symbol_info.text))
     end)
 end
 
 function M.analyze_current_symbol()
     local symbol_info = utils.get_cursor_symbol()
     if not symbol_info then
-        utils.warn("No symbol found under cursor")
+        utils.debug("No symbol found under cursor")
         return
     end
 

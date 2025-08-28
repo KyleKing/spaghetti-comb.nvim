@@ -71,7 +71,7 @@ function M.save_session(name)
     file:write(json_data)
     file:close()
 
-    utils.info("Session saved to: " .. session_file)
+    utils.log_action("session_saved", session_file)
     return true
 end
 
@@ -135,7 +135,7 @@ function M.load_session(name)
         pcall(function() vim.cmd(session_data.window_layout.layout_info) end)
     end
 
-    utils.info(string.format("Session loaded from: %s (%d entries)", session_file, #(nav_stack.entries or {})))
+    utils.log_action("session_loaded", string.format("%s (%d entries)", session_file, #(nav_stack.entries or {})))
     return true
 end
 
@@ -179,7 +179,7 @@ function M.delete_session(name)
 
     local success = os.remove(session_file)
     if success then
-        utils.info("Session deleted: " .. session_file)
+        utils.log_action("session_deleted", session_file)
         return true
     else
         utils.error("Failed to delete session: " .. session_file)
@@ -274,7 +274,9 @@ function M.clean_old_auto_sessions(max_age_days)
         end
     end
 
-    if cleaned_count > 0 then utils.info(string.format("Cleaned %d old auto-backup sessions", cleaned_count)) end
+    if cleaned_count > 0 then
+        utils.log_action("sessions_cleaned", string.format("%d old auto-backup sessions", cleaned_count))
+    end
 
     return cleaned_count
 end
