@@ -32,6 +32,10 @@ local default_config = {
         navigate_prev = "<leader>sp",
         save_session = "<leader>ss",
         load_session = "<leader>sl",
+        call_hierarchy_incoming = "<leader>sci",
+        call_hierarchy_outgoing = "<leader>sco",
+        show_navigation_history = "<leader>sh",
+        bookmark_current = "<leader>sb",
     },
     coupling = {
         enabled = true,
@@ -82,14 +86,71 @@ local function setup_commands()
 
     vim.api.nvim_create_user_command(
         "SpaghettiCombSave",
-        function() require("spaghetti-comb.persistence.storage").save_session() end,
-        { desc = "Save current exploration session" }
+        function(opts) require("spaghetti-comb.persistence.storage").save_session(opts.args ~= "" and opts.args or nil) end,
+        { desc = "Save current exploration session", nargs = "?" }
     )
 
     vim.api.nvim_create_user_command(
         "SpaghettiCombLoad",
-        function() require("spaghetti-comb.persistence.storage").load_session() end,
-        { desc = "Load saved exploration session" }
+        function(opts) require("spaghetti-comb.persistence.storage").load_session(opts.args ~= "" and opts.args or nil) end,
+        { desc = "Load saved exploration session", nargs = "?" }
+    )
+
+    vim.api.nvim_create_user_command("SpaghettiCombListSessions", function()
+        local sessions = require("spaghetti-comb.persistence.storage").list_sessions()
+        if #sessions == 0 then
+            require("spaghetti-comb.utils").info("No saved sessions found")
+        else
+            local lines = { "Available sessions:" }
+            for _, session in ipairs(sessions) do
+                table.insert(
+                    lines,
+                    string.format("  %s (modified: %s)", session.name, os.date("%Y-%m-%d %H:%M", session.mtime))
+                )
+            end
+            vim.notify(table.concat(lines, "\n"))
+        end
+    end, { desc = "List all saved exploration sessions" })
+
+    vim.api.nvim_create_user_command(
+        "SpaghettiCombCallHierarchyIncoming",
+        function() require("spaghetti-comb.analyzer").get_call_hierarchy_incoming() end,
+        { desc = "Show incoming calls (who calls this function)" }
+    )
+
+    vim.api.nvim_create_user_command(
+        "SpaghettiCombCallHierarchyOutgoing",
+        function() require("spaghetti-comb.analyzer").get_call_hierarchy_outgoing() end,
+        { desc = "Show outgoing calls (what this function calls)" }
+    )
+
+    vim.api.nvim_create_user_command("SpaghettiCombNavigationHistory", function()
+        local summary = require("spaghetti-comb.navigation").get_navigation_summary()
+        if #summary.entries == 0 then
+            require("spaghetti-comb.utils").info("Navigation stack is empty")
+        else
+            local lines = { string.format("Navigation History (%d/%d):", summary.current_index, summary.total) }
+            for _, entry in ipairs(summary.entries) do
+                local marker = entry.is_current and ">> " or "   "
+                local bookmark = entry.bookmarked and "★ " or ""
+                table.insert(
+                    lines,
+                    string.format("%s%s%s:%d %s", marker, bookmark, entry.relative_path, entry.line, entry.symbol)
+                )
+            end
+            vim.notify(table.concat(lines, "\n"))
+        end
+    end, { desc = "Show navigation history" })
+
+    vim.api.nvim_create_user_command("SpaghettiCombBookmarkCurrent", function()
+        require("spaghetti-comb.navigation").update_current_entry({ bookmarked = true })
+        require("spaghetti-comb.utils").info("Current navigation entry bookmarked")
+    end, { desc = "Bookmark current navigation entry" })
+
+    vim.api.nvim_create_user_command(
+        "SpaghettiCombAnalyze",
+        function() require("spaghetti-comb.analyzer").analyze_current_symbol() end,
+        { desc = "Analyze current symbol (show all relations)" }
     )
 end
 
@@ -103,6 +164,30 @@ local function setup_keymaps()
     vim.keymap.set("n", keymaps.navigate_prev, "<cmd>SpaghettiCombPrev<cr>", { desc = "Navigate backward in stack" })
     vim.keymap.set("n", keymaps.save_session, "<cmd>SpaghettiCombSave<cr>", { desc = "Save session" })
     vim.keymap.set("n", keymaps.load_session, "<cmd>SpaghettiCombLoad<cr>", { desc = "Load session" })
+    vim.keymap.set(
+        "n",
+        keymaps.call_hierarchy_incoming,
+        "<cmd>SpaghettiCombCallHierarchyIncoming<cr>",
+        { desc = "Show incoming calls" }
+    )
+    vim.keymap.set(
+        "n",
+        keymaps.call_hierarchy_outgoing,
+        "<cmd>SpaghettiCombCallHierarchyOutgoing<cr>",
+        { desc = "Show outgoing calls" }
+    )
+    vim.keymap.set(
+        "n",
+        keymaps.show_navigation_history,
+        "<cmd>SpaghettiCombNavigationHistory<cr>",
+        { desc = "Show navigation history" }
+    )
+    vim.keymap.set(
+        "n",
+        keymaps.bookmark_current,
+        "<cmd>SpaghettiCombBookmarkCurrent<cr>",
+        { desc = "Bookmark current" }
+    )
 end
 
 function M.setup(user_config)

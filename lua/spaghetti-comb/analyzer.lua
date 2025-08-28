@@ -236,8 +236,17 @@ function M.get_call_hierarchy_incoming()
                 end
             end
 
+            navigation.push(symbol_info)
             navigation.update_current_entry({ incoming_calls = calls })
 
+            local processed = {
+                method = "callHierarchy/incomingCalls",
+                locations = calls,
+                symbol_info = symbol_info,
+                context = { type = "incoming_calls" },
+            }
+
+            require("spaghetti-comb.ui.floating").show_relations(processed)
             utils.info(string.format("Found %d incoming calls for %s", #calls, symbol_info.text))
         end)
     end)
@@ -276,8 +285,17 @@ function M.get_call_hierarchy_outgoing()
                 end
             end
 
+            navigation.push(symbol_info)
             navigation.update_current_entry({ outgoing_calls = calls })
 
+            local processed = {
+                method = "callHierarchy/outgoingCalls",
+                locations = calls,
+                symbol_info = symbol_info,
+                context = { type = "outgoing_calls" },
+            }
+
+            require("spaghetti-comb.ui.floating").show_relations(processed)
             utils.info(string.format("Found %d outgoing calls for %s", #calls, symbol_info.text))
         end)
     end)
