@@ -7,11 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Testing
 
 - `make test` - Run all tests using mini.test framework documented in `mini-test.md`
+- `make test_file FILE=<file>` - Run specific test file (e.g., `make test_file FILE=tests/test_navigation.lua`)
 
 ### Code Quality
 
-- `make lint` - Format code using stylua
-- `make luals` - Run lua-language-server type checking
+- `make lint` - Check code formatting using stylua
+- `make format` - Format code using stylua (fix mode)
+- `make luals` - Run lua-language-server type checking (not yet implemented)
 
 ### Documentation
 
@@ -19,22 +21,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Setup
 
-- `make setup` - Initialize plugin from template (interactive script)
 - `make deps` - Install mini.nvim dependency for tests and documentation
 
 ## Architecture Overview
 
-This is a Neovim plugin for visually exploring a new code base
+This is a Neovim plugin for code exploration called "Spaghetti Comb" - designed to help developers untangle complex codebases by visualizing code relationships and dependencies.
 
 ### Current Implementation Status
 
-- There is no implementation yet
+The plugin is in active development with basic infrastructure completed (Phase 1). The plugin structure follows standard Neovim plugin patterns with a modular architecture.
 
 ### Plugin Architecture Pattern
 
 The codebase follows a standard Neovim plugin architecture:
 
-1. Global plugin object exposes public API
-1. Modular structure separating domains
+1. **Global plugin object** (`SpaghettiComb`) exposes public API via `init.lua`
+1. **Modular structure** separating domains:
+   - `analyzer.lua` - LSP-based code analysis and symbol extraction
+   - `navigation.lua` - Navigation stack management and history
+   - `ui/` - User interface components (floating windows, highlights, previews)
+   - `coupling/` - Code coupling analysis and metrics
+   - `persistence/` - Session storage and bookmarks
+   - `utils.lua` - Shared utilities
 
-The plugin will provide an intuitive way to understand a new codebase by showing related code on request.
+### Key Features (Planned)
+
+- **Relations Panel**: Floating window showing code relationships (references, definitions, call hierarchy)
+- **Navigation Stack**: Bidirectional exploration history with context preservation
+- **LSP Integration**: Multi-language support (TypeScript, JavaScript, Python, Rust, Go)
+- **Coupling Analysis**: Numerical evaluation of code relationships with visual indicators
+- **Session Persistence**: Save/load exploration sessions and bookmarks
+
+### Testing Framework
+
+Uses `mini.test` with child Neovim processes for comprehensive plugin testing. See `mini-test.md` for detailed testing documentation and examples.
