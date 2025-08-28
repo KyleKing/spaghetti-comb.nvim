@@ -88,6 +88,7 @@ local SpaghettiComb = {
 ### UI Layout
 
 **Normal Mode** (horizontal split):
+
 ```
 ┌─ Main Buffer ──────────────────────────────────────┐
 │ function calculateTotal() {                        │
@@ -115,6 +116,7 @@ local SpaghettiComb = {
 ```
 
 **Focus Mode** (expanded with side preview):
+
 ```
 ┌─ Main Buffer ──────────────────────────────────────┐
 │ function calculateTotal() {                        │

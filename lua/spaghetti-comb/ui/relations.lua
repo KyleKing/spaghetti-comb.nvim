@@ -38,18 +38,18 @@ local function get_split_window_config()
     local config = require("spaghetti-comb").get_config()
     local relations_config = config and config.relations
 
-    if not relations_config then 
-        relations_config = { 
-            height = 15, 
+    if not relations_config then
+        relations_config = {
+            height = 15,
             position = "bottom",
-            focus_height = 30
-        } 
+            focus_height = 30,
+        }
     end
 
     return {
         height = relations_config.height or 15,
         focus_height = relations_config.focus_height or 30,
-        position = relations_config.position or "bottom"
+        position = relations_config.position or "bottom",
     }
 end
 
@@ -345,7 +345,7 @@ function M.create_split_window()
     split_state.original_win_id = vim.api.nvim_get_current_win()
     local buf_id = create_relations_buffer()
     local config = get_split_window_config()
-    
+
     -- Create horizontal split at bottom
     vim.cmd("botright " .. config.height .. "split")
     local win_id = vim.api.nvim_get_current_win()
@@ -368,7 +368,7 @@ function M.create_split_window()
         callback = function() M.close_relations() end,
         once = true,
     })
-    
+
     -- Auto-update preview when cursor moves in relations window
     vim.api.nvim_create_autocmd({ "CursorMoved" }, {
         buffer = buf_id,
@@ -403,13 +403,11 @@ function M.close_relations()
     if split_state.preview_win_id and vim.api.nvim_win_is_valid(split_state.preview_win_id) then
         pcall(vim.api.nvim_win_close, split_state.preview_win_id, true)
     end
-    
+
     if split_state.relations_win_id and vim.api.nvim_win_is_valid(split_state.relations_win_id) then
         -- Check if it's safe to close the window (more than one window exists)
         local windows = vim.api.nvim_list_wins()
-        if #windows > 1 then
-            pcall(vim.api.nvim_win_close, split_state.relations_win_id, true)
-        end
+        if #windows > 1 then pcall(vim.api.nvim_win_close, split_state.relations_win_id, true) end
     end
 
     split_state.relations_win_id = nil
@@ -546,78 +544,70 @@ function M.toggle_focus_mode()
 end
 
 function M.enter_focus_mode()
-    if not split_state.is_visible or split_state.is_focused then
-        return
-    end
+    if not split_state.is_visible or split_state.is_focused then return end
 
     local config = get_split_window_config()
-    
+
     -- Resize relations window to focus height
     vim.api.nvim_win_set_height(split_state.relations_win_id, config.focus_height)
-    
+
     -- Create preview window to the right of relations window
     vim.api.nvim_set_current_win(split_state.relations_win_id)
     vim.cmd("vertical botright 60split")
-    
+
     local preview_win_id = vim.api.nvim_get_current_win()
     local preview_buf_id = vim.api.nvim_create_buf(false, true)
-    
+
     vim.api.nvim_win_set_buf(preview_win_id, preview_buf_id)
     vim.api.nvim_buf_set_option(preview_buf_id, "buftype", "nofile")
     vim.api.nvim_buf_set_option(preview_buf_id, "swapfile", false)
     vim.api.nvim_buf_set_option(preview_buf_id, "bufhidden", "wipe")
     vim.api.nvim_buf_set_option(preview_buf_id, "filetype", "spaghetti-comb-preview")
     vim.api.nvim_buf_set_name(preview_buf_id, "SpaghettiComb Preview")
-    
+
     vim.api.nvim_win_set_option(preview_win_id, "wrap", false)
     vim.api.nvim_win_set_option(preview_win_id, "number", true)
     vim.api.nvim_win_set_option(preview_win_id, "relativenumber", false)
-    
+
     split_state.preview_win_id = preview_win_id
     split_state.preview_buf_id = preview_buf_id
     split_state.is_focused = true
-    
+
     -- Set cursor back to relations window
     vim.api.nvim_set_current_win(split_state.relations_win_id)
-    
+
     -- Update preview content for current selection
     M.update_preview_content()
-    
+
     utils.info("Focus mode enabled - relations window expanded with preview")
 end
 
 function M.exit_focus_mode()
-    if not split_state.is_focused then
-        return
-    end
+    if not split_state.is_focused then return end
 
     -- Close preview window
     if split_state.preview_win_id and vim.api.nvim_win_is_valid(split_state.preview_win_id) then
         pcall(vim.api.nvim_win_close, split_state.preview_win_id, true)
     end
-    
+
     -- Resize relations window back to normal height
     if split_state.relations_win_id and vim.api.nvim_win_is_valid(split_state.relations_win_id) then
         local config = get_split_window_config()
         pcall(vim.api.nvim_win_set_height, split_state.relations_win_id, config.height)
     end
-    
+
     split_state.preview_win_id = nil
     split_state.preview_buf_id = nil
     split_state.is_focused = false
-    
+
     utils.info("Focus mode disabled - relations window restored to normal size")
 end
 
 function M.update_preview_content()
-    if not split_state.is_focused or not split_state.preview_buf_id then
-        return
-    end
+    if not split_state.is_focused or not split_state.preview_buf_id then return end
 
     -- Check if preview buffer is still valid
-    if not vim.api.nvim_buf_is_valid(split_state.preview_buf_id) then
-        return
-    end
+    if not vim.api.nvim_buf_is_valid(split_state.preview_buf_id) then return end
 
     local item = M.get_selected_item()
     if not item then
@@ -625,7 +615,7 @@ function M.update_preview_content()
             "No item selected",
             "",
             "Use arrow keys or j/k to navigate in the relations window",
-            "Press <Tab> to exit focus mode"
+            "Press <Tab> to exit focus mode",
         }
         pcall(vim.api.nvim_buf_set_option, split_state.preview_buf_id, "modifiable", true)
         pcall(vim.api.nvim_buf_set_lines, split_state.preview_buf_id, 0, -1, false, placeholder_lines)
@@ -634,7 +624,7 @@ function M.update_preview_content()
     end
 
     local preview_lines = require("spaghetti-comb.ui.preview").create_preview_content(item, 10)
-    
+
     pcall(vim.api.nvim_buf_set_option, split_state.preview_buf_id, "modifiable", true)
     pcall(vim.api.nvim_buf_set_lines, split_state.preview_buf_id, 0, -1, false, preview_lines)
     pcall(vim.api.nvim_buf_set_option, split_state.preview_buf_id, "modifiable", false)

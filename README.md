@@ -5,7 +5,7 @@ A Neovim plugin for code exploration designed to help developers untangle comple
 ## Features
 
 - **Split Window Relations Panel** - Opens at bottom of screen like vim's `:help` command
-- **Focus Mode** - Press `<Tab>` to expand relations window and show side-by-side code preview  
+- **Focus Mode** - Press `<Tab>` to expand relations window and show side-by-side code preview
 - **Vim Motion Navigation** - Use `j/k`, arrow keys, and other vim motions to navigate relations
 - **LSP Integration** - Works with any LSP server for references, definitions, and call hierarchy
 - **Navigation Stack** - Bidirectional exploration history with bookmark support
@@ -70,14 +70,15 @@ require("spaghetti-comb").setup()
 ### Quick Start
 
 1. Position your cursor on any function, variable, or symbol
-2. Press `<leader>sr` to open the Relations panel
-3. Use `j/k` or arrow keys to navigate the results
-4. Press `<Tab>` to enter **Focus Mode** for expanded view with preview
-5. Press `<Enter>` to jump to a location, or `<C-]>` to explore it further
+1. Press `<leader>sr` to open the Relations panel
+1. Use `j/k` or arrow keys to navigate the results
+1. Press `<Tab>` to enter **Focus Mode** for expanded view with preview
+1. Press `<Enter>` to jump to a location, or `<C-]>` to explore it further
 
 ### Default Keymaps
 
 **Global keymaps:**
+
 - `<leader>sr` - Show Relations panel for symbol under cursor
 - `<leader>sf` - Find references to current symbol
 - `<leader>sd` - Go to definition of current symbol
@@ -87,6 +88,7 @@ require("spaghetti-comb").setup()
 - `<leader>sl` - Load saved exploration session
 
 **Within Relations panel:**
+
 - `<Enter>` - Navigate to selected location
 - `<C-]>` - Explore symbol at selected location (go deeper)
 - `<C-o>` - Navigate backward in exploration stack
@@ -103,6 +105,7 @@ require("spaghetti-comb").setup()
 ### Focus Mode
 
 Press `<Tab>` in the Relations panel to enter **Focus Mode**:
+
 - Relations window expands to double height
 - Preview window opens on the right showing code context
 - Preview automatically updates as you navigate with `j/k`
@@ -111,6 +114,7 @@ Press `<Tab>` in the Relations panel to enter **Focus Mode**:
 ### UI Layout
 
 **Normal Mode:**
+
 ```
 ┌─ Your Code Buffer ──────────────────────────────────┐
 │ function calculateTotal() {                         │
@@ -121,7 +125,7 @@ Press `<Tab>` in the Relations panel to enter **Focus Mode**:
 │ Relations for 'getTax':                             │
 │ References (3):                                     │
 │ ├─ 📄 checkout.ts:42 [C:0.7]                      │
-│ ├─ 📄 invoice.ts:18 [C:0.4]                       │  
+│ ├─ 📄 invoice.ts:18 [C:0.4]                       │
 │ └─ 📄 report.ts:95 [C:0.2]                        │
 │                                                     │
 │ Press <Tab> for Focus Mode                          │
@@ -129,6 +133,7 @@ Press `<Tab>` in the Relations panel to enter **Focus Mode**:
 ```
 
 **Focus Mode:**
+
 ```
 ┌─ Your Code Buffer ──────────────────────────────────┐
 │ function calculateTotal() {                         │
@@ -152,4 +157,3 @@ See `:help spaghetti-comb` for complete documentation.
 - Neovim 0.8+
 - LSP server configured for your language
 - mini.deps (for installation method shown above)
-
