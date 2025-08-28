@@ -9,7 +9,7 @@ test_file: deps/mini.nvim
 # Format code using stylua
 lint:
 	stylua lua/ --check
-	
+
 # Format code using stylua (fix)
 format:
 	stylua lua/
@@ -26,7 +26,7 @@ docs: deps/mini.nvim
 setup:
 	@echo "Plugin structure already set up"
 
-# Download 'mini.nvim' to use its 'mini.test' testing module  
+# Download 'mini.nvim' to use its 'mini.test' testing module
 deps/mini.nvim:
 	@mkdir -p deps
 	git clone --filter=blob:none https://github.com/echasnovski/mini.nvim $@

@@ -150,7 +150,8 @@ To write tests, you'll need these files:
 Mandatory:
 
 - **Your Lua plugin in 'lua' directory**. Here we will be testing 'hello_lines' plugin.
-- **Test files**. By default they should be Lua files located in 'tests/' directory and named with 'test_' prefix. For example, we will write everything in 'test_hello_lines.lua'. It is usually a good idea to follow this template (will be assumed for the rest of this file):
+
+- **Test files**. By default they should be Lua files located in 'tests/' directory and named with 'test\_' prefix. For example, we will write everything in 'test_hello_lines.lua'. It is usually a good idea to follow this template (will be assumed for the rest of this file):
 
     <details><summary>Template for test files</summary>
 
@@ -226,7 +227,6 @@ The 'mini.test' module out of the box supports two major ways of running tests:
 
 - **Interactive**. All test files will be run directly inside current Neovim session. This proved to be very useful for debugging while writing tests. To run tests, simply execute `:lua MiniTest.run()` / `:lua MiniTest.run_file()` / `:lua MiniTest.run_at_location()` (assuming, you already have 'mini.test' set up with `require('mini.test').setup()`). With default configuration this will result into floating window with information about results of test execution. Press `q` to close it. **Note**: Be careful though, as it might affect your current setup. To avoid this, [use child processes](#using-child-process) inside tests.
 - **Headless** (from shell). Start headless Neovim process with proper startup file and execute `lua MiniTest.run()`. Assuming full file organization from previous section, this can be achieved with `make test`. This will show information about results of test execution directly in shell.
-
 
 ## Basics
 
@@ -707,8 +707,9 @@ Main feature of 'mini.test' which makes it different from other Lua testing fram
 You can start/stop/restart child process associated with this child Neovim object. Current (from which testing is initiated) and child Neovim processes can "talk" to each through RPC messages (see `:h RPC`). It means you can programmatically execute code inside child process, get its output inside current process, and test if it meets your expectation. Child process is headless but fully functioning process which allows you to test things such as extmarks, floating windows, etc.
 
 Although this approach proved to be useful and efficient, it is not ideal. Here are some limitations:
-  - Due to current RPC protocol implementation functions and userdata can't be used in both input and output with child process. Indicator of this issue is a `Cannot convert given lua type` error. Usual solution is to move some logic on the side of child process, like create and use global functions (note that they will be "forgotten" after next restart).
-  - Sometimes hanging process will occur: it stops executing without any output. Most of the time it is because Neovim process is "blocked", i.e. it waits for user input and won't return from other call. Common causes are active hit-enter-prompt (solution: increase prompt height to a bigger value) or Operator-pending mode (solution: exit it). To mitigate this experience, most helper methods will throw an error if they can deduce that immediate execution will lead to hanging state.
+
+- Due to current RPC protocol implementation functions and userdata can't be used in both input and output with child process. Indicator of this issue is a `Cannot convert given lua type` error. Usual solution is to move some logic on the side of child process, like create and use global functions (note that they will be "forgotten" after next restart).
+- Sometimes hanging process will occur: it stops executing without any output. Most of the time it is because Neovim process is "blocked", i.e. it waits for user input and won't return from other call. Common causes are active hit-enter-prompt (solution: increase prompt height to a bigger value) or Operator-pending mode (solution: exit it). To mitigate this experience, most helper methods will throw an error if they can deduce that immediate execution will lead to hanging state.
 
 Here is recommended setup for managing child processes. It will make fresh Neovim process before every test case:
 
@@ -991,6 +992,7 @@ local set_lines = function(lines) child.api.nvim_buf_set_lines(0, 0, -1, true, l
 ```
 
 - When working with automatically named screenshots, beware of the following caveats:
+
     - Some systems are case insensitive (like usually Windows and MacOS). So having two different file names which are the same ignoring case will introduce problems for users to properly install plugin.
     - Some system setups have restrictions on full path length (like 260 bytes on some Git+Windows combinations) or file name length (like 255 bytes on ext4 Windows partitions and 143 bytes on eCryptfs Linux partitions). Restriction on full path is hard to accommodate for (apart from limiting file name size to some reasonable number), but trying to not have file names longer than 143 bytes (by having shorter test case names) should be reasonable.
 

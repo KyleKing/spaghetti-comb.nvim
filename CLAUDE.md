@@ -37,12 +37,12 @@ The codebase follows a standard Neovim plugin architecture:
 
 1. **Global plugin object** (`SpaghettiComb`) exposes public API via `init.lua`
 1. **Modular structure** separating domains:
-   - `analyzer.lua` - LSP-based code analysis and symbol extraction
-   - `navigation.lua` - Navigation stack management and history
-   - `ui/` - User interface components (floating windows, highlights, previews)
-   - `coupling/` - Code coupling analysis and metrics
-   - `persistence/` - Session storage and bookmarks
-   - `utils.lua` - Shared utilities
+    - `analyzer.lua` - LSP-based code analysis and symbol extraction
+    - `navigation.lua` - Navigation stack management and history
+    - `ui/` - User interface components (floating windows, highlights, previews)
+    - `coupling/` - Code coupling analysis and metrics
+    - `persistence/` - Session storage and bookmarks
+    - `utils.lua` - Shared utilities
 
 ### Key Features (Planned)
 

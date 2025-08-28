@@ -338,14 +338,14 @@ local navigation_stack = {
 ### Coupling Analysis Engine
 
 - **Numerical Coupling Evaluation**: Calculate coupling strength between symbols
-  - Structural coupling (direct dependencies)
-  - Data coupling (shared data structures)
-  - Control coupling (control flow dependencies)
-  - Content coupling (internal data access)
+    - Structural coupling (direct dependencies)
+    - Data coupling (shared data structures)
+    - Control coupling (control flow dependencies)
+    - Content coupling (internal data access)
 - **Coupling Visualization**:
-  - Color-coded coupling strength indicators
-  - Coupling trend analysis over time
-  - Hotspot identification for refactoring candidates
+    - Color-coded coupling strength indicators
+    - Coupling trend analysis over time
+    - Hotspot identification for refactoring candidates
 - **Metrics Dashboard**: Summary view of project coupling health
 
 ### Enhanced Code Previews
@@ -451,4 +451,3 @@ require('spaghetti-comb').setup({
 - Performance benchmarking for optimization validation
 
 This implementation plan provides a comprehensive roadmap for building Spaghetti Comb into a powerful code exploration tool that helps developers untangle complex codebases through intelligent relationship visualization and navigation.
-
