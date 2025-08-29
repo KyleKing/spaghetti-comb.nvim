@@ -1,5 +1,84 @@
+--- *spaghetti-comb.nvim* Code exploration and relationship visualization
+---
+--- MIT License Copyright (c) 2024 Kyle King
+---
+--- ==============================================================================
+---
+--- Spaghetti Comb is a Neovim plugin designed to help developers untangle 
+--- complex codebases by visualizing code relationships and dependencies. The name 
+--- is a playful reference to "spaghetti code" - this plugin serves as a "comb" 
+--- to help untangle and understand intricate code relationships.
+---
+--- Key Features:
+--- - LSP-powered symbol analysis with references, definitions, and call hierarchy
+--- - Split window Relations panel with vim motion navigation
+--- - Navigation stack with bidirectional history
+--- - Focus mode with side-by-side code previews
+--- - Coupling analysis with numerical indicators
+--- - Bookmark system with collections and persistence
+--- - Session management for exploration state
+--- - Multi-language support (TypeScript, JavaScript, Python, Rust, Go, Lua)
+---
+--- # Setup ~
+---
+--- This module needs to be set up with `require('spaghetti-comb').setup({})`.
+--- See |SpaghettiComb.setup()| for configuration options.
+---
+--- >lua
+---   require('spaghetti-comb').setup({
+---     relations = {
+---       height = 15,        -- Relations panel height
+---       focus_height = 30,  -- Height in focus mode
+---       position = 'bottom' -- Panel position
+---     }
+---   })
+--- <
+---
+--- # Commands ~
+---
+--- The plugin provides these user commands:
+--- - |:SpaghettiCombShow| - Show Relations panel for symbol under cursor
+--- - |:SpaghettiCombReferences| - Find all references to current symbol
+--- - |:SpaghettiCombDefinition| - Jump to symbol definition
+--- - |:SpaghettiCombToggle| - Toggle Relations panel visibility
+--- - |:SpaghettiCombNext| - Navigate forward in exploration stack
+--- - |:SpaghettiCombPrev| - Navigate backward in exploration stack
+--- - |:SpaghettiCombSaveSession| - Save current exploration session
+--- - |:SpaghettiCombLoadSession| - Load exploration session
+--- - |:SpaghettiCombBookmarkCurrent| - Bookmark current symbol
+---
+--- # Key Mappings ~
+---
+--- Default key mappings (can be customized in setup):
+--- - `<leader>sr` - Show Relations panel
+--- - `<leader>sf` - Find references
+--- - `<leader>sd` - Go to definition  
+--- - `<leader>sn` - Navigate forward
+--- - `<leader>sp` - Navigate backward
+--- - `<leader>ss` - Save session
+--- - `<leader>sl` - Load session
+--- - `<leader>sb` - Bookmark current symbol
+---
+--- Within Relations Panel:
+--- - `<CR>` - Navigate to selected item
+--- - `<C-]>` - Explore selected symbol deeper
+--- - `<C-o>` - Navigate back in stack
+--- - `<Tab>` - Toggle focus mode (expand + preview)
+--- - `m` - Toggle bookmark for selected item
+--- - `c` - Show coupling metrics
+--- - `/` - Search relations
+--- - `f` - Cycle coupling filter
+--- - `s` - Cycle sort mode
+--- - `q` - Close Relations panel
+---
+---@tag spaghetti-comb.nvim
+
 local M = {}
 
+--- Global plugin object containing configuration and state
+---@class SpaghettiCombPlugin
+---@field config SpaghettiCombConfig Plugin configuration
+---@field state SpaghettiCombState Plugin state
 local SpaghettiComb = {
     config = {},
     state = {
@@ -9,7 +88,21 @@ local SpaghettiComb = {
     },
 }
 
+--- Default plugin configuration
+---@class SpaghettiCombConfig
+---@field relations SpaghettiCombRelationsConfig Relations panel settings
+---@field logging SpaghettiCombLoggingConfig Logging configuration
+---@field languages SpaghettiCombLanguagesConfig Language-specific settings
+---@field keymaps SpaghettiCombKeymapsConfig Key mapping configuration
+---@field coupling SpaghettiCombCouplingConfig Coupling analysis settings
 local default_config = {
+    --- Relations panel configuration
+    ---@class SpaghettiCombRelationsConfig
+    ---@field height number Normal split height in lines (default: 15)
+    ---@field focus_height number Expanded height in focus mode (default: 30) 
+    ---@field position string Split position: 'bottom' (default: 'bottom')
+    ---@field auto_preview boolean Auto-update preview in focus mode (default: true)
+    ---@field show_coupling boolean Show coupling metrics [C:0.7] (default: true)
     relations = {
         height = 15,
         focus_height = 30,
@@ -17,10 +110,15 @@ local default_config = {
         auto_preview = true,
         show_coupling = true,
     },
+    --- Logging configuration
+    ---@class SpaghettiCombLoggingConfig
+    ---@field silent_mode boolean Reduce noise by hiding info messages (default: true)
+    ---@field show_debug boolean Show debug messages (default: false)
+    ---@field show_trace boolean Show trace messages (default: false)
     logging = {
-        silent_mode = true, -- Reduce noise by default
-        show_debug = false, -- Show debug messages
-        show_trace = false, -- Show trace messages
+        silent_mode = true,
+        show_debug = false,
+        show_trace = false,
     },
     languages = {
         typescript = { enabled = true, coupling_analysis = true },
@@ -279,6 +377,26 @@ local function setup_keymaps()
     )
 end
 
+--- Setup SpaghettiComb plugin with user configuration
+---
+--- This function initializes the plugin with the provided configuration,
+--- sets up user commands and key mappings, and initializes the navigation system.
+---
+---@param user_config? SpaghettiCombConfig User configuration (optional)
+---
+---@usage >lua
+---   require('spaghetti-comb').setup()
+---   -- OR with custom config
+---   require('spaghetti-comb').setup({
+---     relations = {
+---       height = 20,
+---       focus_height = 40
+---     },
+---     keymaps = {
+---       show_relations = '<leader>cr'
+---     }
+---   })
+--- <
 function M.setup(user_config)
     SpaghettiComb.config = merge_config(user_config)
 
@@ -293,8 +411,12 @@ function M.setup(user_config)
     require("spaghetti-comb.navigation").init(SpaghettiComb.state.navigation_stack)
 end
 
+--- Get current plugin configuration
+---@return SpaghettiCombConfig Current configuration
 function M.get_config() return SpaghettiComb.config end
 
+--- Get current plugin state
+---@return SpaghettiCombState Current plugin state
 function M.get_state() return SpaghettiComb.state end
 
 return M

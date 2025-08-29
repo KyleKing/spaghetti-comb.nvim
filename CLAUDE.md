@@ -19,7 +19,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Documentation
 
-- `make docs` - Generate plugin documentation using mini.doc
+- `make docs` - Generate help tags for vim documentation
+- `make docs-auto` - Attempt automatic documentation generation (experimental)
 
 ### Setup
 
