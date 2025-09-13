@@ -41,9 +41,11 @@ lua/
 │   │   ├── events.lua        -- Navigation event handling
 │   │   └── bookmarks.lua     -- Sticky bookmarks and frequent locations
 │   ├── ui/
-│   │   ├── breadcrumbs.lua   -- Visual breadcrumb rendering
+│   │   ├── breadcrumbs.lua   -- Visual breadcrumb rendering with collapse/expand
+│   │   ├── floating_tree.lua -- Branch history floating window with unicode tree
 │   │   ├── preview.lua       -- Code preview functionality
-│   │   └── picker.lua        -- Integration with mini.pick
+│   │   ├── picker.lua        -- Integration with mini.pick (dual modes)
+│   │   └── statusline.lua    -- Branch status display in statusline
 │   ├── navigation/
 │   │   ├── commands.lua      -- Enhanced navigation commands
 │   │   ├── lsp.lua           -- LSP integration hooks
@@ -62,7 +64,7 @@ lua/
 
 ### History Manager
 
-**Purpose**: Central component that tracks navigation history, manages branching paths, and handles pruning.
+**Purpose**: Central component that tracks navigation history, manages branching paths, and handles intelligent pruning with location recovery.
 
 **Key Interfaces**:
 ```lua
@@ -75,23 +77,38 @@ history_manager.navigate_to_index(index)
 history_manager.create_branch(from_index)
 history_manager.get_active_branches()
 history_manager.switch_branch(branch_id)
+history_manager.determine_exploration_state()
 
--- Pruning and cleanup
+-- Intelligent pruning with recovery
+history_manager.schedule_pruning()  -- Debounced 2-minute delay
+history_manager.prune_with_recovery()
+history_manager.attempt_location_recovery(entry)
+history_manager.mark_unrecoverable(entry)
 history_manager.prune_old_entries(max_age)
 history_manager.prune_inconsequential_jumps()
+
+-- Location recovery
+history_manager.find_shifted_location(entry)
+history_manager.update_recovered_position(entry, new_position)
+history_manager.preserve_original_reference(entry)
 ```
 
 ### Breadcrumb Renderer
 
-**Purpose**: Handles visual display of navigation breadcrumbs with minimal screen real estate usage.
+**Purpose**: Handles visual display of navigation breadcrumbs with hotkey-triggered display and collapsible interface.
 
 **Key Interfaces**:
 ```lua
 -- Display management
-breadcrumbs.show()
+breadcrumbs.show_on_hotkey()
 breadcrumbs.hide()
 breadcrumbs.toggle()
 breadcrumbs.update_display(trail)
+
+-- Focus and collapse management
+breadcrumbs.focus_item(index)
+breadcrumbs.collapse_unfocused()
+breadcrumbs.expand_neighbors(focused_index)
 
 -- Visual styling
 breadcrumbs.set_highlight_groups()
@@ -191,6 +208,78 @@ debug.set_log_level(level)
 debug.is_debug_enabled()
 ```
 
+### Floating Tree Window
+
+**Purpose**: Displays branch history in a floating window with unicode tree visualization and preview pane.
+
+**Key Interfaces**:
+```lua
+-- Window management
+floating_tree.show_branch_history()
+floating_tree.hide()
+floating_tree.toggle()
+
+-- Tree rendering
+floating_tree.render_unicode_tree(branches)
+floating_tree.update_tree_display()
+floating_tree.highlight_active_branch()
+
+-- Navigation and interaction
+floating_tree.handle_vim_motions()
+floating_tree.select_branch_node(node)
+floating_tree.update_preview_pane(node)
+
+-- Visual styling
+floating_tree.apply_color_scheme()
+floating_tree.mark_important_nodes()
+floating_tree.mark_bookmarked_nodes()
+```
+
+### Statusline Integration
+
+**Purpose**: Provides minimal branch context information in the statusline.
+
+**Key Interfaces**:
+```lua
+-- Status display
+statusline.get_branch_status()
+statusline.format_active_exploration(branch_id, depth)
+statusline.format_idle_indicator()
+
+-- State management
+statusline.update_exploration_state()
+statusline.is_actively_exploring()
+statusline.calculate_exploration_timeout()
+
+-- Integration
+statusline.register_statusline_component()
+statusline.get_minimal_display_string()
+```
+
+### Enhanced Picker
+
+**Purpose**: Provides dual-mode picker for bookmark management and quick navigation.
+
+**Key Interfaces**:
+```lua
+-- Mode management
+picker.show_bookmark_mode()
+picker.show_navigation_mode()
+picker.switch_mode()
+
+-- Bookmark management mode
+picker.list_bookmarks_with_preview()
+picker.toggle_bookmark_selection()
+picker.filter_by_filename_or_code()
+picker.sort_by_frecency()
+
+-- Navigation mode
+picker.list_navigation_history()
+picker.filter_navigation_entries()
+picker.sort_by_recency()
+picker.jump_to_selected_location()
+```
+
 ## Data Models
 
 ### Navigation Entry
@@ -200,6 +289,10 @@ NavigationEntry = {
   id = string,              -- Unique identifier
   file_path = string,       -- Absolute file path
   position = {              -- Cursor position
+    line = number,
+    column = number
+  },
+  original_position = {     -- Original position before line shifts
     line = number,
     column = number
   },
@@ -215,6 +308,9 @@ NavigationEntry = {
   visit_count = number,     -- Number of times visited (for frequency tracking)
   is_bookmarked = boolean,  -- Manual bookmark flag
   is_frequent = boolean,    -- Auto-detected frequent location
+  is_active = boolean,      -- False if location is unrecoverable after pruning
+  line_shifted = boolean,   -- True if position was recovered after line shift
+  last_pruned = number,     -- Timestamp of last pruning attempt
 }
 ```
 
@@ -263,14 +359,17 @@ Config = {
   display = {
     enabled = boolean,      -- Default: true
     max_items = number,     -- Default: 10
-    auto_hide = boolean,    -- Default: true (hide when actively coding)
+    hotkey_only = boolean,  -- Default: true (show only on hotkey press)
+    collapse_unfocused = boolean, -- Default: true (mini.files-like behavior)
   },
   
   -- History management
   history = {
     max_entries = number,   -- Default: 1000
     max_age_minutes = number, -- Default: 30
+    pruning_debounce_minutes = number, -- Default: 2
     save_on_exit = boolean, -- Default: false (optional persistence)
+    exploration_timeout_minutes = number, -- Default: 5 (for statusline state)
   },
   
   -- Integration settings
@@ -278,6 +377,15 @@ Config = {
     jumplist = boolean,     -- Default: true (extend built-in jumplist)
     lsp = boolean,          -- Default: true (extend built-in LSP)
     mini_pick = boolean,    -- Default: true if mini.pick available
+    statusline = boolean,   -- Default: true (show branch info in statusline)
+  },
+  
+  -- Visual settings
+  visual = {
+    use_unicode_tree = boolean, -- Default: true (unicode box-drawing chars)
+    color_scheme = string,  -- Default: "subtle" (for tree readability)
+    floating_window_width = number, -- Default: 80
+    floating_window_height = number, -- Default: 20
   },
   
   -- Bookmark settings

@@ -14,10 +14,13 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 
 1. WHEN I navigate between files or functions THEN the system SHALL record each jump in a navigation history
 2. WHEN I view the navigation breadcrumbs THEN the system SHALL display the sequence of locations that led to my current position
-3. WHEN I have multiple branching navigation paths THEN the system SHALL visually distinguish between different exploration branches
+3. WHEN I have multiple branching navigation paths THEN the system SHALL visually distinguish between different exploration branches using unicode box-drawing characters
 4. WHEN the navigation history exceeds a reasonable limit THEN the system SHALL automatically prune older entries while preserving important branch points
 5. WHEN jumping around within the same file THEN the system SHOULD prune inconsequential jumps
 6. WHEN the system has kept the jump history for more than a configurable amount of time (default to 30m) THEN the system SHALL prune old history
+7. WHEN pruning occurs THEN the system SHALL attempt to update jump destinations if line numbers have shifted and mark unrecoverable locations as inactive
+8. WHEN pruning is triggered THEN the system SHALL debounce pruning operations by 2 minutes to prevent excessive processing
+9. WHEN a location is recovered after line number changes THEN the system SHALL show both the original and current line numbers to the user
 
 ### Requirement 2
 
@@ -41,6 +44,10 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 3. WHEN I want to jump forward after going backward THEN the system SHALL allow forward navigation through previously visited locations
 4. WHEN I want to jump to any point in my history THEN the system SHALL provide a quick selection interface using `mini.pick`, if installed, and possible to extend for Telescope or Snacks picker in the future
 5. WHEN `mini.pick` is not installed THEN the system SHALL turn off the picker feature
+6. WHEN I want to view the complete branch history THEN the system SHALL display a floating window with a visual tree on the left using unicode box-drawing characters and a preview pane on the right
+7. WHEN viewing the branch history tree THEN the system SHALL support native vim motions for navigation and show branches sorted by most to least recent
+8. WHEN I want to manage bookmarks THEN the picker SHALL have a bookmark management mode with fuzzy filtering by filename or code content, sorted by frecency
+9. WHEN I want to navigate quickly THEN the picker SHALL have a navigation mode with the same filtering options but sorted by recency
 
 ### Requirement 4
 
@@ -49,8 +56,10 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 #### Acceptance Criteria
 
 1. WHEN the breadcrumbs are displayed THEN they SHALL occupy minimal screen space and use subtle visual styling
-2. WHEN not using the breadcrumbs THEN the system SHALL support toggling the breadcrumbs to hide/show them
-3. WHEN I'm actively coding THEN the breadcrumbs SHALL dissapear until toggled back on
+2. WHEN I want to view breadcrumbs THEN the system SHALL only show them when I press the designated hotkey
+3. WHEN breadcrumbs are shown THEN they SHALL collapse information for less recent locations unless focused, similar to mini.files behavior
+4. WHEN I focus on a breadcrumb item THEN the system SHALL expand that item and collapse all but the immediate neighboring breadcrumbs
+5. WHEN breadcrumbs are not actively being used THEN they SHALL remain hidden to preserve screen real estate
 
 ### Requirement 5
 
@@ -130,3 +139,14 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 3. WHEN I want to enable debug mode THEN the system SHALL provide a configuration option to turn on verbose logging
 4. WHEN debug logs are written THEN they SHALL follow Neovim's standard logging practices and be written to appropriate log locations
 5. WHEN I want to inspect plugin state THEN the system SHALL provide commands to dump current history and configuration for debugging
+
+### Requirement 12
+
+**User Story:** As a developer who wants contextual awareness of my exploration state, I want to see minimal branch information in my statusline, so that I can understand my current navigation context without opening additional windows.
+
+#### Acceptance Criteria
+
+1. WHEN I am actively exploring with an active branch THEN the statusline SHALL display the branch short identifier, current depth, and minimal necessary information in an extremely concise fashion
+2. WHEN I am not actively exploring THEN the statusline SHALL show an idle branching indicator
+3. WHEN determining active exploration THEN the system SHALL use a simple algorithm based primarily on time between jumps to differentiate exploration from idle states
+4. WHEN displaying statusline information THEN the system SHALL ensure the display is minimal and does not interfere with existing statusline content
