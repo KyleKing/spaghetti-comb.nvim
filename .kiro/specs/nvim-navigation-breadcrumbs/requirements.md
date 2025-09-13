@@ -39,7 +39,8 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 1. WHEN I want to go back to a previous location THEN the system SHALL provide keyboard shortcuts that extend nvim's built-in jumplist functionality
 2. WHEN I navigate backward through history THEN the system SHALL update the visual breadcrumbs to reflect my current position in the trail
 3. WHEN I want to jump forward after going backward THEN the system SHALL allow forward navigation through previously visited locations
-4. WHEN I want to jump to any point in my history THEN the system SHALL provide a quick selection interface using nvim's built-in picker functionality
+4. WHEN I want to jump to any point in my history THEN the system SHALL provide a quick selection interface using `mini.pick`, if installed, and possible to extend for Telescope or Snacks picker in the future
+5. WHEN `mini.pick` is not installed THEN the system SHALL turn off the picker feature
 
 ### Requirement 4
 
@@ -105,3 +106,11 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 2. WHEN previews are displayed THEN they SHALL show relevant context around the target location
 3. WHEN I hover over or select a breadcrumb item THEN the system SHALL display a preview pane similar to telescope or mini.files
 4. WHEN previews are shown THEN they SHALL be fast to load and not impact navigation performance
+
+### Requirement 10
+
+**User Story:** As a developer, I want to be able to have a "sticky note" or to "highlight" important jump locations, either automatically detected based on frequency or manually.
+
+### Requirement 11
+
+**User Story:** As a developer, who wants to debug issues, I want to optionally be able to turn on a debug log following standard practices and inspect all plugin operations to ensure correct behavior. Errors should be captured by default.
