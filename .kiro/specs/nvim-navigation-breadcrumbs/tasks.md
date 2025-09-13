@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Set up project structure and core interfaces
+- [x] 1. Set up project structure and core interfaces
   - Create directory structure for history, ui, navigation, utils, and tests
   - Define core data model interfaces and types for NavigationEntry, NavigationTrail, and BookmarkEntry with pruning recovery fields
   - Create basic configuration schema with visual and pruning settings
