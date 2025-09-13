@@ -109,8 +109,24 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 
 ### Requirement 10
 
-**User Story:** As a developer, I want to be able to have a "sticky note" or to "highlight" important jump locations, either automatically detected based on frequency or manually.
+**User Story:** As a developer, I want to be able to have a "sticky note" or to "highlight" important jump locations, either automatically detected based on frequency or manually, so that I can quickly access frequently visited or important code locations.
+
+#### Acceptance Criteria
+
+1. WHEN I visit a location multiple times within a session THEN the system SHALL automatically mark it as a frequently visited location
+2. WHEN I want to manually mark a location as important THEN the system SHALL provide a command to create a sticky bookmark at the current position
+3. WHEN viewing navigation history THEN the system SHALL visually distinguish important/frequent locations from regular navigation entries
+4. WHEN I want to jump to important locations THEN the system SHALL provide quick access through the picker interface
+5. WHEN I want to manage bookmarks THEN the system SHALL provide commands to list, remove, and clear sticky bookmarks
 
 ### Requirement 11
 
-**User Story:** As a developer, who wants to debug issues, I want to optionally be able to turn on a debug log following standard practices and inspect all plugin operations to ensure correct behavior. Errors should be captured by default.
+**User Story:** As a developer who wants to debug issues, I want to optionally be able to turn on a debug log following standard practices and inspect all plugin operations to ensure correct behavior, so that I can troubleshoot problems and contribute to plugin development.
+
+#### Acceptance Criteria
+
+1. WHEN debug logging is enabled THEN the system SHALL log all navigation events, history operations, and UI updates
+2. WHEN errors occur THEN the system SHALL capture and log error details by default regardless of debug mode
+3. WHEN I want to enable debug mode THEN the system SHALL provide a configuration option to turn on verbose logging
+4. WHEN debug logs are written THEN they SHALL follow Neovim's standard logging practices and be written to appropriate log locations
+5. WHEN I want to inspect plugin state THEN the system SHALL provide commands to dump current history and configuration for debugging

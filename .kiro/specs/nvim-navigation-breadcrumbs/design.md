@@ -19,8 +19,13 @@ graph TB
     F[Jumplist Integration] --> B
     G[Project Manager] --> B
     B --> H[Storage Manager]
+    B --> K[Bookmark Manager]
     C --> I[UI Components]
     D --> J[Picker Integration]
+    I --> L[Preview Pane]
+    M[Debug Logger] --> B
+    M --> C
+    M --> D
 ```
 
 ### Plugin Structure
@@ -33,7 +38,8 @@ lua/
 │   ├── history/
 │   │   ├── manager.lua       -- Core history tracking logic
 │   │   ├── storage.lua       -- Persistence and pruning
-│   │   └── events.lua        -- Navigation event handling
+│   │   ├── events.lua        -- Navigation event handling
+│   │   └── bookmarks.lua     -- Sticky bookmarks and frequent locations
 │   ├── ui/
 │   │   ├── breadcrumbs.lua   -- Visual breadcrumb rendering
 │   │   ├── preview.lua       -- Code preview functionality
@@ -42,10 +48,14 @@ lua/
 │   │   ├── commands.lua      -- Enhanced navigation commands
 │   │   ├── lsp.lua           -- LSP integration hooks
 │   │   └── jumplist.lua      -- Jumplist enhancement
-│   └── utils/
-│       ├── project.lua       -- Project detection and management
-│       └── performance.lua   -- ~~Performance monitoring utilities~~ (Edit: there should not be custom performance measurement tooling beyond what is necessary for the app to function)
-(Edit: there should be a directory for tests)
+│   ├── utils/
+│   │   ├── project.lua       -- Project detection and management
+│   │   └── debug.lua         -- Debug logging utilities
+│   └── tests/
+│       ├── history_spec.lua  -- History manager tests
+│       ├── ui_spec.lua       -- UI component tests
+│       ├── navigation_spec.lua -- Navigation command tests
+│       └── integration_spec.lua -- Integration tests
 ```
 
 ## Components and Interfaces
@@ -102,11 +112,21 @@ commands.jump_to_history_item(index)
 -- Quick selection
 commands.show_history_picker()
 commands.show_branch_picker()
+commands.show_bookmarks_picker()
+
+-- Bookmark management
+commands.toggle_bookmark()
+commands.clear_bookmarks()
+commands.list_bookmarks()
+
+-- History management
+commands.clear_history()
+commands.clear_project_history()
 ```
 
 ### LSP Integration
 
-**Purpose**: Hooks into LSP events to track definition jumps, references, and implementations.
+**Purpose**: Hooks into LSP events to track definition jumps, references, and implementations while extending built-in functionality.
 
 **Key Interfaces**:
 ```lua
@@ -115,9 +135,60 @@ lsp_integration.on_definition_jump(from_pos, to_pos)
 lsp_integration.on_references_found(locations)
 lsp_integration.on_implementation_jump(from_pos, to_pos)
 
--- Enhanced LSP commands
+-- Enhanced LSP commands that extend built-in functionality
 lsp_integration.enhanced_go_to_definition()
 lsp_integration.enhanced_find_references()
+lsp_integration.enhanced_go_to_implementation()
+
+-- Reference navigation with previews
+lsp_integration.show_references_with_preview()
+lsp_integration.navigate_references(direction)
+```
+
+### Bookmark Manager
+
+**Purpose**: Manages sticky bookmarks and automatic frequent location detection.
+
+**Key Interfaces**:
+```lua
+-- Bookmark management
+bookmarks.toggle_bookmark(location)
+bookmarks.add_bookmark(location, manual)
+bookmarks.remove_bookmark(location)
+bookmarks.clear_all_bookmarks()
+
+-- Frequent location tracking
+bookmarks.increment_visit_count(location)
+bookmarks.update_frequent_locations()
+bookmarks.get_frequent_locations()
+
+-- Bookmark queries
+bookmarks.get_all_bookmarks()
+bookmarks.is_bookmarked(location)
+bookmarks.is_frequent(location)
+```
+
+### Debug Logger
+
+**Purpose**: Provides configurable debug logging following Neovim standards.
+
+**Key Interfaces**:
+```lua
+-- Logging functions
+debug.log(level, message, data)
+debug.debug(message, data)
+debug.info(message, data)
+debug.warn(message, data)
+debug.error(message, data)
+
+-- State inspection
+debug.dump_history()
+debug.dump_config()
+debug.dump_bookmarks()
+
+-- Log management
+debug.set_log_level(level)
+debug.is_debug_enabled()
 ```
 
 ## Data Models
@@ -141,6 +212,9 @@ NavigationEntry = {
   },
   project_root = string,    -- Project root directory
   branch_id = string,       -- Branch identifier for navigation paths
+  visit_count = number,     -- Number of times visited (for frequency tracking)
+  is_bookmarked = boolean,  -- Manual bookmark flag
+  is_frequent = boolean,    -- Auto-detected frequent location
 }
 ```
 
@@ -157,9 +231,31 @@ NavigationTrail = {
 }
 ```
 
+### Bookmark Entry
+
+```lua
+BookmarkEntry = {
+  id = string,              -- Unique identifier
+  file_path = string,       -- Absolute file path
+  position = {              -- Cursor position
+    line = number,
+    column = number
+  },
+  timestamp = number,       -- Creation timestamp
+  is_manual = boolean,      -- Manual vs automatic bookmark
+  visit_count = number,     -- Number of visits
+  context = {               -- Code context for preview
+    before_lines = table,
+    after_lines = table,
+    function_name = string,
+  },
+  project_root = string,    -- Associated project
+}
+```
+
 ### Configuration Schema
 
-(Edit: minimize the supported configuration to only the absolute necessary and rely on good defaults)
+**Design Rationale**: Minimal configuration with sensible defaults to reduce complexity while allowing essential customization.
 
 ```lua
 Config = {
@@ -167,29 +263,33 @@ Config = {
   display = {
     enabled = boolean,      -- Default: true
     max_items = number,     -- Default: 10
-    auto_hide = boolean,    -- Default: true
-    position = string,      -- "top", "bottom", "floating"
+    auto_hide = boolean,    -- Default: true (hide when actively coding)
   },
   
   -- History management
   history = {
     max_entries = number,   -- Default: 1000
     max_age_minutes = number, -- Default: 30
-    prune_threshold = number, -- Default: 100
-    save_on_exit = boolean, -- Default: false
+    save_on_exit = boolean, -- Default: false (optional persistence)
   },
   
   -- Integration settings
   integration = {
-    jumplist = boolean,     -- Default: true
-    lsp = boolean,          -- Default: true
-    telescope = boolean,    -- Default: true
+    jumplist = boolean,     -- Default: true (extend built-in jumplist)
+    lsp = boolean,          -- Default: true (extend built-in LSP)
+    mini_pick = boolean,    -- Default: true if mini.pick available
   },
   
-  -- Performance settings
-  performance = {
-    debounce_ms = number,   -- Default: 50
-    max_preview_lines = number, -- Default: 20
+  -- Bookmark settings
+  bookmarks = {
+    frequent_threshold = number, -- Default: 3 (visits to mark as frequent)
+    auto_bookmark_frequent = boolean, -- Default: true
+  },
+  
+  -- Debug settings
+  debug = {
+    enabled = boolean,      -- Default: false
+    log_level = string,     -- Default: "info" ("debug", "info", "warn", "error")
   }
 }
 ```
@@ -205,6 +305,8 @@ Config = {
 
 ### Error Handling Strategy
 
+**Design Rationale**: Graceful degradation ensures the plugin never breaks the user's workflow, with comprehensive logging for debugging.
+
 ```lua
 -- Graceful degradation pattern
 local function safe_operation(operation, fallback)
@@ -212,6 +314,8 @@ local function safe_operation(operation, fallback)
   if success then
     return result
   else
+    -- Always log errors regardless of debug mode
+    debug.error("Operation failed", { error = tostring(result) })
     vim.notify("Navigation breadcrumbs: " .. tostring(result), vim.log.levels.WARN)
     return fallback and fallback() or nil
   end
@@ -220,10 +324,29 @@ end
 -- File accessibility checking
 local function validate_file_access(file_path)
   if not vim.fn.filereadable(file_path) then
+    debug.warn("File no longer accessible", { file = file_path })
     -- Remove from history or mark as inaccessible
     return false
   end
   return true
+end
+
+-- LSP availability checking
+local function ensure_lsp_available()
+  if not vim.lsp.get_active_clients() or #vim.lsp.get_active_clients() == 0 then
+    debug.info("LSP not available, using fallback navigation")
+    return false
+  end
+  return true
+end
+
+-- Mini.pick availability checking
+local function check_mini_pick_available()
+  local has_mini_pick = pcall(require, 'mini.pick')
+  if not has_mini_pick then
+    debug.info("mini.pick not available, picker features disabled")
+  end
+  return has_mini_pick
 end
 ```
 
@@ -235,44 +358,95 @@ The plugin will use `mini.test` as specified in the requirements, focusing on hi
 
 ### Test Categories
 
+**Design Rationale**: Focus on high-signal integration tests using mini.test framework as specified in requirements, avoiding exhaustive unit testing in favor of testing real user workflows.
+
 1. **Core Functionality Tests**
    - Navigation history recording and retrieval
    - Branch creation and management
-   - Pruning algorithms
-
-2. **Integration Tests**
-   - LSP integration with go-to-definition
-   - Jumplist enhancement
+   - Pruning algorithms (time-based and inconsequential jump removal)
    - Project-aware history separation
 
-3. **UI Tests**
-   - Breadcrumb display and hiding
-   - Preview pane functionality
-   - Picker integration
+2. **Integration Tests**
+   - LSP integration with go-to-definition (extending built-in functionality)
+   - Jumplist enhancement (Ctrl-O, Ctrl-I integration)
+   - Mini.pick integration (with graceful fallback when unavailable)
+   - Project detection and context switching
 
-4. **Performance Tests**
-   - Memory usage under large history loads
-   - Response time for navigation operations
-   - File loading impact measurement
+3. **UI Tests**
+   - Breadcrumb display and auto-hide functionality
+   - Preview pane functionality with code context
+   - Picker integration for history and bookmark selection
+   - Visual distinction of bookmarked and frequent locations
+
+4. **Bookmark Tests**
+   - Manual bookmark creation and removal
+   - Automatic frequent location detection
+   - Bookmark persistence and restoration
+   - Visit count tracking accuracy
+
+5. **Performance Tests**
+   - Navigation operations complete within 50ms
+   - Memory usage under large history loads (target: <10MB for 1000 entries)
+   - File loading impact measurement (target: <5ms additional delay)
+   - History pruning performance (target: <100ms)
 
 ### Test Structure
 
 ```lua
--- Example test structure
+-- Example test structure using mini.test
 local T = MiniTest.new_set()
 
 T['navigation history'] = MiniTest.new_set()
 T['navigation history']['records jumps correctly'] = function()
-  -- Test navigation recording
+  -- Test navigation recording across files and within files
 end
 
 T['navigation history']['handles branching paths'] = function()
   -- Test branch creation and switching
 end
 
+T['navigation history']['prunes old entries'] = function()
+  -- Test time-based pruning (30 minute default)
+end
+
+T['navigation history']['prunes inconsequential jumps'] = function()
+  -- Test removal of small jumps within same file
+end
+
 T['lsp integration'] = MiniTest.new_set()
 T['lsp integration']['enhances go-to-definition'] = function()
-  -- Test LSP integration
+  -- Test LSP integration extends rather than replaces built-in
+end
+
+T['lsp integration']['handles missing lsp gracefully'] = function()
+  -- Test fallback behavior when LSP unavailable
+end
+
+T['bookmarks'] = MiniTest.new_set()
+T['bookmarks']['tracks frequent locations'] = function()
+  -- Test automatic frequent location detection
+end
+
+T['bookmarks']['manages manual bookmarks'] = function()
+  -- Test manual bookmark creation and removal
+end
+
+T['ui components'] = MiniTest.new_set()
+T['ui components']['shows and hides breadcrumbs'] = function()
+  -- Test breadcrumb visibility and auto-hide
+end
+
+T['ui components']['displays code previews'] = function()
+  -- Test preview pane functionality
+end
+
+T['picker integration'] = MiniTest.new_set()
+T['picker integration']['works with mini.pick when available'] = function()
+  -- Test picker functionality
+end
+
+T['picker integration']['gracefully handles missing mini.pick'] = function()
+  -- Test fallback when mini.pick not installed
 end
 ```
 
@@ -285,27 +459,41 @@ end
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure
-- Basic history manager implementation
-- Simple navigation recording
-- Configuration system setup
+**Design Rationale**: Incremental development approach ensuring core functionality works before adding advanced features, with testing integrated throughout.
 
-### Phase 2: Visual Components
-- Breadcrumb rendering system
+### Phase 1: Core Infrastructure
+- Basic history manager implementation with project-aware separation
+- Simple navigation recording and pruning logic
+- Configuration system with minimal, sensible defaults
+- Debug logging infrastructure
+- Basic test framework setup
+
+### Phase 2: Navigation Integration
+- LSP integration hooks that extend (not replace) built-in functionality
+- Jumplist enhancement for Ctrl-O/Ctrl-I commands
+- Navigation commands implementation
+- Time-based and inconsequential jump pruning
+
+### Phase 3: Visual Components
+- Breadcrumb rendering system with auto-hide functionality
 - Basic display toggle functionality
 - Integration with Neovim's UI system
+- Visual distinction for different entry types
 
-### Phase 3: Enhanced Navigation
-- LSP integration hooks
-- Jumplist enhancement
-- Navigation commands implementation
+### Phase 4: Bookmark System
+- Manual bookmark creation and management
+- Automatic frequent location detection based on visit counts
+- Bookmark persistence (optional)
+- Integration with navigation commands
 
-### Phase 4: Advanced Features
-- Preview pane functionality
-- Picker integration (mini.pick)
-- Project-aware history management
+### Phase 5: Advanced UI Features
+- Code preview pane functionality with context
+- Mini.pick integration with graceful fallback
+- Enhanced picker interfaces for history and bookmarks
+- Performance optimization for large histories
 
-### Phase 5: Polish and Optimization
-- Performance optimization
-- Comprehensive testing
-- Documentation and examples
+### Phase 6: Polish and Testing
+- Comprehensive mini.test integration test suite
+- Performance benchmarking and optimization
+- Error handling and edge case coverage
+- Documentation and usage examples
