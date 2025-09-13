@@ -6,7 +6,7 @@
   - Create basic configuration schema with visual and pruning settings
   - _Requirements: All requirements - foundational setup_
 
-- [ ] 2. Implement core history manager with intelligent pruning
+- [-] 2. Implement core history manager with intelligent pruning
   - [ ] 2.1 Create basic history tracking functionality
     - Write history manager module with entry recording and retrieval
     - Implement navigation trail data structure with current index tracking
