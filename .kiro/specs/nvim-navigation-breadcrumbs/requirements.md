@@ -86,8 +86,22 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 
 ### Requirement 8
 
-**User Story:** As a developer who prioritizes maintainability, the project will use mini.test to verify the high level behavior in small, but few, high-signal tests.
+**User Story:** As a developer who prioritizes maintainability, I want the plugin to have comprehensive test coverage, so that I can trust the functionality and contribute to the project with confidence.
+
+#### Acceptance Criteria
+
+1. WHEN the plugin is developed THEN it SHALL use mini.test framework for testing high-level behavior
+2. WHEN tests are written THEN they SHALL focus on high-signal integration tests rather than exhaustive unit tests
+3. WHEN new features are added THEN they SHALL include corresponding test coverage
+4. WHEN tests are run THEN they SHALL complete quickly and provide clear feedback on functionality
 
 ### Requirement 9
 
-**User Story:** As a developer who benefits from concise visual previews, there should be a feature to preview different visited code (taking inspiration from mini.files or telescope preview panes).
+**User Story:** As a developer who benefits from visual context, I want to see previews of code at different navigation points, so that I can quickly assess whether a location is relevant before jumping to it.
+
+#### Acceptance Criteria
+
+1. WHEN I view the navigation history THEN the system SHALL provide small code previews for each location
+2. WHEN previews are displayed THEN they SHALL show relevant context around the target location
+3. WHEN I hover over or select a breadcrumb item THEN the system SHALL display a preview pane similar to telescope or mini.files
+4. WHEN previews are shown THEN they SHALL be fast to load and not impact navigation performance
