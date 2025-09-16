@@ -8,7 +8,7 @@ local T = new_set({
     },
 })
 
-local utils = require("spaghetti-comb.utils")
+local utils = require("spaghetti-comb-v1.utils")
 
 T["symbol_extraction"] = new_set()
 

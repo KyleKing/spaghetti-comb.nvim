@@ -19,10 +19,10 @@ luals: # Run lua-language-server type checking
 	@echo "lua-language-server type checking not implemented yet"
 
 docs: deps/mini.nvim # Generate plugin documentation using mini.doc (currently manual)
-	@echo "Documentation is currently maintained manually in doc/spaghetti-comb.txt"
+	@echo "Documentation is currently maintained manually in doc/spaghetti-comb-v1.txt"
 	@echo "Generating help tags..."
 	nvim --headless -c "helptags doc/" -c "qa!"
-	@echo "Help tags generated successfully! Use :help spaghetti-comb.txt to view documentation"
+	@echo "Help tags generated successfully! Use :help spaghetti-comb-v1.txt to view documentation"
 
 docs-auto: deps/mini.nvim # Attempt automatic documentation generation (experimental)
 	@echo "Experimental: Generating documentation from code annotations..."

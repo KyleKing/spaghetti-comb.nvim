@@ -1,4 +1,4 @@
-local utils = require("spaghetti-comb.utils")
+local utils = require("spaghetti-comb-v1.utils")
 
 local M = {}
 
@@ -167,7 +167,7 @@ function M.update_current_entry(updates)
 
     -- Calculate coupling score when we have enough data
     if current.references or current.definitions or current.incoming_calls or current.outgoing_calls then
-        local coupling_metrics = require("spaghetti-comb.coupling.metrics")
+        local coupling_metrics = require("spaghetti-comb-v1.coupling.metrics")
         local symbol_info = {
             text = current.symbol,
             file = current.file,

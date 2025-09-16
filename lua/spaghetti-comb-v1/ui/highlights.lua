@@ -51,7 +51,7 @@ function M.apply_highlights(buf_id)
     setup_highlight_groups()
 
     local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
-    local ns_id = vim.api.nvim_create_namespace("spaghetti-comb-highlights")
+    local ns_id = vim.api.nvim_create_namespace("spaghetti-comb-v1-highlights")
 
     vim.api.nvim_buf_clear_namespace(buf_id, ns_id, 0, -1)
 

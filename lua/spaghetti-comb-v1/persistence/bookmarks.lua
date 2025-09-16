@@ -1,4 +1,4 @@
-local utils = require("spaghetti-comb.utils")
+local utils = require("spaghetti-comb-v1.utils")
 
 local M = {}
 
@@ -12,7 +12,7 @@ local BOOKMARKS_VERSION = "1.0"
 
 function M.get_bookmarks_file()
     local data_path = vim.fn.stdpath("data")
-    local bookmarks_dir = data_path .. "/spaghetti-comb"
+    local bookmarks_dir = data_path .. "/spaghetti-comb-v1"
 
     if vim.fn.isdirectory(bookmarks_dir) == 0 then vim.fn.mkdir(bookmarks_dir, "p") end
 
@@ -40,7 +40,7 @@ function M.create_bookmark_entry(location, name, collection)
         },
         metadata = {
             created_at = os.time(),
-            created_by = "spaghetti-comb",
+            created_by = "spaghetti-comb-v1",
             project_root = utils.get_project_root(),
             git_branch = utils.get_git_branch(),
         },

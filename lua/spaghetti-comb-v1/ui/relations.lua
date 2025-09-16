@@ -1,5 +1,5 @@
-local utils = require("spaghetti-comb.utils")
-local navigation = require("spaghetti-comb.navigation")
+local utils = require("spaghetti-comb-v1.utils")
+local navigation = require("spaghetti-comb-v1.navigation")
 
 local M = {}
 
@@ -28,14 +28,14 @@ local function create_relations_buffer()
     vim.api.nvim_buf_set_option(buf_id, "buftype", "nofile")
     vim.api.nvim_buf_set_option(buf_id, "swapfile", false)
     vim.api.nvim_buf_set_option(buf_id, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(buf_id, "filetype", "spaghetti-comb")
+    vim.api.nvim_buf_set_option(buf_id, "filetype", "spaghetti-comb-v1")
     vim.api.nvim_buf_set_name(buf_id, "SpaghettiComb Relations")
 
     return buf_id
 end
 
 local function get_split_window_config()
-    local config = require("spaghetti-comb").get_config()
+    local config = require("spaghetti-comb-v1").get_config()
     local relations_config = config and config.relations
 
     if not relations_config then
@@ -108,7 +108,7 @@ local function format_location_line(location, show_coupling, include_preview)
 
     if not include_preview then return base_line end
 
-    local preview = require("spaghetti-comb.ui.preview")
+    local preview = require("spaghetti-comb-v1.ui.preview")
     local item_key = preview.get_item_key(location)
     if not item_key then return base_line end
 
@@ -234,7 +234,7 @@ end
 local function render_relations_content(data)
     local lines = {}
     local current_entry = navigation.peek()
-    local config = require("spaghetti-comb").get_config()
+    local config = require("spaghetti-comb-v1").get_config()
     local show_previews = config and config.relations and config.relations.auto_preview
 
     if current_entry then
@@ -394,7 +394,7 @@ function M.show_relations(data)
     vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, lines)
     vim.api.nvim_buf_set_option(buf_id, "modifiable", false)
 
-    require("spaghetti-comb.ui.highlights").apply_highlights(buf_id)
+    require("spaghetti-comb-v1.ui.highlights").apply_highlights(buf_id)
 
     utils.log_ui_change("Relations panel opened")
 end
@@ -452,7 +452,7 @@ function M.toggle_relations()
     if split_state.is_visible then
         M.close_relations()
     else
-        require("spaghetti-comb.analyzer").analyze_current_symbol()
+        require("spaghetti-comb-v1.analyzer").analyze_current_symbol()
     end
 end
 
@@ -465,7 +465,7 @@ function M.refresh_content()
     vim.api.nvim_buf_set_lines(split_state.relations_buf_id, 0, -1, false, lines)
     vim.api.nvim_buf_set_option(split_state.relations_buf_id, "modifiable", false)
 
-    require("spaghetti-comb.ui.highlights").apply_highlights(split_state.relations_buf_id)
+    require("spaghetti-comb-v1.ui.highlights").apply_highlights(split_state.relations_buf_id)
 end
 
 function M.get_selected_item()
@@ -552,7 +552,7 @@ function M.explore_selected()
     vim.api.nvim_win_set_cursor(0, { item.line, item.col - 1 })
     vim.cmd("normal! zz")
 
-    vim.schedule(function() require("spaghetti-comb.analyzer").analyze_current_symbol() end)
+    vim.schedule(function() require("spaghetti-comb-v1.analyzer").analyze_current_symbol() end)
 
     utils.log_navigation(string.format("Exploring symbol at %s:%d", item.relative_path or item.path, item.line))
 end
@@ -589,7 +589,7 @@ function M.enter_focus_mode()
     vim.api.nvim_buf_set_option(preview_buf_id, "buftype", "nofile")
     vim.api.nvim_buf_set_option(preview_buf_id, "swapfile", false)
     vim.api.nvim_buf_set_option(preview_buf_id, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(preview_buf_id, "filetype", "spaghetti-comb-preview")
+    vim.api.nvim_buf_set_option(preview_buf_id, "filetype", "spaghetti-comb-v1-preview")
     vim.api.nvim_buf_set_name(preview_buf_id, "SpaghettiComb Preview")
 
     vim.api.nvim_win_set_option(preview_win_id, "wrap", false)
@@ -650,7 +650,7 @@ function M.update_preview_content()
         return
     end
 
-    local preview_lines = require("spaghetti-comb.ui.preview").create_preview_content(item, 10)
+    local preview_lines = require("spaghetti-comb-v1.ui.preview").create_preview_content(item, 10)
 
     pcall(vim.api.nvim_buf_set_option, split_state.preview_buf_id, "modifiable", true)
     pcall(vim.api.nvim_buf_set_lines, split_state.preview_buf_id, 0, -1, false, preview_lines)
@@ -664,7 +664,7 @@ function M.toggle_bookmark()
         return
     end
 
-    local bookmarks = require("spaghetti-comb.persistence.bookmarks")
+    local bookmarks = require("spaghetti-comb-v1.persistence.bookmarks")
     local existing_bookmark_id = bookmarks.find_bookmark_by_location(item)
 
     if existing_bookmark_id then

@@ -1,20 +1,20 @@
-*spaghetti-comb.txt*  Code exploration and relationship visualization
+*spaghetti-comb-v1.txt*  Code exploration and relationship visualization
 
 ==============================================================================
-CONTENTS                                              *spaghetti-comb-contents*
+CONTENTS                                              *spaghetti-comb-v1-contents*
 
-    1. Introduction ........................ |spaghetti-comb-introduction|
-    2. Installation ........................ |spaghetti-comb-installation|
-    3. Setup ............................... |spaghetti-comb-setup|
-    4. Configuration ....................... |spaghetti-comb-configuration|
-    5. Commands ............................ |spaghetti-comb-commands|
-    6. Key Mappings ........................ |spaghetti-comb-keymaps|
-    7. Usage ............................... |spaghetti-comb-usage|
-    8. API Reference ....................... |spaghetti-comb-api|
-    9. Troubleshooting ..................... |spaghetti-comb-troubleshooting|
+    1. Introduction ........................ |spaghetti-comb-v1-introduction|
+    2. Installation ........................ |spaghetti-comb-v1-installation|
+    3. Setup ............................... |spaghetti-comb-v1-setup|
+    4. Configuration ....................... |spaghetti-comb-v1-configuration|
+    5. Commands ............................ |spaghetti-comb-v1-commands|
+    6. Key Mappings ........................ |spaghetti-comb-v1-keymaps|
+    7. Usage ............................... |spaghetti-comb-v1-usage|
+    8. API Reference ....................... |spaghetti-comb-v1-api|
+    9. Troubleshooting ..................... |spaghetti-comb-v1-troubleshooting|
 
 ==============================================================================
-INTRODUCTION                                      *spaghetti-comb-introduction*
+INTRODUCTION                                      *spaghetti-comb-v1-introduction*
 
 Spaghetti Comb is a Neovim plugin designed to help developers untangle complex
 codebases by visualizing code relationships and dependencies. The name is a 
@@ -37,22 +37,22 @@ Requirements:
 - (Optional) Treesitter for enhanced fallback support
 
 ==============================================================================
-INSTALLATION                                      *spaghetti-comb-installation*
+INSTALLATION                                      *spaghetti-comb-v1-installation*
 
 Using lazy.nvim: >lua
     {
-      'your-username/spaghetti-comb.nvim',
+      'your-username/spaghetti-comb-v1.nvim',
       config = function()
-        require('spaghetti-comb').setup()
+        require('spaghetti-comb-v1').setup()
       end
     }
 <
 
 Using packer.nvim: >lua
     use {
-      'your-username/spaghetti-comb.nvim',
+      'your-username/spaghetti-comb-v1.nvim',
       config = function()
-        require('spaghetti-comb').setup()
+        require('spaghetti-comb-v1').setup()
       end
     }
 <
@@ -63,14 +63,14 @@ Manual installation:
 3. Call setup() in your init.lua
 
 ==============================================================================
-SETUP                                                    *spaghetti-comb-setup*
+SETUP                                                    *spaghetti-comb-v1-setup*
 
 Basic setup: >lua
-    require('spaghetti-comb').setup()
+    require('spaghetti-comb-v1').setup()
 <
 
 Custom configuration: >lua
-    require('spaghetti-comb').setup({
+    require('spaghetti-comb-v1').setup({
       relations = {
         height = 20,          -- Relations panel height (default: 15)
         focus_height = 40,    -- Height in focus mode (default: 30)
@@ -90,9 +90,9 @@ Custom configuration: >lua
 <
 
 ==============================================================================
-CONFIGURATION                                    *spaghetti-comb-configuration*
+CONFIGURATION                                    *spaghetti-comb-v1-configuration*
 
-                                                    *spaghetti-comb-config-relations*
+                                                    *spaghetti-comb-v1-config-relations*
 relations~
     Configuration for the Relations panel display.
 
@@ -102,7 +102,7 @@ relations~
     • auto_preview (boolean): Auto-update preview in focus mode (default: true)
     • show_coupling (boolean): Show coupling metrics [C:0.7] (default: true)
 
-                                                    *spaghetti-comb-config-logging*
+                                                    *spaghetti-comb-v1-config-logging*
 logging~
     Logging system configuration.
 
@@ -110,7 +110,7 @@ logging~
     • show_debug (boolean): Show debug messages (default: false)
     • show_trace (boolean): Show trace messages (default: false)
 
-                                                   *spaghetti-comb-config-languages*
+                                                   *spaghetti-comb-v1-config-languages*
 languages~
     Language-specific settings.
 
@@ -121,7 +121,7 @@ languages~
     • rust.enabled (boolean): Enable Rust support (default: true)
     • go.enabled (boolean): Enable Go support (default: true)
 
-                                                     *spaghetti-comb-config-keymaps*
+                                                     *spaghetti-comb-v1-config-keymaps*
 keymaps~
     Key mapping configuration. All mappings can be customized.
 
@@ -134,7 +134,7 @@ keymaps~
     • load_session (string): Load session (default: '<leader>sl')
     • bookmark_current (string): Bookmark current symbol (default: '<leader>sb')
 
-                                                    *spaghetti-comb-config-coupling*
+                                                    *spaghetti-comb-v1-config-coupling*
 coupling~
     Coupling analysis configuration.
 
@@ -144,7 +144,7 @@ coupling~
     • show_metrics (boolean): Show numerical metrics (default: true)
 
 ==============================================================================
-COMMANDS                                              *spaghetti-comb-commands*
+COMMANDS                                              *spaghetti-comb-v1-commands*
 
                                                          *:SpaghettiCombShow*
 :SpaghettiCombShow                  Show Relations panel for symbol under cursor.
@@ -191,7 +191,7 @@ COMMANDS                                              *spaghetti-comb-commands*
                                    Add current location to bookmarks for quick access.
 
 ==============================================================================
-KEY MAPPINGS                                          *spaghetti-comb-keymaps*
+KEY MAPPINGS                                          *spaghetti-comb-v1-keymaps*
 
 Global Key Mappings~
 (Default mappings, can be customized in setup)
@@ -231,7 +231,7 @@ Focus Mode (when <Tab> is pressed)~
 All vim motions work within the Relations panel (j/k, gg/G, /search, etc.)
 
 ==============================================================================
-USAGE                                                    *spaghetti-comb-usage*
+USAGE                                                    *spaghetti-comb-v1-usage*
 
 Basic Workflow~
 
@@ -272,9 +272,9 @@ Session Management:
 - Sessions include navigation stack and window layout
 
 ==============================================================================
-API REFERENCE                                            *spaghetti-comb-api*
+API REFERENCE                                            *spaghetti-comb-v1-api*
 
-setup({config})                                     *spaghetti-comb.setup()*
+setup({config})                                     *spaghetti-comb-v1.setup()*
     Setup the plugin with optional configuration.
 
     Parameters: ~
@@ -282,27 +282,27 @@ setup({config})                                     *spaghetti-comb.setup()*
 
     Usage: ~
 >lua
-        require('spaghetti-comb').setup({
+        require('spaghetti-comb-v1').setup({
           relations = {
             height = 20
           }
         })
 <
 
-get_config()                                     *spaghetti-comb.get_config()*
+get_config()                                     *spaghetti-comb-v1.get_config()*
     Get the current plugin configuration.
 
     Returns: ~
         (table) Current configuration
 
-get_state()                                       *spaghetti-comb.get_state()*
+get_state()                                       *spaghetti-comb-v1.get_state()*
     Get the current plugin state.
 
     Returns: ~
         (table) Current plugin state including navigation stack
 
 ==============================================================================
-TROUBLESHOOTING                              *spaghetti-comb-troubleshooting*
+TROUBLESHOOTING                              *spaghetti-comb-v1-troubleshooting*
 
 No Relations Found~
 - Ensure LSP server is running for your file type

@@ -1,6 +1,6 @@
-local utils = require("spaghetti-comb.utils")
-local navigation = require("spaghetti-comb.navigation")
-local error_handler = require("spaghetti-comb.error_handling")
+local utils = require("spaghetti-comb-v1.utils")
+local navigation = require("spaghetti-comb-v1.navigation")
+local error_handler = require("spaghetti-comb-v1.error_handling")
 
 local M = {}
 
@@ -86,7 +86,7 @@ end
 function M.calculate_location_coupling(location)
     if not location or not location.path then return 0.0 end
 
-    local coupling_metrics = require("spaghetti-comb.coupling.metrics")
+    local coupling_metrics = require("spaghetti-comb-v1.coupling.metrics")
 
     -- Create a simplified symbol info for the location
     local symbol_info = {
@@ -144,7 +144,7 @@ function M.find_references()
 
                 navigation.push(symbol_info)
                 navigation.update_current_entry({ references = processed.locations })
-                require("spaghetti-comb.ui.relations").show_relations(processed)
+                require("spaghetti-comb-v1.ui.relations").show_relations(processed)
                 utils.debug(string.format("Found %d references (fallback) for %s", #fallback_result, symbol_info.text))
             else
                 utils.error("Failed to find references with both LSP and fallback methods")
@@ -165,7 +165,7 @@ function M.find_references()
         error_handler.safe_call(function()
             navigation.push(symbol_info)
             navigation.update_current_entry({ references = processed.locations })
-            require("spaghetti-comb.ui.relations").show_relations(processed)
+            require("spaghetti-comb-v1.ui.relations").show_relations(processed)
         end, { processed = processed, symbol_info = symbol_info })
 
         utils.debug(string.format("Found %d references for %s", #processed.locations, symbol_info.text))
@@ -207,7 +207,7 @@ function M.go_to_definition()
                 string.format("Definition of %s at %s:%d", symbol_info.text, location.relative_path, location.line)
             )
 
-            require("spaghetti-comb.ui.relations").show_relations(processed)
+            require("spaghetti-comb-v1.ui.relations").show_relations(processed)
         end
     end)
 end
@@ -236,7 +236,7 @@ function M.find_implementations()
 
         navigation.update_current_entry({ implementations = processed.locations })
 
-        require("spaghetti-comb.ui.relations").show_relations(processed)
+        require("spaghetti-comb-v1.ui.relations").show_relations(processed)
 
         utils.debug(string.format("Found %d implementations for %s", #processed.locations, symbol_info.text))
     end)
@@ -288,7 +288,7 @@ function M.get_call_hierarchy_incoming()
                 context = { type = "incoming_calls" },
             }
 
-            require("spaghetti-comb.ui.relations").show_relations(processed)
+            require("spaghetti-comb-v1.ui.relations").show_relations(processed)
             utils.debug(string.format("Found %d incoming calls for %s", #calls, symbol_info.text))
         end)
     end)
@@ -337,7 +337,7 @@ function M.get_call_hierarchy_outgoing()
                 context = { type = "outgoing_calls" },
             }
 
-            require("spaghetti-comb.ui.relations").show_relations(processed)
+            require("spaghetti-comb-v1.ui.relations").show_relations(processed)
             utils.debug(string.format("Found %d outgoing calls for %s", #calls, symbol_info.text))
         end)
     end)
@@ -729,7 +729,7 @@ function M.analyze_current_symbol()
 
     local function check_completion()
         completed_requests = completed_requests + 1
-        if completed_requests >= total_requests then require("spaghetti-comb.ui.relations").show_relations(all_data) end
+        if completed_requests >= total_requests then require("spaghetti-comb-v1.ui.relations").show_relations(all_data) end
     end
 
     M.find_references_with_fallback(symbol_info, function(processed)

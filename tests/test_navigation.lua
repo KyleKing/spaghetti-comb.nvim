@@ -7,7 +7,7 @@ local T = new_set({
     hooks = {
         pre_case = function()
             child.restart({ "-u", "scripts/minimal_init.lua" })
-            child.lua([[Navigation = require('spaghetti-comb.navigation')]])
+            child.lua([[Navigation = require('spaghetti-comb-v1.navigation')]])
         end,
         post_once = child.stop,
     },

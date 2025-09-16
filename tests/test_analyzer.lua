@@ -28,8 +28,8 @@ local T = new_set({
     },
 })
 
-local analyzer = require("spaghetti-comb.analyzer")
-local utils = require("spaghetti-comb.utils")
+local analyzer = require("spaghetti-comb-v1.analyzer")
+local utils = require("spaghetti-comb-v1.utils")
 
 T["analyzer"] = new_set()
 

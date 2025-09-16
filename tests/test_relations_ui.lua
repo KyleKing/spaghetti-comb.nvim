@@ -5,18 +5,18 @@ local T = new_set({
     hooks = {
         pre_case = function()
             vim.cmd("silent! %bwipeout!")
-            require("spaghetti-comb").setup({})
+            require("spaghetti-comb-v1").setup({})
         end,
         post_case = function()
             vim.cmd("silent! %bwipeout!")
-            local floating = require("spaghetti-comb.ui.relations")
+            local floating = require("spaghetti-comb-v1.ui.relations")
             if floating.is_visible() then floating.close_relations() end
         end,
     },
 })
 
-local floating = require("spaghetti-comb.ui.relations")
-local navigation = require("spaghetti-comb.navigation")
+local floating = require("spaghetti-comb-v1.ui.relations")
+local navigation = require("spaghetti-comb-v1.navigation")
 
 T["floating_ui"] = new_set()
 

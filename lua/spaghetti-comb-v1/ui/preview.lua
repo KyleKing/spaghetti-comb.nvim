@@ -1,4 +1,4 @@
-local utils = require("spaghetti-comb.utils")
+local utils = require("spaghetti-comb-v1.utils")
 
 local M = {}
 

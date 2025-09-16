@@ -6,10 +6,10 @@ MiniDoc.setup()
 
 -- Define input files to process
 local input_files = {
-  'lua/spaghetti-comb/init.lua',
+  'lua/spaghetti-comb-v1/init.lua',
 }
 
-local output_file = 'doc/spaghetti-comb.txt'
+local output_file = 'doc/spaghetti-comb-v1.txt'
 
 -- Generate the documentation
 MiniDoc.generate(input_files, output_file)

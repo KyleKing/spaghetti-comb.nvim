@@ -1,11 +1,11 @@
-local utils = require("spaghetti-comb.utils")
-local navigation = require("spaghetti-comb.navigation")
+local utils = require("spaghetti-comb-v1.utils")
+local navigation = require("spaghetti-comb-v1.navigation")
 
 local M = {}
 
 local function get_session_dir()
     local data_path = vim.fn.stdpath("data")
-    local session_dir = data_path .. "/spaghetti-comb/sessions"
+    local session_dir = data_path .. "/spaghetti-comb-v1/sessions"
 
     if vim.fn.isdirectory(session_dir) == 0 then vim.fn.mkdir(session_dir, "p") end
 

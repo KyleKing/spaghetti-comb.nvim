@@ -27,11 +27,11 @@ local add, _now, later = MiniDeps.add, MiniDeps.now, MiniDeps.later
 later(function()
     add({
         -- Install from local directory replacing with the actual path
-        source = "file:///Users/kyleking/Developer/local-code/spaghetti-comb.nvim",
+        source = "file:///Users/kyleking/Developer/local-code/spaghetti-comb-v1.nvim",
         depends = {},
     })
 
-    require("spaghetti-comb").setup({
+    require("spaghetti-comb-v1").setup({
         -- Configuration options (optional)
         relations = {
             height = 15,              -- Normal split height
@@ -59,10 +59,10 @@ You can also add the plugin directory directly to Neovim's runtime path:
 
 ```lua
 -- Add to your init.lua
-vim.opt.runtimepath:append("/path/to/your/local/spaghetti-comb.nvim")
+vim.opt.runtimepath:append("/path/to/your/local/spaghetti-comb-v1.nvim")
 
 -- Then setup normally
-require("spaghetti-comb").setup()
+require("spaghetti-comb-v1").setup()
 ```
 
 ## Usage
@@ -150,7 +150,7 @@ Press `<Tab>` in the Relations panel to enter **Focus Mode**:
 └─────────────────────────────┴───────────────────────┘
 ```
 
-See `:help spaghetti-comb` for complete documentation.
+See `:help spaghetti-comb-v1` for complete documentation.
 
 ## Requirements
 

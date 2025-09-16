@@ -1,4 +1,4 @@
-local utils = require("spaghetti-comb.utils")
+local utils = require("spaghetti-comb-v1.utils")
 
 local M = {}
 
@@ -136,9 +136,9 @@ function M.safe_lsp_call(method, params, callback, context)
 
     local function lsp_fallback(error_info)
         if method == "textDocument/references" then
-            return require("spaghetti-comb.analyzer").find_references_fallback(context.symbol_text or "")
+            return require("spaghetti-comb-v1.analyzer").find_references_fallback(context.symbol_text or "")
         elseif method == "textDocument/definition" then
-            return require("spaghetti-comb.analyzer").find_definitions_treesitter(
+            return require("spaghetti-comb-v1.analyzer").find_definitions_treesitter(
                 context.symbol_text or "",
                 context.bufnr or vim.api.nvim_get_current_buf()
             )
@@ -244,7 +244,7 @@ function M.validate_config(config)
         return M.handle_error(
             "Configuration is nil",
             { config = config },
-            function() return require("spaghetti-comb").get_config() or {} end
+            function() return require("spaghetti-comb-v1").get_config() or {} end
         )
     end
 
