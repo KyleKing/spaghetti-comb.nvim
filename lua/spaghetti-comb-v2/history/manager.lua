@@ -321,23 +321,32 @@ function M.prune_inconsequential_jumps(entries)
     local pruned_entries = {}
     local last_kept_entry = nil
 
+    -- Helper function to keep an entry
+    local function keep_entry(entry)
+        table.insert(pruned_entries, entry)
+        last_kept_entry = entry
+    end
+
     for _, entry in ipairs(entries) do
+        local should_keep = false
+
         if not last_kept_entry then
             -- Keep the first entry
-            table.insert(pruned_entries, entry)
-            last_kept_entry = entry
+            should_keep = true -- selene: allow(if_same_then_else)
         elseif entry.file_path ~= last_kept_entry.file_path then
             -- Different file, keep this entry
-            table.insert(pruned_entries, entry)
-            last_kept_entry = entry
+            should_keep = true -- selene: allow(if_same_then_else)
         elseif M.is_inconsequential_jump(last_kept_entry, entry) then
             -- Skip inconsequential jumps within the same file
             -- Update the last kept entry's timestamp to the newer one
             last_kept_entry.timestamp = entry.timestamp
         else
             -- Keep significant jumps
-            table.insert(pruned_entries, entry)
-            last_kept_entry = entry
+            should_keep = true -- selene: allow(if_same_then_else)
+        end
+
+        if should_keep then
+            keep_entry(entry)
         end
     end
 

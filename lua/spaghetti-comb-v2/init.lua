@@ -23,10 +23,18 @@ function M.setup(opts)
     -- Initialize core components
     local history_manager = require("spaghetti-comb-v2.history.manager")
     local commands = require("spaghetti-comb-v2.navigation.commands")
+    local events = require("spaghetti-comb-v2.navigation.events")
+    local jumplist = require("spaghetti-comb-v2.navigation.jumplist")
+    local debug_utils = require("spaghetti-comb-v2.utils.debug")
+
+    -- Setup debug logging first
+    debug_utils.setup(state.config.debug)
 
     -- Setup components with config
     history_manager.setup(state.config)
     commands.setup(state.config)
+    events.setup(state.config)
+    jumplist.setup(state.config)
 
     state.initialized = true
 end
