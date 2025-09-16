@@ -2,11 +2,9 @@
 
 ## Overview
 
-The spaghetti-comb-v2 plugin is a Neovim plugin for code exploration that helps developers untangle complex codebases by visualizing code relationships and dependencies. It builds upon the foundation of spaghetti-comb-v1 while implementing a more modular and extensible architecture.
+The nvim-navigation-breadcrumbs plugin extends Neovim's built-in navigation capabilities with a visual breadcrumb system that tracks navigation history and provides enhanced code exploration features. The design prioritizes integration with existing Neovim functionality, performance, and minimal visual intrusion.
 
-The plugin uses a **split window architecture** similar to vim's `:help` command, with a **focus mode** that expands the window and adds a side-by-side preview panel. The design prioritizes performance, extensibility, and seamless integration with Neovim's existing functionality.
-
-The plugin will be implemented as a Lua-based Neovim plugin with a modular architecture separating concerns into distinct domains: history management, navigation commands, UI components, and utilities.
+The plugin will be implemented as a Lua-based Neovim plugin that hooks into existing navigation events, maintains efficient in-memory data structures for history tracking, and provides both visual breadcrumbs and enhanced navigation commands.
 
 ## Architecture
 
@@ -14,47 +12,44 @@ The plugin will be implemented as a Lua-based Neovim plugin with a modular archi
 
 ```mermaid
 graph TB
-     A[Navigation Events] --> B[History Manager]
-     B --> C[Navigation Commands]
-     B --> D[UI Components]
-     E[LSP Integration] --> B
-     F[Jumplist Integration] --> B
-     G[Project Manager] --> B
-     B --> H[Storage Manager]
-     B --> I[Bookmark Manager]
-     D --> J[Split Window UI]
-     D --> K[Floating Tree]
-     D --> L[Preview Pane]
-     D --> M[Picker Integration]
-     N[Debug Logger] --> B
-     N --> C
-     N --> D
+    A[Navigation Events] --> B[History Manager]
+    B --> C[Breadcrumb Renderer]
+    B --> D[Navigation Commands]
+    E[LSP Integration] --> B
+    F[Jumplist Integration] --> B
+    G[Project Manager] --> B
+    B --> H[Storage Manager]
+    B --> K[Bookmark Manager]
+    C --> I[UI Components]
+    D --> J[Picker Integration]
+    I --> L[Preview Pane]
+    M[Debug Logger] --> B
+    M --> C
+    M --> D
 ```
 
 ### Plugin Structure
 
 ```
 lua/
-├── spaghetti-comb-v2/
+├── nvim-navigation-breadcrumbs/
 │   ├── init.lua              -- Main plugin entry point
 │   ├── config.lua            -- Configuration management
-│   ├── types.lua             -- Type definitions and data models
 │   ├── history/
 │   │   ├── manager.lua       -- Core history tracking logic
 │   │   ├── storage.lua       -- Persistence and pruning
 │   │   ├── events.lua        -- Navigation event handling
 │   │   └── bookmarks.lua     -- Sticky bookmarks and frequent locations
+│   ├── ui/
+│   │   ├── breadcrumbs.lua   -- Visual breadcrumb rendering with collapse/expand
+│   │   ├── floating_tree.lua -- Branch history floating window with unicode tree
+│   │   ├── preview.lua       -- Code preview functionality
+│   │   ├── picker.lua        -- Integration with mini.pick (dual modes)
+│   │   └── statusline.lua    -- Branch status display in statusline
 │   ├── navigation/
 │   │   ├── commands.lua      -- Enhanced navigation commands
-│   │   ├── jumplist.lua      -- Jumplist enhancement
-│   │   └── lsp.lua           -- LSP integration hooks
-│   ├── ui/
-│   │   ├── breadcrumbs.lua   -- Visual breadcrumb rendering
-│   │   ├── floating_tree.lua -- Branch history floating window
-│   │   ├── preview.lua       -- Code preview functionality
-│   │   ├── picker.lua        -- Integration with mini.pick
-│   │   ├── statusline.lua    -- Branch status display in statusline
-│   │   └── relations.lua     -- Split window management with focus mode
+│   │   ├── lsp.lua           -- LSP integration hooks
+│   │   └── jumplist.lua      -- Jumplist enhancement
 │   ├── utils/
 │   │   ├── project.lua       -- Project detection and management
 │   │   └── debug.lua         -- Debug logging utilities
@@ -69,7 +64,7 @@ lua/
 
 ### History Manager
 
-**Purpose**: Central component that tracks navigation history, manages branching paths, and handles intelligent pruning with location recovery. Builds upon v1 foundation with enhanced data structures.
+**Purpose**: Central component that tracks navigation history, manages branching paths, and handles intelligent pruning with location recovery.
 
 **Key Interfaces**:
 ```lua
@@ -98,32 +93,31 @@ history_manager.update_recovered_position(entry, new_position)
 history_manager.preserve_original_reference(entry)
 ```
 
-### Relations Panel
+### Breadcrumb Renderer
 
-**Purpose**: Manages the split window interface for displaying code relationships with focus mode and preview integration.
+**Purpose**: Handles visual display of navigation breadcrumbs with hotkey-triggered display and collapsible interface.
 
 **Key Interfaces**:
 ```lua
--- Window management
-relations.show()
-relations.hide()
-relations.toggle()
-relations.focus_mode()  -- Expand window and show side-by-side preview
+-- Display management
+breadcrumbs.show_on_hotkey()
+breadcrumbs.hide()
+breadcrumbs.toggle()
+breadcrumbs.update_display(trail)
 
--- Content display
-relations.update_relations(relations_data)
-relations.set_filter(filter_options)
-relations.navigate(direction)
+-- Focus and collapse management
+breadcrumbs.focus_item(index)
+breadcrumbs.collapse_unfocused()
+breadcrumbs.expand_neighbors(focused_index)
 
--- Focus mode management
-relations.enter_focus_mode()
-relations.exit_focus_mode()
-relations.update_preview(content)
+-- Visual styling
+breadcrumbs.set_highlight_groups()
+breadcrumbs.configure_display_options(opts)
 ```
 
 ### Navigation Commands
 
-**Purpose**: Provides enhanced navigation commands that extend Neovim's built-in functionality with LSP integration.
+**Purpose**: Provides enhanced navigation commands that extend Neovim's built-in functionality.
 
 **Key Interfaces**:
 ```lua
@@ -145,11 +139,6 @@ commands.list_bookmarks()
 -- History management
 commands.clear_history()
 commands.clear_project_history()
-
--- LSP-enhanced commands
-commands.go_to_definition()
-commands.find_references()
-commands.show_call_hierarchy()
 ```
 
 ### LSP Integration
@@ -159,18 +148,18 @@ commands.show_call_hierarchy()
 **Key Interfaces**:
 ```lua
 -- LSP event hooks
-lsp.on_definition_jump(from_pos, to_pos)
-lsp.on_references_found(locations)
-lsp.on_implementation_jump(from_pos, to_pos)
+lsp_integration.on_definition_jump(from_pos, to_pos)
+lsp_integration.on_references_found(locations)
+lsp_integration.on_implementation_jump(from_pos, to_pos)
 
 -- Enhanced LSP commands that extend built-in functionality
-lsp.enhanced_go_to_definition()
-lsp.enhanced_find_references()
-lsp.enhanced_go_to_implementation()
+lsp_integration.enhanced_go_to_definition()
+lsp_integration.enhanced_find_references()
+lsp_integration.enhanced_go_to_implementation()
 
 -- Reference navigation with previews
-lsp.show_references_with_preview()
-lsp.navigate_references(direction)
+lsp_integration.show_references_with_preview()
+lsp_integration.navigate_references(direction)
 ```
 
 ### Bookmark Manager
@@ -357,21 +346,6 @@ BookmarkEntry = {
     function_name = string,
   },
   project_root = string,    -- Associated project
-}
-```
-
-### Relations Data
-
-```lua
-RelationsData = {
-  symbol = string,          -- Current symbol/function name
-  file_path = string,       -- Current file path
-  references = table,       -- Array of reference locations
-  definitions = table,      -- Array of definition locations
-  implementations = table,  -- Array of implementation locations
-  calls = table,            -- Array of call sites
-  dependencies = table,     -- Code dependencies
-  coupling_metrics = table, -- Coupling analysis results
 }
 ```
 
@@ -593,39 +567,41 @@ end
 
 ## Implementation Phases
 
-**Design Rationale**: Building upon v1 foundation while implementing modular v2 architecture with enhanced features.
+**Design Rationale**: Incremental development approach ensuring core functionality works before adding advanced features, with testing integrated throughout.
 
-### Phase 1: Archive v1 and Setup v2 Foundation
-- Archive spaghetti-comb-v1 code that won't contribute to v2
-- Migrate useful v1 components to v2 structure
-- Set up v2 directory structure and core interfaces
-- Define enhanced data models in types.lua
-- Update configuration system for v2 features
+### Phase 1: Core Infrastructure
+- Basic history manager implementation with project-aware separation
+- Simple navigation recording and pruning logic
+- Configuration system with minimal, sensible defaults
+- Debug logging infrastructure
+- Basic test framework setup
 
-### Phase 2: Core History and Navigation
-- Implement enhanced history manager with v1 improvements
-- Add LSP integration for navigation tracking
-- Create navigation commands with jumplist enhancement
-- Implement intelligent pruning with location recovery
-- Add project-aware history separation
+### Phase 2: Navigation Integration
+- LSP integration hooks that extend (not replace) built-in functionality
+- Jumplist enhancement for Ctrl-O/Ctrl-I commands
+- Navigation commands implementation
+- Time-based and inconsequential jump pruning
 
-### Phase 3: Relations Panel UI
-- Build split window relations panel with focus mode
-- Implement code relationship visualization
-- Add side-by-side preview in focus mode
-- Create filtering and sorting capabilities
-- Integrate with existing navigation system
+### Phase 3: Visual Components
+- Breadcrumb rendering system with auto-hide functionality
+- Basic display toggle functionality
+- Integration with Neovim's UI system
+- Visual distinction for different entry types
 
-### Phase 4: Advanced Features
-- Implement bookmark system (manual and automatic)
-- Add floating tree window for branch visualization
-- Create picker integration with mini.pick fallback
-- Add statusline integration for exploration state
-- Implement coupling analysis and metrics
+### Phase 4: Bookmark System
+- Manual bookmark creation and management
+- Automatic frequent location detection based on visit counts
+- Bookmark persistence (optional)
+- Integration with navigation commands
 
-### Phase 5: Testing and Optimization
+### Phase 5: Advanced UI Features
+- Code preview pane functionality with context
+- Mini.pick integration with graceful fallback
+- Enhanced picker interfaces for history and bookmarks
+- Performance optimization for large histories
+
+### Phase 6: Polish and Testing
 - Comprehensive mini.test integration test suite
 - Performance benchmarking and optimization
 - Error handling and edge case coverage
 - Documentation and usage examples
-- Final integration and polish

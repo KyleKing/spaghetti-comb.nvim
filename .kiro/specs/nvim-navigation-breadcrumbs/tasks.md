@@ -1,40 +1,17 @@
 # Implementation Plan
 
-- [ ] 0. Archive v1 code and migrate useful components
-  - [ ] 0.1 Analyze spaghetti-comb-v1 codebase for reusable components
-    - Review coupling/graph.lua for relationship analysis algorithms
-    - Review persistence/storage.lua for data persistence patterns
-    - Review ui/relations.lua for split window management
-    - Review analyzer.lua for LSP integration patterns
-    - Identify components that can be migrated to v2 structure
-  - [ ] 0.2 Create archive directory for v1 code
-    - Move non-reusable v1 code to archive/spaghetti-comb-v1/
-    - Preserve v1 code for reference but remove from active development
-    - Update any references to archived v1 components
-  - [ ] 0.3 Migrate useful v1 components to v2
-    - Migrate proven algorithms from v1 coupling analysis
-    - Adapt v1 persistence patterns for v2 storage system
-    - Reuse v1 UI patterns for v2 relations panel
-    - Integrate v1 LSP hooks into v2 navigation system
-  - [ ] 0.4 Update documentation references
-    - Update README.md to reflect v2 architecture
-    - Update any v1-specific documentation
-    - Ensure CLAUDE.md reflects current development state
-
 - [x] 1. Set up project structure and core interfaces
-  - Create v2 directory structure: history/, navigation/, ui/, utils/, tests/
-  - Define enhanced data models in types.lua including RelationsData for code analysis
-  - Create configuration schema with v2-specific settings for relations panel and coupling analysis
-  - Set up modular plugin architecture with clear separation of concerns
-  - _Requirements: All requirements - foundational v2 setup_
+  - Create directory structure for history, ui, navigation, utils, and tests
+  - Define core data model interfaces and types for NavigationEntry, NavigationTrail, and BookmarkEntry with pruning recovery fields
+  - Create basic configuration schema with visual and pruning settings
+  - _Requirements: All requirements - foundational setup_
 
 - [-] 2. Implement core history manager with intelligent pruning
-  - [ ] 2.1 Create enhanced history tracking functionality
+  - [ ] 2.1 Create basic history tracking functionality
     - Write history manager module with entry recording and retrieval
     - Implement navigation trail data structure with current index tracking
     - Create unique ID generation for navigation entries
     - Add exploration state detection based on time between jumps
-    - Integrate with v2 relations panel for real-time updates
     - _Requirements: 1.1, 1.2, 1.3, 12.3_
   
   - [ ] 2.2 Add project-aware history separation
@@ -52,13 +29,12 @@
     - Create inconsequential jump detection and removal within same file
     - _Requirements: 1.4, 1.5, 1.6, 1.7, 1.8, 1.9_
 
-- [ ] 3. Build relations panel UI system
-  - [ ] 3.1 Implement split window relations panel
-    - Create relations.lua module for split window management
-    - Implement focus mode with side-by-side preview
-    - Add window positioning and sizing logic
-    - Integrate with existing navigation system
-    - _Requirements: 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5_
+- [ ] 3. Create navigation event handling system
+  - [ ] 3.1 Hook into Neovim navigation events
+    - Create event handlers for cursor movement, buffer changes, and window switches
+    - Implement debouncing to avoid recording excessive micro-movements
+    - Write jump type classification (manual, lsp_definition, lsp_reference, etc.)
+    - _Requirements: 1.1, 5.1, 5.2_
   
   - [ ] 3.2 Integrate with built-in jumplist functionality
     - Extend Ctrl-O and Ctrl-I commands to work with breadcrumb history
@@ -66,13 +42,12 @@
     - Ensure compatibility with Neovim's built-in jump tracking
     - _Requirements: 6.1, 6.3_
 
-- [ ] 4. Implement LSP integration for code analysis
-  - [ ] 4.1 Create LSP event hooks for code relationships
+- [ ] 4. Implement LSP integration that extends built-in functionality
+  - [ ] 4.1 Create LSP event hooks
     - Hook into LSP go-to-definition events to record navigation jumps
-    - Implement reference finding integration that populates relations panel
+    - Implement reference finding integration that tracks jump sources
     - Create implementation jump tracking for LSP-based navigation
-    - Add call hierarchy analysis for comprehensive relationship mapping
-    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 6.2_
+    - _Requirements: 2.1, 2.2, 2.3, 6.2_
   
   - [ ] 4.2 Add enhanced LSP commands with graceful fallback
     - Write enhanced go-to-definition that extends built-in LSP functionality
@@ -80,14 +55,8 @@
     - Implement graceful degradation when LSP is unavailable
     - _Requirements: 2.4, 6.2_
 
-- [ ] 5. Build coupling analysis and bookmark system
-  - [ ] 5.1 Implement coupling analysis metrics
-    - Create coupling calculation algorithms for code relationships
-    - Implement dependency analysis and relationship strength metrics
-    - Add visual indicators for coupling intensity in relations panel
-    - Integrate coupling analysis with navigation decisions
-    - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
-  - [ ] 5.2 Implement manual bookmark functionality
+- [ ] 5. Build bookmark management system
+  - [ ] 5.1 Implement manual bookmark functionality
     - Create bookmark toggle command for current cursor position
     - Write bookmark storage and retrieval with persistence support
     - Implement bookmark removal and clearing commands
@@ -99,13 +68,12 @@
     - Write frequent location management and cleanup
     - _Requirements: 10.1, 10.3_
 
-- [ ] 6. Create relations panel display system
-  - [ ] 6.1 Implement relations panel display logic
-    - Write relations panel display with toggle functionality
-    - Create visual styling for code relationships and coupling metrics
-    - Implement panel positioning and layout management
-    - Add filtering and sorting capabilities for relations data
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
+- [ ] 6. Create hotkey-triggered breadcrumb system
+  - [ ] 6.1 Implement hotkey-only breadcrumb display
+    - Write breadcrumb display logic that only shows on hotkey press
+    - Create visual styling with subtle, non-intrusive appearance
+    - Implement breadcrumb positioning and layout management
+    - _Requirements: 4.2, 4.5_
   
   - [ ] 6.2 Add collapsible breadcrumb interface
     - Implement mini.files-like collapse behavior for unfocused items
@@ -120,14 +88,13 @@
     - Show original vs current line numbers for recovered locations
     - _Requirements: 1.3, 1.9, 10.3_
 
-- [ ] 7. Build floating tree window for navigation visualization
+- [ ] 7. Build floating tree window with unicode visualization
   - [ ] 7.1 Create unicode tree rendering system
-    - Write unicode box-drawing character tree renderer for navigation branches
+    - Write unicode box-drawing character tree renderer
     - Implement branch sorting by most to least recent
     - Create visual marking for bookmarked and frequent locations
     - Add subtle color scheme for improved readability
-    - Integrate with relations panel for comprehensive navigation view
-    - _Requirements: 3.6, 3.7, 3.8, 3.9_
+    - _Requirements: 3.6, 3.7_
   
   - [ ] 7.2 Add floating window management
     - Create floating window with left tree panel and right preview panel
@@ -149,7 +116,6 @@
     - Implement bookmark toggle functionality within picker
     - Create frecency-based sorting for bookmark management
     - Add preview support for bookmark entries
-    - Integrate with relations panel for enhanced bookmark context
     - _Requirements: 3.8, 10.4_
   
   - [ ] 8.2 Create navigation picker mode
