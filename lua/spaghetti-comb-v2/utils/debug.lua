@@ -13,7 +13,7 @@ function M.setup(config)
   
   -- Set up log file path
   local log_dir = vim.fn.stdpath('log')
-  state.log_file = log_dir .. '/nvim-navigation-breadcrumbs.log'
+  state.log_file = log_dir .. '/spaghetti-comb-v2.log'
 end
 
 -- Log levels
@@ -84,7 +84,7 @@ function M.log(level, message, data)
       vim_level = vim.log.levels.WARN
     end
     
-    vim.notify("nvim-navigation-breadcrumbs: " .. message, vim_level)
+    vim.notify("spaghetti-comb-v2: " .. message, vim_level)
   end
 end
 

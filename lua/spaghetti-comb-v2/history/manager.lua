@@ -1,5 +1,5 @@
 -- Core history tracking logic
-local types = require('nvim-navigation-breadcrumbs.types')
+local types = require('spaghetti-comb-v2.types')
 
 local M = {}
 

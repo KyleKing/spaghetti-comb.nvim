@@ -1,6 +1,6 @@
 -- History manager tests
 local MiniTest = require('mini.test')
-local history_manager = require('nvim-navigation-breadcrumbs.history.manager')
+local history_manager = require('spaghetti-comb-v2.history.manager')
 
 local T = MiniTest.new_set()
 

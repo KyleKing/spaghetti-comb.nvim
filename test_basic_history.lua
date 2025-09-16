@@ -1,7 +1,7 @@
 #!/usr/bin/env lua
 
 -- Add current directory to package path
-package.path = package.path .. ';./lua/nvim-navigation-breadcrumbs/?.lua;./lua/nvim-navigation-breadcrumbs/?/init.lua'
+package.path = package.path .. ';./lua/spaghetti-comb-v2/?.lua;./lua/spaghetti-comb-v2/?/init.lua'
 
 print('Running basic history manager tests...')
 
@@ -13,7 +13,7 @@ local config = {
   }
 }
 
-local history_manager = require('nvim-navigation-breadcrumbs.history.manager')
+local history_manager = require('spaghetti-comb-v2.history.manager')
 history_manager.setup(config)
 history_manager.set_current_project('/test/project')
 assert(history_manager.get_current_project() == '/test/project', 'Project setup failed')

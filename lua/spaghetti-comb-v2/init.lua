@@ -5,7 +5,7 @@ local M = {}
 M.version = "0.1.0"
 
 -- Default configuration
-local default_config = require('nvim-navigation-breadcrumbs.config').default
+local default_config = require('spaghetti-comb-v2.config').default
 
 -- Plugin state
 local state = {
@@ -23,8 +23,8 @@ function M.setup(opts)
   state.config = vim.tbl_deep_extend("force", default_config, opts or {})
   
   -- Initialize core components
-  local history_manager = require('nvim-navigation-breadcrumbs.history.manager')
-  local commands = require('nvim-navigation-breadcrumbs.navigation.commands')
+  local history_manager = require('spaghetti-comb-v2.history.manager')
+  local commands = require('spaghetti-comb-v2.navigation.commands')
   
   -- Setup components with config
   history_manager.setup(state.config)
