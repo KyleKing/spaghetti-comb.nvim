@@ -11,6 +11,7 @@ function M.run_all()
         require("spaghetti-comb-v2.tests.ui_spec"),
         require("spaghetti-comb-v2.tests.navigation_spec"),
         require("spaghetti-comb-v2.tests.integration_spec"),
+        require("spaghetti-comb-v2.tests.lsp_spec"),
     }
 
     -- Run tests
@@ -41,6 +42,12 @@ end
 function M.run_integration()
     local MiniTest = require("mini.test")
     local test_set = require("spaghetti-comb-v2.tests.integration_spec")
+    MiniTest.run(test_set)
+end
+
+function M.run_lsp()
+    local MiniTest = require("mini.test")
+    local test_set = require("spaghetti-comb-v2.tests.lsp_spec")
     MiniTest.run(test_set)
 end
 

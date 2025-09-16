@@ -17,7 +17,7 @@ sources = ["deps/mini.nvim"]
 [tasks.test]
 depends = ["deps-mini-nvim"]
 description = "Run all test files"
-run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua MiniTest.run()\""
+run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua require('spaghetti-comb-v2.tests.init').run_all()\""
 
 [tasks.test-file]
 depends = ["deps-mini-nvim"]
@@ -29,15 +29,15 @@ flag "-f --file"
 
 [tasks.lint]
 description = "Format code using stylua (check mode)"
-run = "stylua tests/ scripts/ plugin/ lua/ --check"
+run = "stylua tests-v1/ scripts/ plugin/ lua/ --check"
 
 [tasks.format]
 description = "Format code using stylua (fix mode)"
-run = "stylua tests/ scripts/ plugin/ lua/"
+run = "stylua tests-v1/ scripts/ plugin/ lua/"
 
 [tasks.typecheck]
 description = "Check for errors with selene"
-run = "selene tests/ scripts/ plugin/ lua/"
+run = "selene tests-v1/ scripts/ plugin/ lua/"
 
 [tasks.luals]
 description = "Run lua-language-server type checking"

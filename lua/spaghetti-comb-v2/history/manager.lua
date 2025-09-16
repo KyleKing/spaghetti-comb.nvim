@@ -345,9 +345,7 @@ function M.prune_inconsequential_jumps(entries)
             should_keep = true -- selene: allow(if_same_then_else)
         end
 
-        if should_keep then
-            keep_entry(entry)
-        end
+        if should_keep then keep_entry(entry) end
     end
 
     return pruned_entries

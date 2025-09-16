@@ -25,6 +25,7 @@ function M.setup(opts)
     local commands = require("spaghetti-comb-v2.navigation.commands")
     local events = require("spaghetti-comb-v2.navigation.events")
     local jumplist = require("spaghetti-comb-v2.navigation.jumplist")
+    local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
     local debug_utils = require("spaghetti-comb-v2.utils.debug")
 
     -- Setup debug logging first
@@ -35,6 +36,7 @@ function M.setup(opts)
     commands.setup(state.config)
     events.setup(state.config)
     jumplist.setup(state.config)
+    lsp_integration.setup(state.config)
 
     state.initialized = true
 end
