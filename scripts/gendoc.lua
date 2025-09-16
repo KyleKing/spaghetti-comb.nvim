@@ -1,4 +1,4 @@
--- Documentation generation script for SpaghettiComb
+-- Documentation generation script for SpaghettiCombv2
 local MiniDoc = require("mini.doc")
 
 -- Setup mini.doc with default configuration

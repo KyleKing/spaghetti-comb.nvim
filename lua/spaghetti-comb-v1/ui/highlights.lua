@@ -1,30 +1,30 @@
 local M = {}
 
 local highlight_groups = {
-    SpaghettiCombTitle = { fg = "#87CEEB", bold = true },
-    SpaghettiCombSection = { fg = "#98C379", bold = true },
-    SpaghettiCombFile = { fg = "#61AFEF" },
-    SpaghettiCombLocation = { fg = "#C678DD" },
-    SpaghettiCombCoupling = { fg = "#E06C75" },
-    SpaghettiCombCouplingHigh = { fg = "#E06C75", bold = true },
-    SpaghettiCombCouplingMedium = { fg = "#E5C07B" },
-    SpaghettiCombCouplingLow = { fg = "#56B6C2" },
-    SpaghettiCombIcon = { fg = "#D19A66" },
-    SpaghettiCombTree = { fg = "#5C6370" },
-    SpaghettiCombSymbol = { fg = "#ABB2BF", bold = true },
-    SpaghettiCombBookmark = { fg = "#F39C12", bold = true },
-    SpaghettiCombPreviewHeader = { fg = "#9B59B6", bold = true },
-    SpaghettiCombPreviewLineNum = { fg = "#5C6370" },
-    SpaghettiCombPreviewTarget = { bg = "#3E4451", bold = true },
-    SpaghettiCombPreviewCode = { fg = "#ABB2BF" },
-    SpaghettiCombExpandIndicator = { fg = "#56B6C2", bold = true },
-    SpaghettiCombKeyword = { fg = "#C678DD", bold = true },
-    SpaghettiCombFunction = { fg = "#61AFEF" },
-    SpaghettiCombString = { fg = "#98C379" },
-    SpaghettiCombComment = { fg = "#5C6370", italic = true },
-    SpaghettiCombOperator = { fg = "#C678DD" },
-    SpaghettiCombNumber = { fg = "#D19A66" },
-    SpaghettiCombType = { fg = "#E5C07B" },
+    SpaghettiCombv2Title = { fg = "#87CEEB", bold = true },
+    SpaghettiCombv2Section = { fg = "#98C379", bold = true },
+    SpaghettiCombv2File = { fg = "#61AFEF" },
+    SpaghettiCombv2Location = { fg = "#C678DD" },
+    SpaghettiCombv2Coupling = { fg = "#E06C75" },
+    SpaghettiCombv2CouplingHigh = { fg = "#E06C75", bold = true },
+    SpaghettiCombv2CouplingMedium = { fg = "#E5C07B" },
+    SpaghettiCombv2CouplingLow = { fg = "#56B6C2" },
+    SpaghettiCombv2Icon = { fg = "#D19A66" },
+    SpaghettiCombv2Tree = { fg = "#5C6370" },
+    SpaghettiCombv2Symbol = { fg = "#ABB2BF", bold = true },
+    SpaghettiCombv2Bookmark = { fg = "#F39C12", bold = true },
+    SpaghettiCombv2PreviewHeader = { fg = "#9B59B6", bold = true },
+    SpaghettiCombv2PreviewLineNum = { fg = "#5C6370" },
+    SpaghettiCombv2PreviewTarget = { bg = "#3E4451", bold = true },
+    SpaghettiCombv2PreviewCode = { fg = "#ABB2BF" },
+    SpaghettiCombv2ExpandIndicator = { fg = "#56B6C2", bold = true },
+    SpaghettiCombv2Keyword = { fg = "#C678DD", bold = true },
+    SpaghettiCombv2Function = { fg = "#61AFEF" },
+    SpaghettiCombv2String = { fg = "#98C379" },
+    SpaghettiCombv2Comment = { fg = "#5C6370", italic = true },
+    SpaghettiCombv2Operator = { fg = "#C678DD" },
+    SpaghettiCombv2Number = { fg = "#D19A66" },
+    SpaghettiCombv2Type = { fg = "#E5C07B" },
 }
 
 local function setup_highlight_groups()
@@ -34,14 +34,14 @@ local function setup_highlight_groups()
 end
 
 local function get_coupling_highlight(coupling_score)
-    if not coupling_score then return "SpaghettiCombCoupling" end
+    if not coupling_score then return "SpaghettiCombv2Coupling" end
 
     if coupling_score >= 0.7 then
-        return "SpaghettiCombCouplingHigh"
+        return "SpaghettiCombv2CouplingHigh"
     elseif coupling_score >= 0.4 then
-        return "SpaghettiCombCouplingMedium"
+        return "SpaghettiCombv2CouplingMedium"
     else
-        return "SpaghettiCombCouplingLow"
+        return "SpaghettiCombv2CouplingLow"
     end
 end
 
@@ -66,7 +66,7 @@ function M.apply_highlights(buf_id)
             or line:match("^Incoming Calls")
             or line:match("^Outgoing Calls")
         then
-            vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombSection", line_idx, 0, -1)
+            vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2Section", line_idx, 0, -1)
         elseif line:match("^[├└]─") then
             M.highlight_relation_line(buf_id, ns_id, line_idx, line)
         elseif line:match("^  [▶▼] %[Preview:") then
@@ -74,7 +74,7 @@ function M.apply_highlights(buf_id)
         elseif line:match("^    [▶ ]%d+") then
             M.highlight_preview_code_line(buf_id, ns_id, line_idx, line)
         elseif line:match("Press <Tab>") or line:match("Try positioning") then
-            vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombComment", line_idx, 0, -1)
+            vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2Comment", line_idx, 0, -1)
         end
     end
 end
@@ -83,17 +83,17 @@ function M.highlight_title_line(buf_id, ns_id, line_idx, line)
     local start_pos = line:find("'")
     local end_pos = line:find("'", start_pos + 1)
     if start_pos and end_pos then
-        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombTitle", line_idx, 0, start_pos - 1)
-        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombSymbol", line_idx, start_pos - 1, end_pos)
-        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombTitle", line_idx, end_pos, -1)
+        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2Title", line_idx, 0, start_pos - 1)
+        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2Symbol", line_idx, start_pos - 1, end_pos)
+        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2Title", line_idx, end_pos, -1)
     else
-        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombTitle", line_idx, 0, -1)
+        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2Title", line_idx, 0, -1)
     end
 end
 
 function M.highlight_relation_line(buf_id, ns_id, line_idx, line)
     local tree_end = line:find("─ ") + 1
-    vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombTree", line_idx, 0, tree_end)
+    vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2Tree", line_idx, 0, tree_end)
 
     -- Highlight bookmark star
     local bookmark_start = line:find("★")
@@ -101,7 +101,7 @@ function M.highlight_relation_line(buf_id, ns_id, line_idx, line)
         vim.api.nvim_buf_add_highlight(
             buf_id,
             ns_id,
-            "SpaghettiCombBookmark",
+            "SpaghettiCombv2Bookmark",
             line_idx,
             bookmark_start - 1,
             bookmark_start
@@ -110,7 +110,7 @@ function M.highlight_relation_line(buf_id, ns_id, line_idx, line)
 
     local icon_start = line:find("📄")
     if icon_start then
-        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombIcon", line_idx, icon_start - 1, icon_start)
+        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2Icon", line_idx, icon_start - 1, icon_start)
     end
 
     local file_start = tree_end + 1
@@ -118,14 +118,14 @@ function M.highlight_relation_line(buf_id, ns_id, line_idx, line)
 
     local colon_pos = line:find(":", file_start)
     if colon_pos then
-        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombFile", line_idx, file_start, colon_pos - 1)
+        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2File", line_idx, file_start, colon_pos - 1)
 
         local bracket_start = line:find("%[C:", colon_pos)
         if bracket_start then
             vim.api.nvim_buf_add_highlight(
                 buf_id,
                 ns_id,
-                "SpaghettiCombLocation",
+                "SpaghettiCombv2Location",
                 line_idx,
                 colon_pos - 1,
                 bracket_start - 1
@@ -138,7 +138,7 @@ function M.highlight_relation_line(buf_id, ns_id, line_idx, line)
                 vim.api.nvim_buf_add_highlight(buf_id, ns_id, highlight_group, line_idx, bracket_start - 1, -1)
             end
         else
-            vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombLocation", line_idx, colon_pos - 1, -1)
+            vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2Location", line_idx, colon_pos - 1, -1)
         end
     end
 end
@@ -150,7 +150,7 @@ function M.highlight_preview_header(buf_id, ns_id, line_idx, line)
         vim.api.nvim_buf_add_highlight(
             buf_id,
             ns_id,
-            "SpaghettiCombExpandIndicator",
+            "SpaghettiCombv2ExpandIndicator",
             line_idx,
             indicator_start - 1,
             indicator_start
@@ -160,7 +160,7 @@ function M.highlight_preview_header(buf_id, ns_id, line_idx, line)
     -- Highlight the preview header
     local preview_start = line:find("%[Preview:")
     if preview_start then
-        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombPreviewHeader", line_idx, preview_start - 1, -1)
+        vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2PreviewHeader", line_idx, preview_start - 1, -1)
     end
 end
 
@@ -172,14 +172,14 @@ function M.highlight_preview_code_line(buf_id, ns_id, line_idx, line)
         local line_num_end = line:find("│") - 1
 
         if marker_end > 0 then
-            vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombPreviewTarget", line_idx, 0, marker_end)
+            vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2PreviewTarget", line_idx, 0, marker_end)
         end
 
         if line_num_end > marker_end then
             vim.api.nvim_buf_add_highlight(
                 buf_id,
                 ns_id,
-                "SpaghettiCombPreviewLineNum",
+                "SpaghettiCombv2PreviewLineNum",
                 line_idx,
                 marker_end,
                 line_num_end
@@ -197,18 +197,18 @@ function M.highlight_code_syntax(buf_id, ns_id, line_idx, line, start_pos)
 
     -- Basic syntax highlighting patterns
     local patterns = {
-        { pattern = "function%s+(%w+)%s*%(", highlight = "SpaghettiCombFunction" },
-        { pattern = "(%w+)%s*%(", highlight = "SpaghettiCombFunction" },
-        { pattern = '"[^"]*"', highlight = "SpaghettiCombString" },
-        { pattern = "'[^']*'", highlight = "SpaghettiCombString" },
-        { pattern = "`[^`]*`", highlight = "SpaghettiCombString" },
-        { pattern = "//.*$", highlight = "SpaghettiCombComment" },
-        { pattern = "#.*$", highlight = "SpaghettiCombComment" },
-        { pattern = "%d+%.?%d*", highlight = "SpaghettiCombNumber" },
-        { pattern = "[%+%-*/=<>!&|]+", highlight = "SpaghettiCombOperator" },
-        { pattern = "%b()", highlight = "SpaghettiCombOperator" },
-        { pattern = "%b{}", highlight = "SpaghettiCombOperator" },
-        { pattern = "%b[]", highlight = "SpaghettiCombOperator" },
+        { pattern = "function%s+(%w+)%s*%(", highlight = "SpaghettiCombv2Function" },
+        { pattern = "(%w+)%s*%(", highlight = "SpaghettiCombv2Function" },
+        { pattern = '"[^"]*"', highlight = "SpaghettiCombv2String" },
+        { pattern = "'[^']*'", highlight = "SpaghettiCombv2String" },
+        { pattern = "`[^`]*`", highlight = "SpaghettiCombv2String" },
+        { pattern = "//.*$", highlight = "SpaghettiCombv2Comment" },
+        { pattern = "#.*$", highlight = "SpaghettiCombv2Comment" },
+        { pattern = "%d+%.?%d*", highlight = "SpaghettiCombv2Number" },
+        { pattern = "[%+%-*/=<>!&|]+", highlight = "SpaghettiCombv2Operator" },
+        { pattern = "%b()", highlight = "SpaghettiCombv2Operator" },
+        { pattern = "%b{}", highlight = "SpaghettiCombv2Operator" },
+        { pattern = "%b[]", highlight = "SpaghettiCombv2Operator" },
     }
 
     -- Keywords by language (basic set)
@@ -255,7 +255,7 @@ function M.highlight_code_syntax(buf_id, ns_id, line_idx, line, start_pos)
             vim.api.nvim_buf_add_highlight(
                 buf_id,
                 ns_id,
-                "SpaghettiCombKeyword",
+                "SpaghettiCombv2Keyword",
                 line_idx,
                 start_pos + match_start - 1,
                 start_pos + match_end
@@ -284,7 +284,7 @@ function M.highlight_code_syntax(buf_id, ns_id, line_idx, line, start_pos)
     end
 
     -- Default code highlighting for the rest
-    vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombPreviewCode", line_idx, start_pos, -1)
+    vim.api.nvim_buf_add_highlight(buf_id, ns_id, "SpaghettiCombv2PreviewCode", line_idx, start_pos, -1)
 end
 
 function M.setup()
@@ -292,7 +292,7 @@ function M.setup()
 
     vim.api.nvim_create_autocmd("ColorScheme", {
         callback = function() setup_highlight_groups() end,
-        group = vim.api.nvim_create_augroup("SpaghettiCombHighlights", { clear = true }),
+        group = vim.api.nvim_create_augroup("SpaghettiCombv2Highlights", { clear = true }),
     })
 end
 

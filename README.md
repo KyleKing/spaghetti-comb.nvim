@@ -1,4 +1,4 @@
-# Spaghetti Comb
+# Spaghetti Comb v2
 
 A Neovim plugin for code exploration designed to help developers untangle complex codebases by visualizing code relationships and dependencies.
 

@@ -26,7 +26,7 @@
 
 ## Architecture Overview
 
-This is a Neovim plugin for code exploration called "Spaghetti Comb" - designed to help developers untangle complex codebases by visualizing code relationships and dependencies.
+This is a Neovim plugin for code exploration called "Spaghetti Comb v2" - designed to help developers untangle complex codebases by visualizing code relationships and dependencies.
 
 The plugin uses a **split window architecture** similar to vim's `:help` command, with a **focus mode** that expands the window and adds a side-by-side preview panel.
 
@@ -38,7 +38,7 @@ The plugin is in active development with basic infrastructure completed (Phase 1
 
 The codebase follows a standard Neovim plugin architecture:
 
-1. **Global plugin object** (`SpaghettiComb`) exposes public API via `init.lua`
+1. **Global plugin object** (`SpaghettiCombv2`) exposes public API via `init.lua`
 1. **Modular structure** separating domains:
     - `analyzer.lua` - LSP-based code analysis and symbol extraction
     - `navigation.lua` - Navigation stack management and history

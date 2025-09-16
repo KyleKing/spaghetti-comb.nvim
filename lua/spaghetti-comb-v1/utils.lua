@@ -126,7 +126,7 @@ function M.log(level, msg, opts)
     -- Skip trace messages unless explicitly enabled
     if level == vim.log.levels.TRACE and not log_config.show_trace then return end
 
-    local prefix = opts.no_prefix and "" or "[SpaghettiComb] "
+    local prefix = opts.no_prefix and "" or "[SpaghettiCombv2] "
     vim.notify(prefix .. msg, level)
 end
 

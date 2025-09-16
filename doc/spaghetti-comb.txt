@@ -16,7 +16,7 @@ CONTENTS                                              *spaghetti-comb-v1-content
 ==============================================================================
 INTRODUCTION                                      *spaghetti-comb-v1-introduction*
 
-Spaghetti Comb is a Neovim plugin designed to help developers untangle complex
+Spaghetti Comb v2 is a Neovim plugin designed to help developers untangle complex
 codebases by visualizing code relationships and dependencies. The name is a 
 playful reference to "spaghetti code" - this plugin serves as a "comb" to help
 untangle and understand intricate code relationships.
@@ -146,48 +146,48 @@ coupling~
 ==============================================================================
 COMMANDS                                              *spaghetti-comb-v1-commands*
 
-                                                         *:SpaghettiCombShow*
-:SpaghettiCombShow                  Show Relations panel for symbol under cursor.
+                                                         *:SpaghettiCombv2Show*
+:SpaghettiCombv2Show                  Show Relations panel for symbol under cursor.
                                    This is the main command to start code exploration.
 
-                                                   *:SpaghettiCombReferences*  
-:SpaghettiCombReferences           Find all references to the current symbol.
+                                                   *:SpaghettiCombv2References*  
+:SpaghettiCombv2References           Find all references to the current symbol.
                                    Shows where the symbol is used throughout the codebase.
 
-                                                   *:SpaghettiCombDefinition*
-:SpaghettiCombDefinition           Jump to the definition of the current symbol.
+                                                   *:SpaghettiCombv2Definition*
+:SpaghettiCombv2Definition           Jump to the definition of the current symbol.
                                    Navigates to where the symbol is defined.
 
-                                                       *:SpaghettiCombToggle*
-:SpaghettiCombToggle               Toggle Relations panel visibility.
+                                                       *:SpaghettiCombv2Toggle*
+:SpaghettiCombv2Toggle               Toggle Relations panel visibility.
                                    Show/hide the Relations panel.
 
-                                                         *:SpaghettiCombNext*
-:SpaghettiCombNext                 Navigate forward in the exploration stack.
+                                                         *:SpaghettiCombv2Next*
+:SpaghettiCombv2Next                 Navigate forward in the exploration stack.
                                    Move to the next symbol in navigation history.
 
-                                                         *:SpaghettiCombPrev*
-:SpaghettiCombPrev                 Navigate backward in the exploration stack.
+                                                         *:SpaghettiCombv2Prev*
+:SpaghettiCombv2Prev                 Navigate backward in the exploration stack.
                                    Move to the previous symbol in navigation history.
 
-                                                  *:SpaghettiCombSaveSession*
-:SpaghettiCombSaveSession {name}   Save current exploration session.
+                                                  *:SpaghettiCombv2SaveSession*
+:SpaghettiCombv2SaveSession {name}   Save current exploration session.
                                    Preserves navigation stack and window state.
 
-                                                  *:SpaghettiCombLoadSession*
-:SpaghettiCombLoadSession {name}   Load exploration session.
+                                                  *:SpaghettiCombv2LoadSession*
+:SpaghettiCombv2LoadSession {name}   Load exploration session.
                                    Restores saved navigation state.
 
-                                             *:SpaghettiCombCallHierarchyIncoming*
-:SpaghettiCombCallHierarchyIncoming  Show incoming calls (who calls this function).
+                                             *:SpaghettiCombv2CallHierarchyIncoming*
+:SpaghettiCombv2CallHierarchyIncoming  Show incoming calls (who calls this function).
                                     Displays functions that call the current symbol.
 
-                                             *:SpaghettiCombCallHierarchyOutgoing*
-:SpaghettiCombCallHierarchyOutgoing  Show outgoing calls (what this function calls).
+                                             *:SpaghettiCombv2CallHierarchyOutgoing*
+:SpaghettiCombv2CallHierarchyOutgoing  Show outgoing calls (what this function calls).
                                     Displays functions called by the current symbol.
 
-                                               *:SpaghettiCombBookmarkCurrent*
-:SpaghettiCombBookmarkCurrent      Bookmark the current symbol.
+                                               *:SpaghettiCombv2BookmarkCurrent*
+:SpaghettiCombv2BookmarkCurrent      Bookmark the current symbol.
                                    Add current location to bookmarks for quick access.
 
 ==============================================================================
@@ -236,7 +236,7 @@ USAGE                                                    *spaghetti-comb-v1-usag
 Basic Workflow~
 
 1. Position cursor on a symbol (function, variable, class, etc.)
-2. Press `<leader>sr` or run `:SpaghettiCombShow`
+2. Press `<leader>sr` or run `:SpaghettiCombv2Show`
 3. Relations panel opens showing:
    - References: Where the symbol is used
    - Definitions: Where the symbol is defined  
@@ -267,8 +267,8 @@ Bookmarks:
 - Bookmarks persist across sessions
 
 Session Management:
-- Save exploration state with `:SpaghettiCombSaveSession <name>`
-- Load saved sessions with `:SpaghettiCombLoadSession <name>`
+- Save exploration state with `:SpaghettiCombv2SaveSession <name>`
+- Load saved sessions with `:SpaghettiCombv2LoadSession <name>`
 - Sessions include navigation stack and window layout
 
 ==============================================================================

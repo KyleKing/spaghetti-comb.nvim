@@ -4,7 +4,7 @@
 ---
 --- ==============================================================================
 ---
---- Spaghetti Comb is a Neovim plugin designed to help developers untangle
+--- Spaghetti Comb v2 is a Neovim plugin designed to help developers untangle
 --- complex codebases by visualizing code relationships and dependencies. The name
 --- is a playful reference to "spaghetti code" - this plugin serves as a "comb"
 --- to help untangle and understand intricate code relationships.
@@ -22,7 +22,7 @@
 --- # Setup ~
 ---
 --- This module needs to be set up with `require('spaghetti-comb-v1').setup({})`.
---- See |SpaghettiComb.setup()| for configuration options.
+--- See |SpaghettiCombv2.setup()| for configuration options.
 ---
 --- >lua
 ---   require('spaghetti-comb-v1').setup({
@@ -37,15 +37,15 @@
 --- # Commands ~
 ---
 --- The plugin provides these user commands:
---- - |:SpaghettiCombShow| - Show Relations panel for symbol under cursor
---- - |:SpaghettiCombReferences| - Find all references to current symbol
---- - |:SpaghettiCombDefinition| - Jump to symbol definition
---- - |:SpaghettiCombToggle| - Toggle Relations panel visibility
---- - |:SpaghettiCombNext| - Navigate forward in exploration stack
---- - |:SpaghettiCombPrev| - Navigate backward in exploration stack
---- - |:SpaghettiCombSaveSession| - Save current exploration session
---- - |:SpaghettiCombLoadSession| - Load exploration session
---- - |:SpaghettiCombBookmarkCurrent| - Bookmark current symbol
+--- - |:SpaghettiCombv2Show| - Show Relations panel for symbol under cursor
+--- - |:SpaghettiCombv2References| - Find all references to current symbol
+--- - |:SpaghettiCombv2Definition| - Jump to symbol definition
+--- - |:SpaghettiCombv2Toggle| - Toggle Relations panel visibility
+--- - |:SpaghettiCombv2Next| - Navigate forward in exploration stack
+--- - |:SpaghettiCombv2Prev| - Navigate backward in exploration stack
+--- - |:SpaghettiCombv2SaveSession| - Save current exploration session
+--- - |:SpaghettiCombv2LoadSession| - Load exploration session
+--- - |:SpaghettiCombv2BookmarkCurrent| - Bookmark current symbol
 ---
 --- # Key Mappings ~
 ---
@@ -76,10 +76,10 @@
 local M = {}
 
 --- Global plugin object containing configuration and state
----@class SpaghettiCombPlugin
----@field config SpaghettiCombConfig Plugin configuration
----@field state SpaghettiCombState Plugin state
-local SpaghettiComb = {
+---@class SpaghettiCombv2Plugin
+---@field config SpaghettiCombv2Config Plugin configuration
+---@field state SpaghettiCombv2State Plugin state
+local SpaghettiCombv2 = {
     config = {},
     state = {
         navigation_stack = {},
@@ -89,15 +89,15 @@ local SpaghettiComb = {
 }
 
 --- Default plugin configuration
----@class SpaghettiCombConfig
----@field relations SpaghettiCombRelationsConfig Relations panel settings
----@field logging SpaghettiCombLoggingConfig Logging configuration
----@field languages SpaghettiCombLanguagesConfig Language-specific settings
----@field keymaps SpaghettiCombKeymapsConfig Key mapping configuration
----@field coupling SpaghettiCombCouplingConfig Coupling analysis settings
+---@class SpaghettiCombv2Config
+---@field relations SpaghettiCombv2RelationsConfig Relations panel settings
+---@field logging SpaghettiCombv2LoggingConfig Logging configuration
+---@field languages SpaghettiCombv2LanguagesConfig Language-specific settings
+---@field keymaps SpaghettiCombv2KeymapsConfig Key mapping configuration
+---@field coupling SpaghettiCombv2CouplingConfig Coupling analysis settings
 local default_config = {
     --- Relations panel configuration
-    ---@class SpaghettiCombRelationsConfig
+    ---@class SpaghettiCombv2RelationsConfig
     ---@field height number Normal split height in lines (default: 15)
     ---@field focus_height number Expanded height in focus mode (default: 30)
     ---@field position string Split position: 'bottom' (default: 'bottom')
@@ -111,7 +111,7 @@ local default_config = {
         show_coupling = true,
     },
     --- Logging configuration
-    ---@class SpaghettiCombLoggingConfig
+    ---@class SpaghettiCombv2LoggingConfig
     ---@field silent_mode boolean Reduce noise by hiding info messages (default: true)
     ---@field show_debug boolean Show debug messages (default: false)
     ---@field show_trace boolean Show trace messages (default: false)
@@ -155,43 +155,43 @@ local function merge_config(user_config) return vim.tbl_deep_extend("force", def
 
 local function setup_commands()
     vim.api.nvim_create_user_command(
-        "SpaghettiCombShow",
+        "SpaghettiCombv2Show",
         function() require("spaghetti-comb-v1.ui.relations").show_relations() end,
         { desc = "Show Relations panel for symbol under cursor" }
     )
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombReferences",
+        "SpaghettiCombv2References",
         function() require("spaghetti-comb-v1.analyzer").find_references() end,
         { desc = "Show where current function is used" }
     )
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombDefinition",
+        "SpaghettiCombv2Definition",
         function() require("spaghetti-comb-v1.analyzer").go_to_definition() end,
         { desc = "Show where symbol is defined" }
     )
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombNext",
+        "SpaghettiCombv2Next",
         function() require("spaghetti-comb-v1.navigation").navigate_next() end,
         { desc = "Navigate forward in exploration stack" }
     )
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombPrev",
+        "SpaghettiCombv2Prev",
         function() require("spaghetti-comb-v1.navigation").navigate_prev() end,
         { desc = "Navigate backward in exploration stack" }
     )
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombToggle",
+        "SpaghettiCombv2Toggle",
         function() require("spaghetti-comb-v1.ui.relations").toggle_relations() end,
         { desc = "Toggle Relations panel visibility" }
     )
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombSave",
+        "SpaghettiCombv2Save",
         function(opts)
             require("spaghetti-comb-v1.persistence.storage").save_session(opts.args ~= "" and opts.args or nil)
         end,
@@ -199,14 +199,14 @@ local function setup_commands()
     )
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombLoad",
+        "SpaghettiCombv2Load",
         function(opts)
             require("spaghetti-comb-v1.persistence.storage").load_session(opts.args ~= "" and opts.args or nil)
         end,
         { desc = "Load saved exploration session", nargs = "?" }
     )
 
-    vim.api.nvim_create_user_command("SpaghettiCombListSessions", function()
+    vim.api.nvim_create_user_command("SpaghettiCombv2ListSessions", function()
         local sessions = require("spaghetti-comb-v1.persistence.storage").list_sessions()
         if #sessions == 0 then
             require("spaghetti-comb-v1.utils").info("No saved sessions found")
@@ -223,18 +223,18 @@ local function setup_commands()
     end, { desc = "List all saved exploration sessions" })
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombCallHierarchyIncoming",
+        "SpaghettiCombv2CallHierarchyIncoming",
         function() require("spaghetti-comb-v1.analyzer").get_call_hierarchy_incoming() end,
         { desc = "Show incoming calls (who calls this function)" }
     )
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombCallHierarchyOutgoing",
+        "SpaghettiCombv2CallHierarchyOutgoing",
         function() require("spaghetti-comb-v1.analyzer").get_call_hierarchy_outgoing() end,
         { desc = "Show outgoing calls (what this function calls)" }
     )
 
-    vim.api.nvim_create_user_command("SpaghettiCombNavigationHistory", function()
+    vim.api.nvim_create_user_command("SpaghettiCombv2NavigationHistory", function()
         local summary = require("spaghetti-comb-v1.navigation").get_navigation_summary()
         if #summary.entries == 0 then
             require("spaghetti-comb-v1.utils").info("Navigation stack is empty")
@@ -252,18 +252,18 @@ local function setup_commands()
         end
     end, { desc = "Show navigation history" })
 
-    vim.api.nvim_create_user_command("SpaghettiCombBookmarkCurrent", function()
+    vim.api.nvim_create_user_command("SpaghettiCombv2BookmarkCurrent", function()
         require("spaghetti-comb-v1.navigation").update_current_entry({ bookmarked = true })
         require("spaghetti-comb-v1.utils").info("Current navigation entry bookmarked")
     end, { desc = "Bookmark current navigation entry" })
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombAnalyze",
+        "SpaghettiCombv2Analyze",
         function() require("spaghetti-comb-v1.analyzer").analyze_current_symbol() end,
         { desc = "Analyze current symbol (show all relations)" }
     )
 
-    vim.api.nvim_create_user_command("SpaghettiCombNavigateByOffset", function(opts)
+    vim.api.nvim_create_user_command("SpaghettiCombv2NavigateByOffset", function(opts)
         local offset = tonumber(opts.args)
         if not offset then
             require("spaghetti-comb-v1.utils").warn("Invalid offset: " .. opts.args)
@@ -272,7 +272,7 @@ local function setup_commands()
         require("spaghetti-comb-v1.navigation").navigate_by_offset(offset)
     end, { desc = "Navigate by offset in stack", nargs = 1 })
 
-    vim.api.nvim_create_user_command("SpaghettiCombBidirectionalContext", function()
+    vim.api.nvim_create_user_command("SpaghettiCombv2BidirectionalContext", function()
         local context = require("spaghetti-comb-v1.navigation").get_bidirectional_context(5, 5)
         local lines = { "Navigation Context:" }
 
@@ -311,7 +311,7 @@ local function setup_commands()
         vim.notify(table.concat(lines, "\n"))
     end, { desc = "Show bidirectional navigation context" })
 
-    vim.api.nvim_create_user_command("SpaghettiCombAutoBackup", function()
+    vim.api.nvim_create_user_command("SpaghettiCombv2AutoBackup", function()
         local success = require("spaghetti-comb-v1.persistence.storage").auto_backup_session()
         if success then
             require("spaghetti-comb-v1.utils").info("Auto-backup session created")
@@ -321,72 +321,72 @@ local function setup_commands()
     end, { desc = "Create automatic backup session" })
 
     vim.api.nvim_create_user_command(
-        "SpaghettiCombCleanOldSessions",
+        "SpaghettiCombv2CleanOldSessions",
         function() require("spaghetti-comb-v1.persistence.storage").clean_old_auto_sessions() end,
         { desc = "Clean old auto-backup sessions" }
     )
 end
 
 local function setup_keymaps()
-    local keymaps = SpaghettiComb.config.keymaps
+    local keymaps = SpaghettiCombv2.config.keymaps
 
-    vim.keymap.set("n", keymaps.show_relations, "<cmd>SpaghettiCombShow<cr>", { desc = "Show Relations panel" })
-    vim.keymap.set("n", keymaps.find_references, "<cmd>SpaghettiCombReferences<cr>", { desc = "Find references" })
-    vim.keymap.set("n", keymaps.go_definition, "<cmd>SpaghettiCombDefinition<cr>", { desc = "Go to definition" })
-    vim.keymap.set("n", keymaps.navigate_next, "<cmd>SpaghettiCombNext<cr>", { desc = "Navigate forward in stack" })
-    vim.keymap.set("n", keymaps.navigate_prev, "<cmd>SpaghettiCombPrev<cr>", { desc = "Navigate backward in stack" })
-    vim.keymap.set("n", keymaps.save_session, "<cmd>SpaghettiCombSave<cr>", { desc = "Save session" })
-    vim.keymap.set("n", keymaps.load_session, "<cmd>SpaghettiCombLoad<cr>", { desc = "Load session" })
+    vim.keymap.set("n", keymaps.show_relations, "<cmd>SpaghettiCombv2Show<cr>", { desc = "Show Relations panel" })
+    vim.keymap.set("n", keymaps.find_references, "<cmd>SpaghettiCombv2References<cr>", { desc = "Find references" })
+    vim.keymap.set("n", keymaps.go_definition, "<cmd>SpaghettiCombv2Definition<cr>", { desc = "Go to definition" })
+    vim.keymap.set("n", keymaps.navigate_next, "<cmd>SpaghettiCombv2Next<cr>", { desc = "Navigate forward in stack" })
+    vim.keymap.set("n", keymaps.navigate_prev, "<cmd>SpaghettiCombv2Prev<cr>", { desc = "Navigate backward in stack" })
+    vim.keymap.set("n", keymaps.save_session, "<cmd>SpaghettiCombv2Save<cr>", { desc = "Save session" })
+    vim.keymap.set("n", keymaps.load_session, "<cmd>SpaghettiCombv2Load<cr>", { desc = "Load session" })
     vim.keymap.set(
         "n",
         keymaps.call_hierarchy_incoming,
-        "<cmd>SpaghettiCombCallHierarchyIncoming<cr>",
+        "<cmd>SpaghettiCombv2CallHierarchyIncoming<cr>",
         { desc = "Show incoming calls" }
     )
     vim.keymap.set(
         "n",
         keymaps.call_hierarchy_outgoing,
-        "<cmd>SpaghettiCombCallHierarchyOutgoing<cr>",
+        "<cmd>SpaghettiCombv2CallHierarchyOutgoing<cr>",
         { desc = "Show outgoing calls" }
     )
     vim.keymap.set(
         "n",
         keymaps.show_navigation_history,
-        "<cmd>SpaghettiCombNavigationHistory<cr>",
+        "<cmd>SpaghettiCombv2NavigationHistory<cr>",
         { desc = "Show navigation history" }
     )
     vim.keymap.set(
         "n",
         keymaps.bookmark_current,
-        "<cmd>SpaghettiCombBookmarkCurrent<cr>",
+        "<cmd>SpaghettiCombv2BookmarkCurrent<cr>",
         { desc = "Bookmark current" }
     )
     vim.keymap.set(
         "n",
         keymaps.bidirectional_context,
-        "<cmd>SpaghettiCombBidirectionalContext<cr>",
+        "<cmd>SpaghettiCombv2BidirectionalContext<cr>",
         { desc = "Show bidirectional navigation context" }
     )
     vim.keymap.set(
         "n",
         keymaps.auto_backup,
-        "<cmd>SpaghettiCombAutoBackup<cr>",
+        "<cmd>SpaghettiCombv2AutoBackup<cr>",
         { desc = "Create auto-backup session" }
     )
     vim.keymap.set(
         "n",
         keymaps.clean_sessions,
-        "<cmd>SpaghettiCombCleanOldSessions<cr>",
+        "<cmd>SpaghettiCombv2CleanOldSessions<cr>",
         { desc = "Clean old sessions" }
     )
 end
 
---- Setup SpaghettiComb plugin with user configuration
+--- Setup SpaghettiCombv2 plugin with user configuration
 ---
 --- This function initializes the plugin with the provided configuration,
 --- sets up user commands and key mappings, and initializes the navigation system.
 ---
----@param user_config? SpaghettiCombConfig User configuration (optional)
+---@param user_config? SpaghettiCombv2Config User configuration (optional)
 ---
 ---@usage >lua
 ---   require('spaghetti-comb-v1').setup()
@@ -402,25 +402,25 @@ end
 ---   })
 --- <
 function M.setup(user_config)
-    SpaghettiComb.config = merge_config(user_config)
+    SpaghettiCombv2.config = merge_config(user_config)
 
     -- Configure logging based on user settings
-    if SpaghettiComb.config.logging then
-        require("spaghetti-comb-v1.utils").set_log_config(SpaghettiComb.config.logging)
+    if SpaghettiCombv2.config.logging then
+        require("spaghetti-comb-v1.utils").set_log_config(SpaghettiCombv2.config.logging)
     end
 
     setup_commands()
     setup_keymaps()
 
-    require("spaghetti-comb-v1.navigation").init(SpaghettiComb.state.navigation_stack)
+    require("spaghetti-comb-v1.navigation").init(SpaghettiCombv2.state.navigation_stack)
 end
 
 --- Get current plugin configuration
----@return SpaghettiCombConfig Current configuration
-function M.get_config() return SpaghettiComb.config end
+---@return SpaghettiCombv2Config Current configuration
+function M.get_config() return SpaghettiCombv2.config end
 
 --- Get current plugin state
----@return SpaghettiCombState Current plugin state
-function M.get_state() return SpaghettiComb.state end
+---@return SpaghettiCombv2State Current plugin state
+function M.get_state() return SpaghettiCombv2.state end
 
 return M

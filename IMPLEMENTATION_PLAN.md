@@ -1,8 +1,8 @@
-# Spaghetti Comb - Neovim Plugin Implementation Plan
+# Spaghetti Comb v2 - Neovim Plugin Implementation Plan
 
 ## Overview
 
-**Spaghetti Comb** is a Neovim plugin designed to help developers untangle complex codebases by visualizing code relationships and dependencies. The name is a playful reference to "spaghetti code" - this plugin serves as a "comb" to help untangle and understand intricate code relationships.
+**Spaghetti Comb v2** is a Neovim plugin designed to help developers untangle complex codebases by visualizing code relationships and dependencies. The name is a playful reference to "spaghetti code" - this plugin serves as a "comb" to help untangle and understand intricate code relationships.
 
 ### User Story
 
@@ -42,7 +42,7 @@ lua/
 ### Global Plugin Object
 
 ```lua
-local SpaghettiComb = {
+local SpaghettiCombv2 = {
   config = {},
   state = {
     navigation_stack = {},
@@ -56,14 +56,14 @@ local SpaghettiComb = {
 
 ### Primary Commands
 
-- `:SpaghettiCombShow` - Show Relations panel for symbol under cursor
-- `:SpaghettiCombReferences` - Show where current function is used
-- `:SpaghettiCombDefinition` - Show where symbol is defined
-- `:SpaghettiCombNext` - Navigate forward in exploration stack
-- `:SpaghettiCombPrev` - Navigate backward in exploration stack
-- `:SpaghettiCombToggle` - Toggle Relations panel visibility
-- `:SpaghettiCombSave` - Save current exploration session
-- `:SpaghettiCombLoad` - Load saved exploration session
+- `:SpaghettiCombv2Show` - Show Relations panel for symbol under cursor
+- `:SpaghettiCombv2References` - Show where current function is used
+- `:SpaghettiCombv2Definition` - Show where symbol is defined
+- `:SpaghettiCombv2Next` - Navigate forward in exploration stack
+- `:SpaghettiCombv2Prev` - Navigate backward in exploration stack
+- `:SpaghettiCombv2Toggle` - Toggle Relations panel visibility
+- `:SpaghettiCombv2Save` - Save current exploration session
+- `:SpaghettiCombv2Load` - Load saved exploration session
 
 ### Key Mappings (Default)
 
@@ -508,4 +508,4 @@ require('spaghetti-comb-v1').setup({
 - Screenshot testing for UI validation
 - Performance benchmarking for optimization validation
 
-This implementation plan provides a comprehensive roadmap for building Spaghetti Comb into a powerful code exploration tool that helps developers untangle complex codebases through intelligent relationship visualization and navigation.
+This implementation plan provides a comprehensive roadmap for building Spaghetti Comb v2 into a powerful code exploration tool that helps developers untangle complex codebases through intelligent relationship visualization and navigation.

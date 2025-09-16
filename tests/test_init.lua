@@ -7,7 +7,7 @@ local T = new_set({
     hooks = {
         pre_case = function()
             child.restart({ "-u", "scripts/minimal_init.lua" })
-            child.lua([[SpaghettiComb = require('spaghetti-comb-v1')]])
+            child.lua([[SpaghettiCombv2 = require('spaghetti-comb-v1')]])
         end,
         post_once = child.stop,
     },
@@ -16,8 +16,8 @@ local T = new_set({
 T["setup()"] = new_set()
 
 T["setup()"]["works with default config"] = function()
-    child.lua([[SpaghettiComb.setup()]])
-    local config = child.lua_get([[SpaghettiComb.get_config()]])
+    child.lua([[SpaghettiCombv2.setup()]])
+    local config = child.lua_get([[SpaghettiCombv2.get_config()]])
 
     expect.no_error(function()
         assert(config ~= nil, "Config should not be nil")
@@ -27,28 +27,28 @@ T["setup()"]["works with default config"] = function()
 end
 
 T["setup()"]["merges user config"] = function()
-    child.lua([[SpaghettiComb.setup({ relations = { focus_height = 40 } })]])
-    local config = child.lua_get([[SpaghettiComb.get_config()]])
+    child.lua([[SpaghettiCombv2.setup({ relations = { focus_height = 40 } })]])
+    local config = child.lua_get([[SpaghettiCombv2.get_config()]])
 
     eq(config.relations.focus_height, 40)
     eq(config.relations.height, 15) -- default should be preserved
 end
 
 T["setup()"]["creates user commands"] = function()
-    child.lua([[SpaghettiComb.setup()]])
+    child.lua([[SpaghettiCombv2.setup()]])
 
     -- Check that commands are created
     local commands = child.lua_get([[vim.tbl_keys(vim.api.nvim_get_commands({}))]])
 
     local expected_commands = {
-        "SpaghettiCombShow",
-        "SpaghettiCombReferences",
-        "SpaghettiCombDefinition",
-        "SpaghettiCombNext",
-        "SpaghettiCombPrev",
-        "SpaghettiCombToggle",
-        "SpaghettiCombSave",
-        "SpaghettiCombLoad",
+        "SpaghettiCombv2Show",
+        "SpaghettiCombv2References",
+        "SpaghettiCombv2Definition",
+        "SpaghettiCombv2Next",
+        "SpaghettiCombv2Prev",
+        "SpaghettiCombv2Toggle",
+        "SpaghettiCombv2Save",
+        "SpaghettiCombv2Load",
     }
 
     for _, cmd in ipairs(expected_commands) do
@@ -59,8 +59,8 @@ T["setup()"]["creates user commands"] = function()
 end
 
 T["get_state()"] = function()
-    child.lua([[SpaghettiComb.setup()]])
-    local state = child.lua_get([[SpaghettiComb.get_state()]])
+    child.lua([[SpaghettiCombv2.setup()]])
+    local state = child.lua_get([[SpaghettiCombv2.get_state()]])
 
     expect.no_error(function()
         assert(state ~= nil, "State should not be nil")

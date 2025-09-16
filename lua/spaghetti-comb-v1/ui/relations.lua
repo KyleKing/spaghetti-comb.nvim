@@ -29,7 +29,7 @@ local function create_relations_buffer()
     vim.api.nvim_buf_set_option(buf_id, "swapfile", false)
     vim.api.nvim_buf_set_option(buf_id, "bufhidden", "wipe")
     vim.api.nvim_buf_set_option(buf_id, "filetype", "spaghetti-comb-v1")
-    vim.api.nvim_buf_set_name(buf_id, "SpaghettiComb Relations")
+    vim.api.nvim_buf_set_name(buf_id, "SpaghettiCombv2 Relations")
 
     return buf_id
 end
@@ -320,7 +320,7 @@ local function render_relations_content(data)
     if #lines <= 2 then
         table.insert(lines, "No relations found")
         table.insert(lines, "")
-        table.insert(lines, "Try positioning cursor on a symbol and running :SpaghettiCombShow")
+        table.insert(lines, "Try positioning cursor on a symbol and running :SpaghettiCombv2Show")
         table.insert(lines, "")
         table.insert(lines, "Keybindings:")
         table.insert(lines, "  <Enter> - Navigate to location")
@@ -586,7 +586,7 @@ function M.enter_focus_mode()
     vim.api.nvim_buf_set_option(preview_buf_id, "swapfile", false)
     vim.api.nvim_buf_set_option(preview_buf_id, "bufhidden", "wipe")
     vim.api.nvim_buf_set_option(preview_buf_id, "filetype", "spaghetti-comb-v1-preview")
-    vim.api.nvim_buf_set_name(preview_buf_id, "SpaghettiComb Preview")
+    vim.api.nvim_buf_set_name(preview_buf_id, "SpaghettiCombv2 Preview")
 
     vim.api.nvim_win_set_option(preview_win_id, "wrap", false)
     vim.api.nvim_win_set_option(preview_win_id, "number", true)
