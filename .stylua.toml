@@ -1,0 +1,5 @@
+# Options: https://github.com/JohnnyMorganz/StyLua?tab=readme-ov-file#options
+# Styleguide: https://github.com/luarocks/lua-style-guide
+
+collapse_simple_statement = "Always"
+indent_type = "Spaces"

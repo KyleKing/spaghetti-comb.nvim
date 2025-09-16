@@ -1,0 +1,63 @@
+# From: https://github.com/jose-elias-alvarez/null-ls.nvim/blob/0010ea927ab7c09ef0ce9bf28c2b573fc302f5a7/vim.toml
+
+[[after_each.args]]
+type = "function"
+
+[[assert.equals.args]]
+type = "any"
+
+[[assert.equals.args]]
+type = "any"
+
+[[assert.equals.args]]
+required = false
+type = "any"
+
+[[assert.falsy.args]]
+type = "any"
+
+[assert.has_error]
+any = true
+
+[assert.is_not]
+any = true
+
+[assert.matches]
+any = true
+
+[[assert.same.args]]
+type = "any"
+
+[[assert.same.args]]
+type = "any"
+
+[[assert.spy.args]]
+type = "any"
+
+[[assert.stub.args]]
+type = "any"
+
+[[assert.truthy.args]]
+type = "any"
+
+[[before_each.args]]
+type = "function"
+
+[[describe.args]]
+type = "string"
+
+[[describe.args]]
+type = "function"
+
+[[it.args]]
+type = "string"
+
+[[it.args]]
+type = "function"
+
+[selene]
+base = "lua51"
+name = "vim"
+
+[vim]
+any = true
