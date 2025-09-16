@@ -2,19 +2,19 @@
 
 ## Introduction
 
-This plugin extends Neovim's built-in navigation capabilities with a visual, non-obtrusive breadcrumb system that helps developers navigate large codebases efficiently. The system will track navigation history, show branching paths, and provide quick access to previously visited locations while maintaining simplicity and performance. The implementation prioritizes extending Neovim's existing functionality over adding external dependencies.
+The spaghetti-comb-v2 plugin is designed to help developers untangle complex codebases by visualizing code relationships and dependencies. Building upon the foundation of spaghetti-comb-v1, this plugin provides enhanced code exploration capabilities through a split-window interface that displays relationships between code elements. The system tracks navigation history, analyzes code coupling, and provides intelligent navigation assistance while maintaining high performance and seamless Neovim integration.
 
 ## Requirements
 
 ### Requirement 1
 
-**User Story:** As a developer working in a large codebase, I want to see a visual trail of my navigation history, so that I can understand how I arrived at my current location and easily jump around my exploration path.
+**User Story:** As a developer exploring a complex codebase, I want to see code relationships and dependencies in a dedicated panel, so that I can understand the structure and connections within the code.
 
 #### Acceptance Criteria
 
-1. WHEN I navigate between files or functions THEN the system SHALL record each jump in a navigation history
-2. WHEN I view the navigation breadcrumbs THEN the system SHALL display the sequence of locations that led to my current position
-3. WHEN I have multiple branching navigation paths THEN the system SHALL visually distinguish between different exploration branches using unicode box-drawing characters
+1. WHEN I open the relations panel THEN the system SHALL display code relationships for the current symbol/function
+2. WHEN I navigate to different symbols THEN the system SHALL update the relations panel with relevant references, definitions, and dependencies
+3. WHEN I have multiple branching navigation paths THEN the system SHALL visually distinguish between different exploration branches
 4. WHEN the navigation history exceeds a reasonable limit THEN the system SHALL automatically prune older entries while preserving important branch points
 5. WHEN jumping around within the same file THEN the system SHOULD prune inconsequential jumps
 6. WHEN the system has kept the jump history for more than a configurable amount of time (default to 30m) THEN the system SHALL prune old history
@@ -24,42 +24,44 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 
 ### Requirement 2
 
-**User Story:** As a developer exploring code relationships, I want to quickly jump to function definitions, implementations, and usage sites, so that I can understand code flow without losing track of where I started.
+**User Story:** As a developer exploring code relationships, I want to see comprehensive code analysis including definitions, references, implementations, and coupling metrics, so that I can understand the full context of code elements.
 
 #### Acceptance Criteria
 
 1. WHEN I trigger "go to definition" THEN the system SHALL extend nvim's built-in LSP functionality and record the jump in navigation history
-2. WHEN I trigger "find references" THEN the system SHALL integrate with nvim's built-in reference finding and allow quick navigation between results
-3. WHEN I jump to a function implementation THEN the system SHALL record both the source and destination in the breadcrumb trail
-4. WHEN I want to see all callers of a function THEN the system SHALL leverage nvim's LSP capabilities to show usage locations and small previews
+2. WHEN I trigger "find references" THEN the system SHALL integrate with nvim's built-in reference finding and display results in the relations panel
+3. WHEN I jump to a function implementation THEN the system SHALL record both the source and destination in the navigation trail
+4. WHEN I want to see all callers of a function THEN the system SHALL leverage nvim's LSP capabilities to show usage locations with coupling analysis
+5. WHEN I view code relationships THEN the system SHALL display coupling metrics and dependency information
+6. WHEN I analyze code structure THEN the system SHALL provide insights about code complexity and relationships
 
 ### Requirement 3
 
-**User Story:** As a developer who frequently backtracks during code exploration, I want intuitive controls to navigate backward and forward through my history, so that I can efficiently retrace my steps without manual file switching.
+**User Story:** As a developer exploring complex codebases, I want an efficient split-window interface to view code relationships with focus mode for detailed analysis.
 
 #### Acceptance Criteria
 
 1. WHEN I want to go back to a previous location THEN the system SHALL provide keyboard shortcuts that extend nvim's built-in jumplist functionality
-2. WHEN I navigate backward through history THEN the system SHALL update the visual breadcrumbs to reflect my current position in the trail
+2. WHEN I navigate backward through history THEN the system SHALL update the relations panel to reflect my current position
 3. WHEN I want to jump forward after going backward THEN the system SHALL allow forward navigation through previously visited locations
-4. WHEN I want to jump to any point in my history THEN the system SHALL provide a quick selection interface using `mini.pick`, if installed, and possible to extend for Telescope or Snacks picker in the future
-5. WHEN `mini.pick` is not installed THEN the system SHALL turn off the picker feature
-6. WHEN I want to view the complete branch history THEN the system SHALL display a floating window with a visual tree on the left using unicode box-drawing characters and a preview pane on the right
-7. WHEN viewing the branch history tree THEN the system SHALL support native vim motions for navigation and show branches sorted by most to least recent
-8. WHEN I want to manage bookmarks THEN the picker SHALL have a bookmark management mode with fuzzy filtering by filename or code content, sorted by frecency
-9. WHEN I want to navigate quickly THEN the picker SHALL have a navigation mode with the same filtering options but sorted by recency
+4. WHEN I want to jump to any point in my history THEN the system SHALL provide a quick selection interface using `mini.pick`, if installed
+5. WHEN `mini.pick` is not installed THEN the system SHALL provide fallback navigation methods
+6. WHEN I want to view detailed code relationships THEN the system SHALL provide a focus mode that expands the relations window and shows side-by-side code preview
+7. WHEN in focus mode THEN the system SHALL display the current code with highlighted relationships and navigation context
+8. WHEN I want to manage bookmarks THEN the picker SHALL have a bookmark management mode with fuzzy filtering by filename or code content
+9. WHEN I want to navigate quickly THEN the picker SHALL have a navigation mode with filtering options sorted by recency
 
 ### Requirement 4
 
-**User Story:** As a developer who values screen real estate, I want the navigation breadcrumbs to be visually subtle and non-intrusive, so that they enhance my workflow without cluttering my editing environment.
+**User Story:** As a developer who values screen real estate, I want the relations panel to be efficient and non-intrusive while providing comprehensive code analysis.
 
 #### Acceptance Criteria
 
-1. WHEN the breadcrumbs are displayed THEN they SHALL occupy minimal screen space and use subtle visual styling
-2. WHEN I want to view breadcrumbs THEN the system SHALL only show them when I press the designated hotkey
-3. WHEN breadcrumbs are shown THEN they SHALL collapse information for less recent locations unless focused, similar to mini.files behavior
-4. WHEN I focus on a breadcrumb item THEN the system SHALL expand that item and collapse all but the immediate neighboring breadcrumbs
-5. WHEN breadcrumbs are not actively being used THEN they SHALL remain hidden to preserve screen real estate
+1. WHEN the relations panel is displayed THEN it SHALL use a split window layout that efficiently uses screen space
+2. WHEN I want to view code relationships THEN the system SHALL provide toggle commands to show/hide the relations panel
+3. WHEN in normal mode THEN the relations panel SHALL show condensed relationship information
+4. WHEN I enter focus mode THEN the system SHALL expand the panel and show detailed analysis with side-by-side preview
+5. WHEN the relations panel is not needed THEN it SHALL be easily hidden to preserve screen real estate
 
 ### Requirement 5
 
@@ -150,3 +152,15 @@ This plugin extends Neovim's built-in navigation capabilities with a visual, non
 2. WHEN I am not actively exploring THEN the statusline SHALL show an idle branching indicator
 3. WHEN determining active exploration THEN the system SHALL use a simple algorithm based primarily on time between jumps to differentiate exploration from idle states
 4. WHEN displaying statusline information THEN the system SHALL ensure the display is minimal and does not interfere with existing statusline content
+
+### Requirement 13
+
+**User Story:** As a developer analyzing code complexity, I want to see coupling metrics and dependency analysis, so that I can identify tightly coupled code that may need refactoring.
+
+#### Acceptance Criteria
+
+1. WHEN I view code relationships THEN the system SHALL calculate and display coupling metrics between code elements
+2. WHEN I analyze a function or class THEN the system SHALL show its dependencies and dependents
+3. WHEN I explore code structure THEN the system SHALL highlight highly coupled components
+4. WHEN I want to understand code complexity THEN the system SHALL provide metrics about relationship density and coupling strength
+5. WHEN I identify tightly coupled code THEN the system SHALL provide visual indicators and suggestions for potential refactoring
