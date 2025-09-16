@@ -729,7 +729,9 @@ function M.analyze_current_symbol()
 
     local function check_completion()
         completed_requests = completed_requests + 1
-        if completed_requests >= total_requests then require("spaghetti-comb-v1.ui.relations").show_relations(all_data) end
+        if completed_requests >= total_requests then
+            require("spaghetti-comb-v1.ui.relations").show_relations(all_data)
+        end
     end
 
     M.find_references_with_fallback(symbol_info, function(processed)

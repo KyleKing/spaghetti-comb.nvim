@@ -1,30 +1,28 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# AGENTS.md
 
 ## Development Commands
 
 ### Testing
 
-- `make test` - Run all tests using mini.test framework documented in `mini-test.md`
-- `make test_file FILE=<file>` - Run specific test file (e.g., `make test_file FILE=tests/test_navigation.lua`)
+- `mise run test` - Run all tests using mini.test framework documented in `mini-test.md`
+- `mise run test-file --file=<file>` - Run specific test file (e.g., `mise run test-file --file=tests/test_navigation.lua`)
 
 ### Code Quality
 
-- `make lint` - Check code formatting using stylua
-- `make format` - Format code using stylua (fix mode)
-- `make typecheck` - Run selene type checking
-- `make luals` - Run lua-language-server type checking (not yet implemented)
+- `mise run lint` - Check code formatting using stylua
+- `mise run format` - Format code using stylua (fix mode)
+- `mise run typecheck` - Run selene type checking
+- `mise run luals` - Run lua-language-server type checking (not yet implemented)
 - `pre-commit run --all-files` - general formatting
 
 ### Documentation
 
-- `make docs` - Generate help tags for vim documentation
-- `make docs-auto` - Attempt automatic documentation generation (experimental)
+- `mise run docs` - Generate help tags for vim documentation
+- `mise run docs-auto` - Attempt automatic documentation generation (experimental)
 
 ### Setup
 
-- `make deps` - Install mini.nvim dependency for tests and documentation
+- `mise run deps-mini-nvim` - Install mini.nvim dependency for tests and documentation
 
 ## Architecture Overview
 

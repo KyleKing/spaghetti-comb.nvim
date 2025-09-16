@@ -4,9 +4,9 @@
 ---
 --- ==============================================================================
 ---
---- Spaghetti Comb is a Neovim plugin designed to help developers untangle 
---- complex codebases by visualizing code relationships and dependencies. The name 
---- is a playful reference to "spaghetti code" - this plugin serves as a "comb" 
+--- Spaghetti Comb is a Neovim plugin designed to help developers untangle
+--- complex codebases by visualizing code relationships and dependencies. The name
+--- is a playful reference to "spaghetti code" - this plugin serves as a "comb"
 --- to help untangle and understand intricate code relationships.
 ---
 --- Key Features:
@@ -52,7 +52,7 @@
 --- Default key mappings (can be customized in setup):
 --- - `<leader>sr` - Show Relations panel
 --- - `<leader>sf` - Find references
---- - `<leader>sd` - Go to definition  
+--- - `<leader>sd` - Go to definition
 --- - `<leader>sn` - Navigate forward
 --- - `<leader>sp` - Navigate backward
 --- - `<leader>ss` - Save session
@@ -99,7 +99,7 @@ local default_config = {
     --- Relations panel configuration
     ---@class SpaghettiCombRelationsConfig
     ---@field height number Normal split height in lines (default: 15)
-    ---@field focus_height number Expanded height in focus mode (default: 30) 
+    ---@field focus_height number Expanded height in focus mode (default: 30)
     ---@field position string Split position: 'bottom' (default: 'bottom')
     ---@field auto_preview boolean Auto-update preview in focus mode (default: true)
     ---@field show_coupling boolean Show coupling metrics [C:0.7] (default: true)
@@ -192,13 +192,17 @@ local function setup_commands()
 
     vim.api.nvim_create_user_command(
         "SpaghettiCombSave",
-        function(opts) require("spaghetti-comb-v1.persistence.storage").save_session(opts.args ~= "" and opts.args or nil) end,
+        function(opts)
+            require("spaghetti-comb-v1.persistence.storage").save_session(opts.args ~= "" and opts.args or nil)
+        end,
         { desc = "Save current exploration session", nargs = "?" }
     )
 
     vim.api.nvim_create_user_command(
         "SpaghettiCombLoad",
-        function(opts) require("spaghetti-comb-v1.persistence.storage").load_session(opts.args ~= "" and opts.args or nil) end,
+        function(opts)
+            require("spaghetti-comb-v1.persistence.storage").load_session(opts.args ~= "" and opts.args or nil)
+        end,
         { desc = "Load saved exploration session", nargs = "?" }
     )
 

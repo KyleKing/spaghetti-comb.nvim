@@ -1,0 +1,62 @@
+[tools]
+lua = "5.4"
+stylua = "latest"
+"cargo:selene" = "latest"
+
+[tasks."deps-mini-nvim"]
+description = "Download 'mini.nvim' to use its 'mini.test' testing module"
+run = '''
+DIRECTORY="deps/mini.nvim"
+if [ ! -d "$DIRECTORY" ]; then
+    mkdir -p "$DIRECTORY"
+    git clone --filter=blob:none https://github.com/echasnovski/mini.nvim "$DIRECTORY"
+fi
+'''
+sources = ["deps/mini.nvim"]
+
+[tasks.test]
+depends = ["deps-mini-nvim"]
+description = "Run all test files"
+run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua MiniTest.run()\""
+
+[tasks.test-file]
+depends = ["deps-mini-nvim"]
+description = "Run test from specified file"
+run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua MiniTest.run_file('{{flag(name='file')}}')\""
+usage = '''
+flag "-f --file"
+'''
+
+[tasks.lint]
+description = "Format code using stylua (check mode)"
+run = "stylua tests/ scripts/ plugin/ lua/ --check"
+
+[tasks.format]
+description = "Format code using stylua (fix mode)"
+run = "stylua tests/ scripts/ plugin/ lua/"
+
+[tasks.typecheck]
+description = "Check for errors with selene"
+run = "selene tests/ scripts/ plugin/ lua/"
+
+[tasks.luals]
+description = "Run lua-language-server type checking"
+run = "echo 'lua-language-server type checking not implemented yet'"
+
+[tasks.docs]
+depends = ["deps-mini-nvim"]
+description = "Generate plugin documentation using mini.doc"
+run = [
+  "echo 'Documentation is currently maintained manually in doc/spaghetti-comb-v1.txt'",
+  "echo 'Generating help tags...'",
+  "nvim --headless -c 'helptags doc/' -c 'qa!'",
+  "echo 'Help tags generated successfully! Use :help spaghetti-comb-v1.txt to view documentation'"
+]
+
+[tasks.docs-auto]
+depends = ["deps-mini-nvim"]
+description = "Attempt automatic documentation generation (experimental)"
+run = [
+  "echo 'Experimental: Generating documentation from code annotations...'",
+  "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c 'luafile scripts/gendoc.lua' -c 'qa!' || echo 'Auto-generation failed, using manual documentation'"
+]

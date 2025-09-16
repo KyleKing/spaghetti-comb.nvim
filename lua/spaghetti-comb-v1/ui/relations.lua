@@ -401,14 +401,14 @@ end
 
 function M.close_relations()
     local was_visible = split_state.is_visible
-    
+
     -- First set visibility to false to prevent autocommand callbacks
     split_state.is_visible = false
     split_state.is_focused = false
-    
+
     -- Clear navigation-related state immediately
     split_state.current_data = nil
-    
+
     -- Close preview window safely with pcall
     if split_state.preview_win_id then
         if vim.api.nvim_win_is_valid(split_state.preview_win_id) then
@@ -416,36 +416,32 @@ function M.close_relations()
         end
         split_state.preview_win_id = nil
     end
-    
+
     if split_state.preview_buf_id and vim.api.nvim_buf_is_valid(split_state.preview_buf_id) then
         pcall(vim.api.nvim_buf_delete, split_state.preview_buf_id, { force = true })
         split_state.preview_buf_id = nil
     end
-    
+
     -- Close relations window safely
     if split_state.relations_win_id then
         if vim.api.nvim_win_is_valid(split_state.relations_win_id) then
             local windows = vim.api.nvim_list_wins()
-            if #windows > 1 then
-                pcall(vim.api.nvim_win_close, split_state.relations_win_id, true)
-            end
+            if #windows > 1 then pcall(vim.api.nvim_win_close, split_state.relations_win_id, true) end
         end
         split_state.relations_win_id = nil
     end
-    
+
     if split_state.relations_buf_id and vim.api.nvim_buf_is_valid(split_state.relations_buf_id) then
         pcall(vim.api.nvim_buf_delete, split_state.relations_buf_id, { force = true })
         split_state.relations_buf_id = nil
     end
-    
+
     -- Ensure autocmds are cleaned up by restoring original window
     if split_state.original_win_id and vim.api.nvim_win_is_valid(split_state.original_win_id) then
         vim.api.nvim_set_current_win(split_state.original_win_id)
     end
-    
-    if was_visible then
-        utils.log_ui_change("Relations panel closed")
-    end
+
+    if was_visible then utils.log_ui_change("Relations panel closed") end
 end
 
 function M.toggle_relations()
