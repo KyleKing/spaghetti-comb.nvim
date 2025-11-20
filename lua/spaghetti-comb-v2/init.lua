@@ -34,6 +34,7 @@ function M.setup(opts)
     local preview = require("spaghetti-comb-v2.ui.preview")
     local floating_tree = require("spaghetti-comb-v2.ui.floating_tree")
     local picker = require("spaghetti-comb-v2.ui.picker")
+    local statusline = require("spaghetti-comb-v2.ui.statusline")
 
     -- Setup debug logging first
     debug_utils.setup(state.config.debug)
@@ -51,6 +52,7 @@ function M.setup(opts)
     breadcrumbs.setup(state.config)
     floating_tree.setup(state.config)
     picker.setup(state.config)
+    statusline.setup(state.config)
 
     state.initialized = true
 end
