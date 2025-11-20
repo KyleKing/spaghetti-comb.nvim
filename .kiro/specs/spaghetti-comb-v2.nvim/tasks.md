@@ -68,64 +68,64 @@
     - Write frequent location management and cleanup
     - _Requirements: 10.1, 10.3_
 
-- [ ] 6. Create hotkey-triggered breadcrumb system
-  - [ ] 6.1 Implement hotkey-only breadcrumb display
+- [x] 6. Create hotkey-triggered breadcrumb system
+  - [x] 6.1 Implement hotkey-only breadcrumb display
     - Write breadcrumb display logic that only shows on hotkey press
     - Create visual styling with subtle, non-intrusive appearance
     - Implement breadcrumb positioning and layout management
     - _Requirements: 4.2, 4.5_
 
-  - [ ] 6.2 Add collapsible breadcrumb interface
+  - [x] 6.2 Add collapsible breadcrumb interface
     - Implement mini.files-like collapse behavior for unfocused items
     - Create focus management that expands selected item and immediate neighbors
     - Write state management for breadcrumb focus and collapse states
     - _Requirements: 4.3, 4.4_
 
-  - [ ] 6.3 Create visual distinction for entry types
+  - [x] 6.3 Create visual distinction for entry types
     - Implement different visual styling for bookmarked locations
     - Add visual indicators for frequent locations
     - Create branch point visualization in breadcrumb trail
     - Show original vs current line numbers for recovered locations
     - _Requirements: 1.3, 1.9, 10.3_
 
-- [ ] 7. Build floating tree window with unicode visualization
-  - [ ] 7.1 Create unicode tree rendering system
+- [x] 7. Build floating tree window with unicode visualization
+  - [x] 7.1 Create unicode tree rendering system
     - Write unicode box-drawing character tree renderer
     - Implement branch sorting by most to least recent
     - Create visual marking for bookmarked and frequent locations
     - Add subtle color scheme for improved readability
     - _Requirements: 3.6, 3.7_
 
-  - [ ] 7.2 Add floating window management
+  - [x] 7.2 Add floating window management
     - Create floating window with left tree panel and right preview panel
     - Implement vim motion support for tree navigation
     - Write window positioning and sizing logic
     - Add window show/hide/toggle functionality
     - _Requirements: 3.6, 3.7_
 
-  - [ ] 7.3 Implement tree preview pane
+  - [x] 7.3 Implement tree preview pane
     - Create code context extraction for selected tree nodes
     - Write preview window management with proper positioning
     - Implement syntax highlighting for preview content
     - Add real-time preview updates based on tree selection
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
-- [ ] 8. Implement dual-mode picker system
-  - [ ] 8.1 Create bookmark management picker mode
+- [x] 8. Implement dual-mode picker system
+  - [x] 8.1 Create bookmark management picker mode
     - Write bookmark picker with fuzzy filtering by filename and code content
     - Implement bookmark toggle functionality within picker
     - Create frecency-based sorting for bookmark management
     - Add preview support for bookmark entries
     - _Requirements: 3.8, 10.4_
 
-  - [ ] 8.2 Create navigation picker mode
+  - [x] 8.2 Create navigation picker mode
     - Write navigation history picker with same filtering capabilities
     - Implement recency-based sorting for quick navigation
     - Create mode switching between bookmark and navigation modes
     - Add jump-to-location functionality from picker
     - _Requirements: 3.9_
 
-  - [ ] 8.3 Add fallback picker functionality
+  - [x] 8.3 Add fallback picker functionality
     - Implement graceful fallback when mini.pick is not installed
     - Create basic selection interface using Neovim's built-in functionality
     - Write feature detection and conditional picker loading
