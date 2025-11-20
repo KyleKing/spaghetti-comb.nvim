@@ -31,6 +31,9 @@ function M.setup(opts)
 
     -- UI components
     local breadcrumbs = require("spaghetti-comb-v2.ui.breadcrumbs")
+    local preview = require("spaghetti-comb-v2.ui.preview")
+    local floating_tree = require("spaghetti-comb-v2.ui.floating_tree")
+    local picker = require("spaghetti-comb-v2.ui.picker")
 
     -- Setup debug logging first
     debug_utils.setup(state.config.debug)
@@ -44,7 +47,10 @@ function M.setup(opts)
     lsp_integration.setup(state.config)
 
     -- Setup UI components
+    preview.setup(state.config)
     breadcrumbs.setup(state.config)
+    floating_tree.setup(state.config)
+    picker.setup(state.config)
 
     state.initialized = true
 end
