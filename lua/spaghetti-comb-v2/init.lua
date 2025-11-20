@@ -29,6 +29,9 @@ function M.setup(opts)
     local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
     local debug_utils = require("spaghetti-comb-v2.utils.debug")
 
+    -- UI components
+    local breadcrumbs = require("spaghetti-comb-v2.ui.breadcrumbs")
+
     -- Setup debug logging first
     debug_utils.setup(state.config.debug)
 
@@ -39,6 +42,9 @@ function M.setup(opts)
     events.setup(state.config)
     jumplist.setup(state.config)
     lsp_integration.setup(state.config)
+
+    -- Setup UI components
+    breadcrumbs.setup(state.config)
 
     state.initialized = true
 end
