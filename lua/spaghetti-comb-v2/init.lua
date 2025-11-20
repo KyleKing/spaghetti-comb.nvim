@@ -22,6 +22,7 @@ function M.setup(opts)
 
     -- Initialize core components
     local history_manager = require("spaghetti-comb-v2.history.manager")
+    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
     local commands = require("spaghetti-comb-v2.navigation.commands")
     local events = require("spaghetti-comb-v2.navigation.events")
     local jumplist = require("spaghetti-comb-v2.navigation.jumplist")
@@ -33,6 +34,7 @@ function M.setup(opts)
 
     -- Setup components with config
     history_manager.setup(state.config)
+    bookmarks.setup(state.config)
     commands.setup(state.config)
     events.setup(state.config)
     jumplist.setup(state.config)

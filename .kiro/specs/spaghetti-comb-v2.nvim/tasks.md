@@ -55,14 +55,14 @@
     - Implement graceful degradation when LSP is unavailable
     - _Requirements: 2.4, 6.2_
 
-- [ ] 5. Build bookmark management system
-  - [ ] 5.1 Implement manual bookmark functionality
+- [x] 5. Build bookmark management system
+  - [x] 5.1 Implement manual bookmark functionality
     - Create bookmark toggle command for current cursor position
     - Write bookmark storage and retrieval with persistence support
     - Implement bookmark removal and clearing commands
     - _Requirements: 10.2, 10.5_
 
-  - [ ] 5.2 Add automatic frequent location detection
+  - [x] 5.2 Add automatic frequent location detection
     - Implement visit count tracking for navigation entries
     - Create automatic frequent location marking based on visit threshold
     - Write frequent location management and cleanup
