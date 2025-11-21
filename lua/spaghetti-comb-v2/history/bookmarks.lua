@@ -56,8 +56,8 @@ function M.toggle_bookmark(location)
     if not state.initialized then return false, "Bookmark manager not initialized" end
     if not location or not location.file_path then return false, "Invalid location" end
 
-    -- Auto-detect project if not set
-    local project_root = project_utils.detect_project_root(location.file_path)
+    -- Auto-detect project if not set, fallback to current project context
+    local project_root = project_utils.detect_project_root(location.file_path) or state.current_project
     if not project_root then return false, "Could not detect project root" end
 
     M.set_current_project(project_root)
@@ -93,8 +93,8 @@ function M.add_bookmark(location, manual)
 
     manual = manual ~= false -- Default to true
 
-    -- Auto-detect project if not set
-    local project_root = project_utils.detect_project_root(location.file_path)
+    -- Auto-detect project if not set, fallback to current project context
+    local project_root = project_utils.detect_project_root(location.file_path) or state.current_project
     if not project_root then return false, "Could not detect project root" end
 
     M.set_current_project(project_root)
@@ -129,8 +129,8 @@ function M.remove_bookmark(location)
     if not state.initialized then return false, "Bookmark manager not initialized" end
     if not location or not location.file_path then return false, "Invalid location" end
 
-    -- Auto-detect project if not set
-    local project_root = project_utils.detect_project_root(location.file_path)
+    -- Auto-detect project if not set, fallback to current project context
+    local project_root = project_utils.detect_project_root(location.file_path) or state.current_project
     if not project_root then return false, "Could not detect project root" end
 
     M.set_current_project(project_root)
@@ -190,7 +190,7 @@ function M.is_bookmarked(location)
     if not state.initialized then return false end
     if not location or not location.file_path then return false end
 
-    local project_root = project_utils.detect_project_root(location.file_path)
+    local project_root = project_utils.detect_project_root(location.file_path) or state.current_project
     if not project_root then return false end
 
     local bookmarks = state.bookmarks[project_root] or {}
@@ -216,8 +216,10 @@ end
 function M.update_frequent_locations()
     if not state.initialized then return false, "Bookmark manager not initialized" end
 
-    local threshold = state.config.bookmarks and state.config.bookmarks.frequent_threshold or 3
-    local auto_bookmark = state.config.bookmarks and state.config.bookmarks.auto_bookmark_frequent or true
+    local threshold = (state.config.bookmarks and state.config.bookmarks.frequent_threshold ~= nil)
+        and state.config.bookmarks.frequent_threshold or 3
+    local auto_bookmark = (state.config.bookmarks and state.config.bookmarks.auto_bookmark_frequent ~= nil)
+        and state.config.bookmarks.auto_bookmark_frequent or true
 
     if not auto_bookmark then return true, "Auto-bookmark disabled" end
 
@@ -252,7 +254,8 @@ end
 function M.get_frequent_locations()
     if not state.initialized then return {} end
 
-    local threshold = state.config.bookmarks and state.config.bookmarks.frequent_threshold or 3
+    local threshold = (state.config.bookmarks and state.config.bookmarks.frequent_threshold ~= nil)
+        and state.config.bookmarks.frequent_threshold or 3
     local frequent = {}
 
     for location_key, count in pairs(state.visit_counts) do
@@ -280,7 +283,8 @@ function M.is_frequent(location)
     if not state.initialized then return false end
     if not location or not location.file_path then return false end
 
-    local threshold = state.config.bookmarks and state.config.bookmarks.frequent_threshold or 3
+    local threshold = (state.config.bookmarks and state.config.bookmarks.frequent_threshold ~= nil)
+        and state.config.bookmarks.frequent_threshold or 3
     local location_key = get_location_key(location.file_path, location.position)
     local count = state.visit_counts[location_key] or 0
 

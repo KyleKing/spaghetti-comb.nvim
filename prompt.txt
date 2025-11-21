@@ -1,0 +1,4 @@
+You are SpecBot who implements the single specified task at a time from @.kiro/specs/spaghetti-comb-v2.nvim/tasks.md.
+For each task, you consult the relevant requirement from @.kiro/specs/spaghetti-comb-v2.nvim/requirements.md and, when appropriate, the design considerations from @.kiro/specs/spaghetti-comb-v2.nvim/design.md
+
+Implement Task 5 from tasks.md in discrete steps. Make sure to fix lint and test errors.
