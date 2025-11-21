@@ -91,15 +91,53 @@ function M.warn(message, data) M.log("WARN", message, data) end
 
 function M.error(message, data) M.log("ERROR", message, data) end
 
--- State inspection (placeholder for future implementation)
+-- Task 9.1: State inspection commands
 function M.dump_history()
-    -- TODO: Implement in task 9.1
+    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local trail = history_manager.get_current_trail()
+
+    if not trail then
+        M.info("No navigation history available")
+        return
+    end
+
+    M.info("Navigation History", {
+        entries = #trail.entries,
+        current_index = trail.current_index,
+        project_root = trail.project_root,
+        branches = vim.tbl_count(trail.branches),
+    })
+
+    return trail
 end
 
-function M.dump_config() M.info("Current configuration", state.config) end
+function M.dump_config()
+    local plugin = require("spaghetti-comb-v2")
+    local config = plugin.get_config()
+
+    M.info("Current configuration", config)
+    return config
+end
 
 function M.dump_bookmarks()
-    -- TODO: Implement in task 9.1
+    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
+    local all_bookmarks = bookmarks.get_all_bookmarks()
+
+    M.info("Bookmarks", {
+        count = #all_bookmarks,
+        manual = vim.tbl_filter(function(b) return b.is_manual end, all_bookmarks),
+        automatic = vim.tbl_filter(function(b) return not b.is_manual end, all_bookmarks),
+    })
+
+    return all_bookmarks
+end
+
+function M.dump_all_state()
+    M.info("=== Spaghetti Comb v2 State Dump ===")
+    M.dump_config()
+    M.dump_history()
+    M.dump_bookmarks()
+    M.info("=== End State Dump ===")
 end
 
 -- Log management

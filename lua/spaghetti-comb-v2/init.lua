@@ -22,21 +22,37 @@ function M.setup(opts)
 
     -- Initialize core components
     local history_manager = require("spaghetti-comb-v2.history.manager")
+    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
     local commands = require("spaghetti-comb-v2.navigation.commands")
     local events = require("spaghetti-comb-v2.navigation.events")
     local jumplist = require("spaghetti-comb-v2.navigation.jumplist")
     local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
     local debug_utils = require("spaghetti-comb-v2.utils.debug")
 
+    -- UI components
+    local breadcrumbs = require("spaghetti-comb-v2.ui.breadcrumbs")
+    local preview = require("spaghetti-comb-v2.ui.preview")
+    local floating_tree = require("spaghetti-comb-v2.ui.floating_tree")
+    local picker = require("spaghetti-comb-v2.ui.picker")
+    local statusline = require("spaghetti-comb-v2.ui.statusline")
+
     -- Setup debug logging first
     debug_utils.setup(state.config.debug)
 
     -- Setup components with config
     history_manager.setup(state.config)
+    bookmarks.setup(state.config)
     commands.setup(state.config)
     events.setup(state.config)
     jumplist.setup(state.config)
     lsp_integration.setup(state.config)
+
+    -- Setup UI components
+    preview.setup(state.config)
+    breadcrumbs.setup(state.config)
+    floating_tree.setup(state.config)
+    picker.setup(state.config)
+    statusline.setup(state.config)
 
     state.initialized = true
 end

@@ -8,6 +8,7 @@ function M.run_all()
     -- Collect all test sets
     local test_sets = {
         require("spaghetti-comb-v2.tests.history_spec"),
+        require("spaghetti-comb-v2.tests.bookmarks_spec"),
         require("spaghetti-comb-v2.tests.ui_spec"),
         require("spaghetti-comb-v2.tests.navigation_spec"),
         require("spaghetti-comb-v2.tests.integration_spec"),
@@ -48,6 +49,12 @@ end
 function M.run_lsp()
     local MiniTest = require("mini.test")
     local test_set = require("spaghetti-comb-v2.tests.lsp_spec")
+    MiniTest.run(test_set)
+end
+
+function M.run_bookmarks()
+    local MiniTest = require("mini.test")
+    local test_set = require("spaghetti-comb-v2.tests.bookmarks_spec")
     MiniTest.run(test_set)
 end
 
