@@ -55,6 +55,9 @@ end
 function M.toggle_bookmark(location)
     if not state.initialized then return false, "Bookmark manager not initialized" end
     if not location or not location.file_path then return false, "Invalid location" end
+    if not location.position or not location.position.line or not location.position.column then
+        return false, "Invalid position"
+    end
 
     -- Auto-detect project if not set, fallback to current project context
     local project_root = project_utils.detect_project_root(location.file_path) or state.current_project
