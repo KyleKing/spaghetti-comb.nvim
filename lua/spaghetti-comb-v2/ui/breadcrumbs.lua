@@ -96,11 +96,11 @@ function M._create_breadcrumb_window()
     vim.api.nvim_buf_set_option(state.buffer, "bufhidden", "wipe")
     vim.api.nvim_buf_set_option(state.buffer, "filetype", "spaghetti-comb-breadcrumbs")
 
-    -- Calculate window dimensions
-    local width = math.min(100, vim.o.columns - 4)
-    local height = math.min(3, vim.o.lines - 4)
+    -- Calculate window dimensions with minimum constraints
+    local width = math.max(10, math.min(100, vim.o.columns - 4))
+    local height = math.max(3, math.min(3, vim.o.lines - 4))
     local row = 0
-    local col = math.floor((vim.o.columns - width) / 2)
+    local col = math.max(0, math.floor((vim.o.columns - width) / 2))
 
     -- Create floating window
     local opts = {
@@ -212,7 +212,7 @@ function M._navigate_next()
     if not state.current_trail then return end
 
     local history_manager = require("spaghetti-comb-v2.history.manager")
-    history_manager.navigate_forward()
+    history_manager.go_forward()
 
     -- Refresh display
     local trail = history_manager.get_current_trail()
@@ -224,7 +224,7 @@ function M._navigate_prev()
     if not state.current_trail then return end
 
     local history_manager = require("spaghetti-comb-v2.history.manager")
-    history_manager.navigate_backward()
+    history_manager.go_back()
 
     -- Refresh display
     local trail = history_manager.get_current_trail()
