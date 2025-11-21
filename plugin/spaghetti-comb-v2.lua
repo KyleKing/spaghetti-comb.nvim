@@ -106,7 +106,7 @@ vim.api.nvim_create_user_command("SpaghettiCombSetup", function(opts)
     -- Parse opts.args as lua table if provided
     local config = {}
     if opts.args and opts.args ~= "" then
-        local ok, result = pcall(loadstring("return " .. opts.args))
+        local ok, result = pcall(function() return vim.json.decode(opts.args) end)
         if ok then config = result end
     end
     require("spaghetti-comb-v2").setup(config)
