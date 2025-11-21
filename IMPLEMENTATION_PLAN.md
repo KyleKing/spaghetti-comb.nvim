@@ -22,7 +22,7 @@
 
 ```
 lua/
-├── spaghetti-comb-v1/
+├── spaghetti-comb-v2/
 │   ├── init.lua              -- Main plugin interface and setup
 │   ├── analyzer.lua          -- LSP-based code analysis and symbol extraction
 │   ├── navigation.lua        -- Navigation stack management and history
@@ -306,7 +306,7 @@ local navigation_stack = {
 
 ```lua
 -- New module structure
-lua/spaghetti-comb-v1/ui/
+lua/spaghetti-comb-v2/ui/
 ├── breadcrumbs.lua          -- Core breadcrumb logic and display
 ├── breadcrumb_menu.lua      -- Interactive navigation menu
 └── statusline.lua           -- Statusline integration helpers
@@ -454,7 +454,7 @@ breadcrumbs = {
 ## Configuration Example
 
 ```lua
-require('spaghetti-comb-v1').setup({
+require('spaghetti-comb-v2').setup({
   -- Relations panel configuration
   relations = {
     height = 15,              -- Normal split height

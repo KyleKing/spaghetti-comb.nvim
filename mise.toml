@@ -47,10 +47,10 @@ run = "echo 'lua-language-server type checking not implemented yet'"
 depends = ["deps-mini-nvim"]
 description = "Generate plugin documentation using mini.doc"
 run = [
-  "echo 'Documentation is currently maintained manually in doc/spaghetti-comb-v1.txt'",
+  "echo 'Documentation is currently maintained manually in doc/spaghetti-comb-v2.txt'",
   "echo 'Generating help tags...'",
   "nvim --headless -c 'helptags doc/' -c 'qa!'",
-  "echo 'Help tags generated successfully! Use :help spaghetti-comb-v1.txt to view documentation'"
+  "echo 'Help tags generated successfully! Use :help spaghetti-comb-v2.txt to view documentation'"
 ]
 
 [tasks.docs-auto]
