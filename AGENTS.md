@@ -1,66 +1,59 @@
-# AGENTS.md
+# AGENTS.md - AI Development Guide
 
-## Development Commands
+Concise reference for AI agents working on this codebase. For detailed human-focused documentation, see [DEVELOPER.md](DEVELOPER.md).
+
+## Quick Commands
 
 ### Testing
-
-- `mise run test` - Run all tests using mini.test framework documented in `mini-test.md`
-- `mise run test-file --file=<file>` - Run specific test file (e.g., `mise run test-file --file=tests/test_navigation.lua`)
+- `mise run test` - Run all v2 tests (mini.test framework)
+- `mise run test-file --file=<file>` - Run specific test file
 
 ### Code Quality
-
-- `mise run lint` - Check code formatting using stylua
-- `mise run format` - Format code using stylua (fix mode)
+- `mise run lint` - Check formatting (stylua)
+- `mise run format` - Format code (stylua fix)
 - `mise run typecheck` - Run selene type checking
-- `mise run luals` - Run lua-language-server type checking (not yet implemented)
-- `pre-commit run --all-files` - general formatting
 
 ### Documentation
-
-- `mise run docs` - Generate help tags for vim documentation
-- `mise run docs-auto` - Attempt automatic documentation generation (experimental)
+- `mise run docs` - Generate vim help tags
+- `mise run docs-auto` - Auto-generate docs (experimental)
 
 ### Setup
-
-- `mise run deps-mini-nvim` - Install mini.nvim dependency for tests and documentation
+- `mise run deps-mini-nvim` - Install mini.nvim dependency
 
 ## Architecture Overview
 
-This is a Neovim plugin for code exploration called "Spaghetti Comb v2" - designed to help developers untangle complex codebases by visualizing code relationships and dependencies.
+**Plugin**: Spaghetti Comb v2 - Code exploration via breadcrumb navigation
 
-The plugin uses a **split window architecture** similar to vim's `:help` command, with a **focus mode** that expands the window and adds a side-by-side preview panel.
+**Current Status**: v2 in active development (history manager implemented, UI components in progress)
 
-### Current Implementation Status
+**Architecture Pattern**:
+- Modular structure: `history/`, `ui/`, `navigation/`, `utils/`
+- Extends built-in Neovim (jumplist, LSP) rather than replacing
+- Project-aware history with intelligent pruning
 
-The plugin is in active development with basic infrastructure completed (Phase 1). The plugin structure follows standard Neovim plugin patterns with a modular architecture.
+**Key Modules**:
+- `history/manager.lua` - Core history tracking (✅ implemented)
+- `ui/breadcrumbs.lua` - Breadcrumb rendering (🚧 TODO)
+- `navigation/commands.lua` - Navigation commands (🚧 TODO)
+- `navigation/lsp.lua` - LSP integration (🚧 TODO)
 
-### Plugin Architecture Pattern
+**v1 vs v2**:
+- v1: Relations panel UI (fully implemented, will be removed)
+- v2: Breadcrumb-based (in development, extends Neovim built-ins)
 
-The codebase follows a standard Neovim plugin architecture:
+## Code Locations
 
-1. **Global plugin object** (`SpaghettiCombv2`) exposes public API via `init.lua`
-1. **Modular structure** separating domains:
-    - `analyzer.lua` - LSP-based code analysis and symbol extraction
-    - `navigation.lua` - Navigation stack management and history
-    - `ui/` - User interface components (split windows, highlights, previews)
-        - `relations.lua` - Split window management with focus mode
-        - `preview.lua` - Code preview functionality
-        - `highlights.lua` - Syntax highlighting
-    - `coupling/` - Code coupling analysis and metrics
-    - `persistence/` - Session storage and bookmarks
-    - `utils.lua` - Shared utilities
+- **v2 Code**: `lua/spaghetti-comb-v2/`
+- **v1 Code**: `lua/spaghetti-comb-v1/` (to be removed after migration)
+- **Tests**: `lua/spaghetti-comb-v2/tests/` (v2), `tests-v1/` (v1)
+- **Plugin Loaders**: `plugin/spaghetti-comb-v2.lua`
 
-### Key Features (Implemented)
+## Testing Framework
 
-- **Relations Panel**: Split window showing code relationships (references, definitions, call hierarchy)
-- **Focus Mode**: Press `<Tab>` to expand relations window and show side-by-side code preview
-- **Vim Motion Navigation**: Full vim navigation support (j/k, arrows, etc.) within relations panel
-- **Navigation Stack**: Bidirectional exploration history with context preservation
-- **LSP Integration**: Multi-language support (TypeScript, JavaScript, Python, Rust, Go)
-- **Coupling Analysis**: Numerical evaluation of code relationships with visual indicators
-- **Session Persistence**: Save/load exploration sessions and bookmarks
-- **Advanced Filtering**: Search, sort, and filter relations by various criteria
+Uses `mini.test` with child Neovim processes. See `deps/mini-test.md` for framework details.
 
-### Testing Framework
+## Common Tasks
 
-Uses `mini.test` with child Neovim processes for comprehensive plugin testing. See `mini-test.md` for detailed testing documentation and examples.
+**Add a feature**: Check `lua/spaghetti-comb-v2/` for TODO comments, implement in appropriate module
+**Fix a bug**: Check test coverage, add test if missing, fix implementation
+**Port from v1**: See ticket 006 for porting checklist, adapt v1 code to v2 architecture
