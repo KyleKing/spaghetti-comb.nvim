@@ -116,6 +116,125 @@ end, {
     desc = "Setup Spaghetti Comb v2",
 })
 
+-- Task 12: Persistence commands
+
+-- Save current project history to disk
+vim.api.nvim_create_user_command("SpaghettiCombSaveHistory", function()
+    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local success, msg = history_manager.save_current_project_history()
+    local level = success and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(msg or "Unknown error", level)
+end, { desc = "Save navigation history for current project" })
+
+-- Save all project histories
+vim.api.nvim_create_user_command("SpaghettiCombSaveAllHistory", function()
+    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local success, msg = history_manager.save_all_histories()
+    local level = success and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(msg or "Unknown error", level)
+end, { desc = "Save navigation history for all projects" })
+
+-- Load project history from disk
+vim.api.nvim_create_user_command("SpaghettiCombLoadHistory", function()
+    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local project_utils = require("spaghetti-comb-v2.utils.project")
+
+    local current_file = vim.api.nvim_buf_get_name(0)
+    local project_root = project_utils.detect_project_root(current_file)
+
+    if not project_root then
+        vim.notify("Could not detect project root", vim.log.levels.WARN)
+        return
+    end
+
+    local success, msg = history_manager.load_project_history(project_root)
+    local level = success and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(msg or "Unknown error", level)
+end, { desc = "Load navigation history for current project" })
+
+-- Save current project bookmarks
+vim.api.nvim_create_user_command("SpaghettiCombSaveBookmarks", function()
+    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
+    local success, msg = bookmarks.save_current_project_bookmarks()
+    local level = success and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(msg or "Unknown error", level)
+end, { desc = "Save bookmarks for current project" })
+
+-- Save all project bookmarks
+vim.api.nvim_create_user_command("SpaghettiCombSaveAllBookmarks", function()
+    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
+    local success, msg = bookmarks.save_all_bookmarks()
+    local level = success and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(msg or "Unknown error", level)
+end, { desc = "Save bookmarks for all projects" })
+
+-- Load project bookmarks from disk
+vim.api.nvim_create_user_command("SpaghettiCombLoadBookmarks", function()
+    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
+    local project_utils = require("spaghetti-comb-v2.utils.project")
+
+    local current_file = vim.api.nvim_buf_get_name(0)
+    local project_root = project_utils.detect_project_root(current_file)
+
+    if not project_root then
+        vim.notify("Could not detect project root", vim.log.levels.WARN)
+        return
+    end
+
+    local success, msg = bookmarks.load_project_bookmarks(project_root)
+    local level = success and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(msg or "Unknown error", level)
+end, { desc = "Load bookmarks for current project" })
+
+-- Clean up old persistence files
+vim.api.nvim_create_user_command("SpaghettiCombCleanupPersistence", function(opts)
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local max_age_days = opts.args and tonumber(opts.args) or 90
+
+    local success, msg = storage.cleanup_persistence(max_age_days)
+    local level = success and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(msg or "Unknown error", level)
+end, {
+    nargs = "?",
+    desc = "Clean up old persistence files (default: 90 days)",
+})
+
+-- Show storage statistics
+vim.api.nvim_create_user_command("SpaghettiCombStorageStats", function()
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local stats = storage.get_storage_stats()
+
+    local msg = string.format(
+        "Storage: %s\nHistory files: %d\nBookmark files: %d\nTotal size: %d bytes",
+        stats.storage_dir,
+        stats.history_count,
+        stats.bookmark_count,
+        stats.total_size
+    )
+
+    vim.notify(msg, vim.log.levels.INFO)
+end, { desc = "Show persistence storage statistics" })
+
+-- List saved projects
+vim.api.nvim_create_user_command("SpaghettiCombListProjects", function()
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local projects = storage.list_saved_projects()
+
+    if #projects == 0 then
+        vim.notify("No saved projects found", vim.log.levels.INFO)
+        return
+    end
+
+    local lines = { "Saved projects:" }
+    for _, project in ipairs(projects) do
+        local date = os.date("%Y-%m-%d %H:%M:%S", project.modified)
+        table.insert(lines, string.format("  %s (%s, %d bytes, modified: %s)",
+            project.hash, project.type, project.size, date))
+    end
+
+    vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
+end, { desc = "List all saved projects" })
+
 -- Optional: Default keymappings (users can override these)
 -- Uncomment to enable default keymaps
 --[[

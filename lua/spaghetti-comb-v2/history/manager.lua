@@ -679,4 +679,108 @@ function M.get_or_create_project_trail(project_root)
     return state.trails[project_root]
 end
 
+-- Task 12.1: History persistence integration
+
+-- Save current project history to disk
+function M.save_current_project_history()
+    if not state.initialized then return false, "History manager not initialized" end
+    if not state.current_project then return false, "No current project" end
+
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local trail = state.trails[state.current_project]
+
+    if not trail or #trail.entries == 0 then
+        return false, "No history to save"
+    end
+
+    return storage.save_history(trail, state.current_project)
+end
+
+-- Save all project histories to disk
+function M.save_all_histories()
+    if not state.initialized then return false, "History manager not initialized" end
+
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local saved_count = 0
+    local errors = {}
+
+    for project_root, trail in pairs(state.trails) do
+        if trail and #trail.entries > 0 then
+            local success, err = storage.save_history(trail, project_root)
+            if success then
+                saved_count = saved_count + 1
+            else
+                table.insert(errors, string.format("%s: %s", project_root, err or "unknown error"))
+            end
+        end
+    end
+
+    if #errors > 0 then
+        return false, string.format("Saved %d projects, %d errors: %s", saved_count, #errors, table.concat(errors, "; "))
+    end
+
+    return true, string.format("Saved %d project histories", saved_count)
+end
+
+-- Load project history from disk
+function M.load_project_history(project_root)
+    if not state.initialized then return false, "History manager not initialized" end
+    if not project_root then return false, "Invalid project root" end
+
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local trail, err = storage.load_history(project_root)
+
+    if not trail then
+        return false, err or "Failed to load history"
+    end
+
+    state.trails[project_root] = trail
+    return true, "History loaded successfully"
+end
+
+-- Auto-save on VimLeavePre
+function M.setup_auto_save()
+    if not state.initialized then return false, "History manager not initialized" end
+
+    local config = state.config or {}
+    if not (config.history and config.history.save_on_exit) then
+        return false, "Auto-save disabled in config"
+    end
+
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+        group = vim.api.nvim_create_augroup("SpaghettiCombPersistence", { clear = true }),
+        callback = function()
+            M.save_all_histories()
+        end,
+    })
+
+    return true, "Auto-save enabled"
+end
+
+-- Auto-load on project switch
+function M.try_load_on_project_switch(project_root)
+    if not state.initialized then return false, "History manager not initialized" end
+    if not project_root then return false, "Invalid project root" end
+
+    local config = state.config or {}
+    if not (config.history and config.history.save_on_exit) then
+        return false, "Persistence disabled in config"
+    end
+
+    -- Don't load if we already have history for this project
+    if state.trails[project_root] and #state.trails[project_root].entries > 0 then
+        return false, "History already loaded"
+    end
+
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local trail, err = storage.load_history(project_root)
+
+    if trail then
+        state.trails[project_root] = trail
+        return true, "History loaded from disk"
+    end
+
+    return false, err or "No saved history"
+end
+
 return M
