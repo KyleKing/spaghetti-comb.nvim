@@ -30,7 +30,7 @@ function M.setup(config)
     state.namespace = vim.api.nvim_create_namespace("spaghetti_comb_tree")
 
     -- Load preview module
-    state.preview_module = require("spaghetti-comb-v2.ui.preview")
+    state.preview_module = require("spaghetti-comb.ui.preview")
 
     -- Set up color scheme
     M.apply_color_scheme()
@@ -43,7 +43,7 @@ function M.show_branch_history()
     if not state.initialized then return false, "Tree view not initialized" end
 
     -- Get current navigation trail
-    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local history_manager = require("spaghetti-comb.history.manager")
     local trail = history_manager.get_current_trail()
 
     if not trail or #trail.entries == 0 then
@@ -133,7 +133,7 @@ function M.render_unicode_tree(trail)
     if not trail or #trail.entries == 0 then return { "No navigation history" } end
 
     local lines = {}
-    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
+    local bookmarks = require("spaghetti-comb.history.bookmarks")
 
     -- Build tree structure
     for i, entry in ipairs(trail.entries) do
@@ -219,7 +219,7 @@ end
 function M.mark_bookmarked_nodes()
     if not state.tree_buffer or not state.current_trail then return end
 
-    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
+    local bookmarks = require("spaghetti-comb.history.bookmarks")
 
     for i, entry in ipairs(state.current_trail.entries) do
         if entry.is_bookmarked or (bookmarks.is_bookmarked and bookmarks.is_bookmarked(entry)) then
@@ -232,7 +232,7 @@ end
 function M.mark_important_nodes()
     if not state.tree_buffer or not state.current_trail then return end
 
-    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
+    local bookmarks = require("spaghetti-comb.history.bookmarks")
 
     for i, entry in ipairs(state.current_trail.entries) do
         if entry.is_frequent or (bookmarks.is_frequent and bookmarks.is_frequent(entry)) then

@@ -19,7 +19,7 @@ end
 function M.get_branch_status()
     if not state.initialized then return nil end
 
-    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local history_manager = require("spaghetti-comb.history.manager")
     local trail = history_manager.get_current_trail()
 
     if not trail or #trail.entries == 0 then return nil end
@@ -75,7 +75,7 @@ end
 function M.register_statusline_component()
     -- This is a simple function that other plugins can call
     -- Example for lualine:
-    --   sections = { lualine_c = { require('spaghetti-comb-v2.ui.statusline').get_minimal_display_string } }
+    --   sections = { lualine_c = { require('spaghetti-comb.ui.statusline').get_minimal_display_string } }
     return M.get_minimal_display_string
 end
 
@@ -93,7 +93,7 @@ end
 
 -- Calculate exploration timeout (delegates to history manager)
 function M.calculate_exploration_timeout()
-    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local history_manager = require("spaghetti-comb.history.manager")
     return history_manager.determine_exploration_state()
 end
 

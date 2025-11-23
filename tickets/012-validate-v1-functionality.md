@@ -48,8 +48,8 @@ nvim --headless --noplugin -u ./scripts/minimal_init.lua \
 - Storage patterns (`persistence/storage.lua`) - Tested
 
 **Needs Review:**
-- UI components - May need adaptation for v2
-- Coupling analysis - May not be needed in v2
+- UI components - May need adaptation for 
+- Coupling analysis - May not be needed in 
 
 ## Test Report Template
 

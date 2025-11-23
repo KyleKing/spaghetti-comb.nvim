@@ -1,6 +1,6 @@
 -- Sticky bookmarks and frequent locations
-local types = require("spaghetti-comb-v2.types")
-local project_utils = require("spaghetti-comb-v2.utils.project")
+local types = require("spaghetti-comb.types")
+local project_utils = require("spaghetti-comb.utils.project")
 
 local M = {}
 
@@ -324,7 +324,7 @@ function M.save_current_project_bookmarks()
     if not state.initialized then return false, "Bookmark manager not initialized" end
     if not state.current_project then return false, "No current project" end
 
-    local storage = require("spaghetti-comb-v2.history.storage")
+    local storage = require("spaghetti-comb.history.storage")
     local bookmarks = get_project_bookmarks()
 
     if #bookmarks == 0 then
@@ -338,7 +338,7 @@ end
 function M.save_all_bookmarks()
     if not state.initialized then return false, "Bookmark manager not initialized" end
 
-    local storage = require("spaghetti-comb-v2.history.storage")
+    local storage = require("spaghetti-comb.history.storage")
     local saved_count = 0
     local errors = {}
 
@@ -365,7 +365,7 @@ function M.load_project_bookmarks(project_root)
     if not state.initialized then return false, "Bookmark manager not initialized" end
     if not project_root then return false, "Invalid project root" end
 
-    local storage = require("spaghetti-comb-v2.history.storage")
+    local storage = require("spaghetti-comb.history.storage")
     local bookmarks, err = storage.load_bookmarks(project_root)
 
     if not bookmarks then
@@ -410,7 +410,7 @@ function M.try_load_on_project_switch(project_root)
         return false, "Bookmarks already loaded"
     end
 
-    local storage = require("spaghetti-comb-v2.history.storage")
+    local storage = require("spaghetti-comb.history.storage")
     local bookmarks, err = storage.load_bookmarks(project_root)
 
     if bookmarks then

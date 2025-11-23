@@ -47,7 +47,7 @@ function M.show_bookmark_mode()
     state.current_mode = "bookmarks"
 
     -- Get all bookmarks
-    local bookmarks_module = require("spaghetti-comb-v2.history.bookmarks")
+    local bookmarks_module = require("spaghetti-comb.history.bookmarks")
     local bookmarks = bookmarks_module.get_all_bookmarks()
 
     if #bookmarks == 0 then
@@ -136,7 +136,7 @@ end
 
 -- Show bookmark preview in picker
 function M._show_bookmark_preview(buf_id, bookmark)
-    local preview_module = require("spaghetti-comb-v2.ui.preview")
+    local preview_module = require("spaghetti-comb.ui.preview")
     local context = preview_module.extract_code_context(bookmark, 5)
 
     if not context then return end
@@ -157,7 +157,7 @@ end
 function M.toggle_bookmark_selection(bookmark)
     if not bookmark then return end
 
-    local bookmarks_module = require("spaghetti-comb-v2.history.bookmarks")
+    local bookmarks_module = require("spaghetti-comb.history.bookmarks")
     bookmarks_module.toggle_bookmark(bookmark)
 
     vim.notify("Bookmark toggled", vim.log.levels.INFO)
@@ -202,7 +202,7 @@ function M.show_navigation_mode()
     state.current_mode = "navigation"
 
     -- Get navigation history
-    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local history_manager = require("spaghetti-comb.history.manager")
     local trail = history_manager.get_current_trail()
 
     if not trail or #trail.entries == 0 then
@@ -296,7 +296,7 @@ end
 
 -- Show navigation preview in picker
 function M._show_navigation_preview(buf_id, entry)
-    local preview_module = require("spaghetti-comb-v2.ui.preview")
+    local preview_module = require("spaghetti-comb.ui.preview")
     local context = preview_module.extract_code_context(entry, 5)
 
     if not context then return end

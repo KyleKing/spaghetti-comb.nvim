@@ -1,8 +1,8 @@
-# Migration Guide: v1 to v2
+# Migration Guide: v1 to 
 
 ## Overview
 
-Spaghetti Comb v2 is a clean break from v1 - no backward compatibility is maintained. This document explains the differences, migration path, and what can be reused from v1.
+Spaghetti Comb is a clean break from v1 - no backward compatibility is maintained. This document explains the differences, migration path, and what can be reused from v1.
 
 ## Why v2?
 
@@ -12,13 +12,13 @@ Spaghetti Comb v2 is a clean break from v1 - no backward compatibility is mainta
 - **Integration**: Standalone plugin with custom commands
 - **Features**: Relations panel, focus mode, coupling metrics, session management
 
-### v2 Approach (Breadcrumb Navigation)
+### Approach (Breadcrumb Navigation)
 - **UI**: Hotkey-triggered breadcrumbs (minimal footprint)
 - **Focus**: Extends built-in Neovim functionality
 - **Integration**: Enhances jumplist and LSP (doesn't replace)
 - **Features**: Project-aware history, intelligent pruning, breadcrumb navigation
 
-### Rationale for v2
+### Rationale for 
 
 1. **Less Intrusive**: Hotkey-triggered vs persistent panel
 2. **Better Integration**: Extends Neovim built-ins rather than replacing
@@ -34,52 +34,52 @@ Spaghetti Comb v2 is a clean break from v1 - no backward compatibility is mainta
 - Symbol extraction
 - Reference/definition finding
 - Call hierarchy queries
-- **Port to**: `lua/spaghetti-comb-v2/navigation/lsp.lua`
+- **Port to**: `lua/spaghetti-comb/navigation/lsp.lua`
 
 **Coupling Analysis** (`lua/spaghetti-comb-v1/coupling/`)
 - `metrics.lua` - Coupling calculation algorithms
 - `graph.lua` - Graph visualization concepts
-- **Port to**: New `lua/spaghetti-comb-v2/coupling/` module (if needed)
+- **Port to**: New `lua/spaghetti-comb/coupling/` module (if needed)
 
 **Navigation Stack Concepts** (`lua/spaghetti-comb-v1/navigation.lua`)
 - Stack management patterns
 - Bidirectional navigation
 - Context preservation
-- **Adapt for**: `lua/spaghetti-comb-v2/history/manager.lua` (already has similar concepts)
+- **Adapt for**: `lua/spaghetti-comb/history/manager.lua` (already has similar concepts)
 
 **Storage Patterns** (`lua/spaghetti-comb-v1/persistence/storage.lua`)
 - Session save/load
 - File-based persistence
-- **Port to**: `lua/spaghetti-comb-v2/history/storage.lua`
+- **Port to**: `lua/spaghetti-comb/history/storage.lua`
 
 **Bookmark Management** (`lua/spaghetti-comb-v1/persistence/bookmarks.lua`)
 - Bookmark creation/removal
 - Bookmark collections
-- **Port to**: `lua/spaghetti-comb-v2/history/bookmarks.lua`
+- **Port to**: `lua/spaghetti-comb/history/bookmarks.lua`
 
 **Code Preview** (`lua/spaghetti-comb-v1/ui/preview.lua`)
 - Code context extraction
 - Preview window management
 - Syntax highlighting
-- **Port to**: `lua/spaghetti-comb-v2/ui/preview.lua`
+- **Port to**: `lua/spaghetti-comb/ui/preview.lua`
 
 **Utilities** (`lua/spaghetti-comb-v1/utils.lua`)
 - Helper functions
 - Common patterns
-- **Review and port**: Useful utilities to `lua/spaghetti-comb-v2/utils/`
+- **Review and port**: Useful utilities to `lua/spaghetti-comb/utils/`
 
-### ❌ Not Needed in v2
+### ❌ Not Needed in 
 
 **Relations Panel UI** (`lua/spaghetti-comb-v1/ui/relations.lua`)
-- v2 uses breadcrumb approach, not split window panel
+- uses breadcrumb approach, not split window panel
 - Concepts may be useful for floating tree, but different implementation
 
 **Highlights** (`lua/spaghetti-comb-v1/ui/highlights.lua`)
-- v2 will have different highlighting needs
+- will have different highlighting needs
 - Review for useful patterns
 
 **Error Handling** (`lua/spaghetti-comb-v1/error_handling.lua`)
-- Review for patterns, but v2 has different error handling strategy
+- Review for patterns, but has different error handling strategy
 
 ## Migration Path
 
@@ -110,47 +110,47 @@ Spaghetti Comb v2 is a clean break from v1 - no backward compatibility is mainta
 - [ ] Port LSP client detection from `analyzer.lua`
 - [ ] Port symbol extraction logic
 - [ ] Port reference/definition finding
-- [ ] Adapt for v2 architecture (extend, don't replace)
-- [ ] Add to `lua/spaghetti-comb-v2/navigation/lsp.lua`
+- [ ] Adapt for architecture (extend, don't replace)
+- [ ] Add to `lua/spaghetti-comb/navigation/lsp.lua`
 
 ### Storage Patterns
 - [ ] Port session save/load from `persistence/storage.lua`
-- [ ] Adapt for v2 data models (NavigationTrail)
-- [ ] Add optional persistence to `lua/spaghetti-comb-v2/history/storage.lua`
+- [ ] Adapt for data models (NavigationTrail)
+- [ ] Add optional persistence to `lua/spaghetti-comb/history/storage.lua`
 
 ### Bookmark Management
 - [ ] Port bookmark creation/removal from `persistence/bookmarks.lua`
-- [ ] Adapt for v2 data models (BookmarkEntry)
-- [ ] Add to `lua/spaghetti-comb-v2/history/bookmarks.lua`
+- [ ] Adapt for data models (BookmarkEntry)
+- [ ] Add to `lua/spaghetti-comb/history/bookmarks.lua`
 
 ### Code Preview
 - [ ] Port preview functionality from `ui/preview.lua`
-- [ ] Adapt for v2 UI components (floating tree, picker)
-- [ ] Add to `lua/spaghetti-comb-v2/ui/preview.lua`
+- [ ] Adapt for UI components (floating tree, picker)
+- [ ] Add to `lua/spaghetti-comb/ui/preview.lua`
 
 ### Coupling Analysis (Optional)
 - [ ] Review coupling metrics from `coupling/metrics.lua`
-- [ ] Determine if needed in v2 (may not be)
+- [ ] Determine if needed in (may not be)
 - [ ] Port if needed
 
 ## Breaking Changes
 
 ### API Changes
 - v1: `require('spaghetti-comb-v1').setup()`
-- v2: `require('spaghetti-comb-v2').setup()`
+- : `require('spaghetti-comb').setup()`
 
 ### Configuration Changes
 - v1: `relations`, `coupling`, `languages` config sections
-- v2: `display`, `history`, `integration`, `visual`, `bookmarks`, `debug` config sections
+- : `display`, `history`, `integration`, `visual`, `bookmarks`, `debug` config sections
 - No direct mapping - new configuration schema
 
 ### Command Changes
 - v1: `:SpaghettiCombv2Show`, `:SpaghettiCombv2References`, etc.
-- v2: New command set (TBD, but will be different)
+- : New command set (TBD, but will be different)
 
 ### Keymap Changes
 - v1: `<leader>sr`, `<leader>sf`, etc.
-- v2: New keymap set (TBD, but will be different)
+- : New keymap set (TBD, but will be different)
 
 ### Feature Removals
 - Relations panel (replaced by breadcrumbs)
@@ -161,15 +161,15 @@ Spaghetti Comb v2 is a clean break from v1 - no backward compatibility is mainta
 
 1. **Backup v1 configuration** (if using v1)
 2. **Remove v1 plugin** from Neovim config
-3. **Install v2 plugin**
-4. **Update configuration** to v2 schema
-5. **Update keymaps** to v2 keymaps
+3. **Install plugin**
+4. **Update configuration** to schema
+5. **Update keymaps** to keymaps
 6. **Learn new workflow** (breadcrumbs vs relations panel)
 
 ## Timeline
 
-- **Current**: v2 in active development
-- **v1 Removal**: After v2 core features are complete and ported
+- **Current**: in active development
+- **v1 Removal**: After core features are complete and ported
 - **Migration Support**: Documentation only (no automated migration)
 
 ## Questions?

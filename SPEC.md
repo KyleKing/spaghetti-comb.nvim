@@ -433,7 +433,7 @@ end
 5. **v1 Features Not Ported**
    - Coupling analysis not yet ported
    - Session management not yet ported
-   - Relations panel approach not used in v2
+   - Relations panel approach not used in 
 
 ### Platform Constraints
 
@@ -456,7 +456,7 @@ end
 - Coupling analysis with visual indicators
 - Session management
 
-**v2 Approach:**
+** Approach:**
 - Breadcrumb-based navigation
 - Extends built-in Neovim functionality
 - Minimal UI footprint
@@ -588,8 +588,8 @@ Config = {
 ## Content Sources
 
 This specification was compiled from:
-- `.kiro/specs/spaghetti-comb-v2.nvim/design.md` - Design decisions and architecture
-- `.kiro/specs/spaghetti-comb-v2.nvim/requirements.md` - User stories and requirements
+- `.kiro/specs/spaghetti-comb.nvim/design.md` - Design decisions and architecture
+- `.kiro/specs/spaghetti-comb.nvim/requirements.md` - User stories and requirements
 - `IMPLEMENTATION_PLAN.md` - Implementation details and phases
 - Code analysis of current implementation
 

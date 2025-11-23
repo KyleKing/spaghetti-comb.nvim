@@ -1,6 +1,6 @@
 # DEVELOPER.md - Development Guide
 
-Comprehensive guide for developers working on Spaghetti Comb v2. For quick AI reference, see [AGENTS.md](AGENTS.md).
+Comprehensive guide for developers working on Spaghetti Comb. For quick AI reference, see [AGENTS.md](AGENTS.md).
 
 ## Table of Contents
 
@@ -60,7 +60,7 @@ The project uses `mise` for tool management. All development commands are define
 spaghetti-comb.nvim/
 ├── lua/
 │   ├── spaghetti-comb-v1/     # v1 implementation (to be removed)
-│   └── spaghetti-comb-v2/     # v2 implementation (current focus)
+│   └── spaghetti-comb/     # implementation (current focus)
 │       ├── init.lua           # Plugin entry point
 │       ├── config.lua         # Configuration management
 │       ├── types.lua          # Core data models
@@ -113,9 +113,9 @@ spaghetti-comb.nvim/
 The project uses `mini.test` framework with child Neovim processes for isolated testing.
 
 **Test Structure:**
-- Tests are in `lua/spaghetti-comb-v2/tests/`
+- Tests are in `lua/spaghetti-comb/tests/`
 - Each test file is a Lua module that returns a test set
-- Test runner is in `lua/spaghetti-comb-v2/tests/init.lua`
+- Test runner is in `lua/spaghetti-comb/tests/init.lua`
 
 ### Running Tests
 
@@ -126,13 +126,13 @@ mise run test
 
 **Run specific test file:**
 ```bash
-mise run test-file --file=lua/spaghetti-comb-v2/tests/history_spec.lua
+mise run test-file --file=lua/spaghetti-comb/tests/history_spec.lua
 ```
 
 **Run tests manually:**
 ```bash
 nvim --headless --noplugin -u ./scripts/minimal_init.lua \
-  -c "lua require('spaghetti-comb-v2.tests.init').run_all()" \
+  -c "lua require('spaghetti-comb.tests.init').run_all()" \
   -c "qa"
 ```
 
@@ -170,7 +170,7 @@ return T
 **Example Test:**
 ```lua
 T["history manager"]["records jumps"] = function()
-    local history = require("spaghetti-comb-v2.history.manager")
+    local history = require("spaghetti-comb.history.manager")
     history.setup({})
     history.set_current_project("/test/project")
     
@@ -371,7 +371,7 @@ When reporting issues:
 - Check for common Lua pitfalls
 
 **Plugin doesn't load:**
-- Check `plugin/spaghetti-comb-v2.lua` exists
+- Check `plugin/spaghetti-comb.lua` exists
 - Verify runtime path includes plugin directory
 - Check Neovim version compatibility
 
@@ -379,7 +379,7 @@ When reporting issues:
 
 **Enable debug logging:**
 ```lua
-require('spaghetti-comb-v2').setup({
+require('spaghetti-comb').setup({
     debug = {
         enabled = true,
         log_level = "debug",
@@ -389,7 +389,7 @@ require('spaghetti-comb-v2').setup({
 
 **Inspect plugin state:**
 ```lua
-local config = require('spaghetti-comb-v2').get_config()
+local config = require('spaghetti-comb').get_config()
 -- Inspect config
 ```
 

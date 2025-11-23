@@ -30,7 +30,7 @@ function M.show_on_hotkey()
     if not state.initialized then return false, "Breadcrumbs not initialized" end
 
     -- Get current navigation trail from history manager
-    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local history_manager = require("spaghetti-comb.history.manager")
     local trail = history_manager.get_current_trail()
 
     if not trail or #trail.entries == 0 then
@@ -211,7 +211,7 @@ end
 function M._navigate_next()
     if not state.current_trail then return end
 
-    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local history_manager = require("spaghetti-comb.history.manager")
     history_manager.go_forward()
 
     -- Refresh display
@@ -223,7 +223,7 @@ end
 function M._navigate_prev()
     if not state.current_trail then return end
 
-    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local history_manager = require("spaghetti-comb.history.manager")
     history_manager.go_back()
 
     -- Refresh display

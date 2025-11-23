@@ -1,7 +1,7 @@
 -- Bookmark management tests
 local helpers = require("mini.test").new_set()
-local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
-local config = require("spaghetti-comb-v2.config")
+local bookmarks = require("spaghetti-comb.history.bookmarks")
+local config = require("spaghetti-comb.config")
 
 -- Helper functions
 local function create_test_location(file_path, line, col)

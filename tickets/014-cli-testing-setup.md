@@ -10,13 +10,13 @@ CLI test execution verified. Test commands documented.
 ```bash
 mise run test
 ```
-- Executes: `nvim --headless --noplugin -u ./scripts/minimal_init.lua -c "lua require('spaghetti-comb-v2.tests.init').run_all()"`
-- Runs all v2 test suites
+- Executes: `nvim --headless --noplugin -u ./scripts/minimal_init.lua -c "lua require('spaghetti-comb.tests.init').run_all()"`
+- Runs all test suites
 - Headless execution (no GUI)
 
 **Run Specific Test File:**
 ```bash
-mise run test-file --file=lua/spaghetti-comb-v2/tests/history_spec.lua
+mise run test-file --file=lua/spaghetti-comb/tests/history_spec.lua
 ```
 - Executes specific test file
 - Uses mini.test framework
@@ -24,7 +24,7 @@ mise run test-file --file=lua/spaghetti-comb-v2/tests/history_spec.lua
 **Manual Execution:**
 ```bash
 nvim --headless --noplugin -u ./scripts/minimal_init.lua \
-  -c "lua require('spaghetti-comb-v2.tests.init').run_all()" \
+  -c "lua require('spaghetti-comb.tests.init').run_all()" \
   -c "qa"
 ```
 
@@ -37,7 +37,7 @@ nvim --headless --noplugin -u ./scripts/minimal_init.lua \
 - Clear output
 
 **Test Structure:**
-- Tests in `lua/spaghetti-comb-v2/tests/`
+- Tests in `lua/spaghetti-comb/tests/`
 - Test runner in `tests/init.lua`
 - Each test file returns test set
 
@@ -51,7 +51,7 @@ mise run test
 
 # Verify headless execution
 nvim --headless --noplugin -u scripts/minimal_init.lua \
-  -c "lua require('spaghetti-comb-v2.tests.init').run_all()" \
+  -c "lua require('spaghetti-comb.tests.init').run_all()" \
   -c "qa"
 # Should work without GUI
 ```
@@ -59,11 +59,11 @@ nvim --headless --noplugin -u scripts/minimal_init.lua \
 **Test Structure:**
 ```bash
 # Verify test files exist
-ls lua/spaghetti-comb-v2/tests/
+ls lua/spaghetti-comb/tests/
 # Should list test files
 
 # Verify test framework usage
-grep -r "MiniTest\|new_set" lua/spaghetti-comb-v2/tests/
+grep -r "MiniTest\|new_set" lua/spaghetti-comb/tests/
 # Should find test framework usage
 ```
 
@@ -101,8 +101,8 @@ Test commands documented in:
 
 ## Both Test Suites
 
-**v2 Tests:**
-- `lua/spaghetti-comb-v2/tests/` - Current focus
+** Tests:**
+- `lua/spaghetti-comb/tests/` - Current focus
 - Uses mini.test
 - CLI execution verified
 

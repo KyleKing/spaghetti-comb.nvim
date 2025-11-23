@@ -19,9 +19,9 @@ function M.setup(config)
     state.config = config
 
     -- Load dependencies
-    lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
-    history_manager = require("spaghetti-comb-v2.history.manager")
-    debug_utils = require("spaghetti-comb-v2.utils.debug")
+    lsp_integration = require("spaghetti-comb.navigation.lsp")
+    history_manager = require("spaghetti-comb.history.manager")
+    debug_utils = require("spaghetti-comb.utils.debug")
 
     -- Setup dependencies
     lsp_integration.setup(config)

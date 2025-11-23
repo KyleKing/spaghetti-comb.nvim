@@ -1,8 +1,8 @@
-# Ticket 009: Inventory v2 TODOs
+# Ticket 009: Inventory TODOs
 
 ## Status: 📊 INVENTORY COMPLETE
 
-TODO inventory created. 94 TODO items found across v2 codebase.
+TODO inventory created. 94 TODO items found across codebase.
 
 ## TODO Count
 

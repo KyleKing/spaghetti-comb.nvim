@@ -1,4 +1,4 @@
-# Ticket 010: v2 Test Implementation
+# Ticket 010: Test Implementation
 
 ## Status: 📝 DOCUMENTED
 
@@ -7,12 +7,12 @@ Test implementation strategy documented. Tests are placeholder structure - imple
 ## Current State
 
 **Test Files:**
-- `lua/spaghetti-comb-v2/tests/init.lua` - Test runner (✅ implemented)
-- `lua/spaghetti-comb-v2/tests/history_spec.lua` - Placeholder tests
-- `lua/spaghetti-comb-v2/tests/ui_spec.lua` - Placeholder tests
-- `lua/spaghetti-comb-v2/tests/navigation_spec.lua` - Placeholder tests
-- `lua/spaghetti-comb-v2/tests/integration_spec.lua` - Placeholder tests
-- `lua/spaghetti-comb-v2/tests/lsp_spec.lua` - Placeholder tests
+- `lua/spaghetti-comb/tests/init.lua` - Test runner (✅ implemented)
+- `lua/spaghetti-comb/tests/history_spec.lua` - Placeholder tests
+- `lua/spaghetti-comb/tests/ui_spec.lua` - Placeholder tests
+- `lua/spaghetti-comb/tests/navigation_spec.lua` - Placeholder tests
+- `lua/spaghetti-comb/tests/integration_spec.lua` - Placeholder tests
+- `lua/spaghetti-comb/tests/lsp_spec.lua` - Placeholder tests
 
 **Test Framework:**
 - Uses mini.test (✅ set up)
@@ -69,7 +69,7 @@ local T = new_set({
 
 ```bash
 # Verify test structure
-grep -r "MiniTest\|new_set" lua/spaghetti-comb-v2/tests/
+grep -r "MiniTest\|new_set" lua/spaghetti-comb/tests/
 # Should find test framework usage
 
 # Run tests
