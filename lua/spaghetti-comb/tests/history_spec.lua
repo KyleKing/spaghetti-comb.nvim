@@ -75,20 +75,142 @@ T["history manager"]["handles branching paths"] = function()
     MiniTest.expect.equality(#branches > 0, true)
 end
 
-T["history manager"]["prunes old entries"] = function()
-    -- TODO: Implement in task 13.1
-end
-
 T["history manager"]["prunes inconsequential jumps"] = function()
-    -- TODO: Implement in task 13.1
+    -- Setup
+    history_manager.setup({})
+    history_manager.clear_all_history()
+    history_manager.set_current_project("/test/project")
+
+    -- Create a series of small jumps within same file
+    local file_path = "/test/project/file1.lua"
+    for i = 1, 5 do
+        local from_loc = { file_path = file_path, position = { line = i, column = 1 } }
+        local to_loc = { file_path = file_path, position = { line = i + 1, column = 1 } }
+        history_manager.record_jump(from_loc, to_loc, "auto")
+    end
+
+    local trail = history_manager.get_current_trail()
+    local initial_count = #trail.entries
+
+    -- Prune inconsequential jumps
+    local pruned_entries = history_manager.prune_inconsequential_jumps(trail.entries)
+
+    -- Should have fewer entries after pruning small movements
+    MiniTest.expect.equality(#pruned_entries < initial_count, true)
 end
 
-T["history manager"]["recovers shifted locations"] = function()
-    -- TODO: Implement in task 13.1
+T["history manager"]["determines inconsequential jumps"] = function()
+    -- Setup
+    history_manager.setup({})
+
+    -- Test same file, small distance
+    local entry1 = {
+        file_path = "/test/file.lua",
+        position = { line = 10, column = 1 },
+        timestamp = os.time(),
+        jump_type = "auto",
+    }
+    local entry2 = {
+        file_path = "/test/file.lua",
+        position = { line = 12, column = 1 },
+        timestamp = os.time(),
+        jump_type = "auto",
+    }
+
+    -- Should be inconsequential (same file, small distance, auto jump)
+    MiniTest.expect.equality(history_manager.is_inconsequential_jump(entry1, entry2), true)
+
+    -- Different file should not be inconsequential
+    entry2.file_path = "/test/other.lua"
+    MiniTest.expect.equality(history_manager.is_inconsequential_jump(entry1, entry2), false)
+
+    -- Large distance should not be inconsequential
+    entry2.file_path = "/test/file.lua"
+    entry2.position.line = 100
+    MiniTest.expect.equality(history_manager.is_inconsequential_jump(entry1, entry2), false)
+
+    -- Manual jump should not be inconsequential
+    entry2.position.line = 12
+    entry2.jump_type = "manual"
+    MiniTest.expect.equality(history_manager.is_inconsequential_jump(entry1, entry2), false)
 end
 
-T["history manager"]["debounces pruning operations"] = function()
-    -- TODO: Implement in task 13.1
+T["history manager"]["navigates backward and forward"] = function()
+    -- Setup
+    history_manager.setup({})
+    history_manager.clear_all_history()
+    history_manager.set_current_project("/test/project")
+
+    -- Record multiple jumps
+    for i = 1, 5 do
+        local from_loc = { file_path = "/test/project/file" .. i .. ".lua", position = { line = i, column = 1 } }
+        local to_loc = { file_path = "/test/project/file" .. (i + 1) .. ".lua", position = { line = i + 1, column = 1 } }
+        history_manager.record_jump(from_loc, to_loc, "manual")
+    end
+
+    local trail = history_manager.get_current_trail()
+    MiniTest.expect.equality(trail.current_index, 5)
+
+    -- Go back
+    local success = history_manager.go_back(2)
+    MiniTest.expect.equality(success, true)
+    trail = history_manager.get_current_trail()
+    MiniTest.expect.equality(trail.current_index, 3)
+
+    -- Go forward
+    success = history_manager.go_forward(1)
+    MiniTest.expect.equality(success, true)
+    trail = history_manager.get_current_trail()
+    MiniTest.expect.equality(trail.current_index, 4)
+end
+
+T["history manager"]["clears history correctly"] = function()
+    -- Setup
+    history_manager.setup({})
+    history_manager.set_current_project("/test/project")
+
+    -- Add some entries
+    local from_loc = { file_path = "/test/project/file1.lua", position = { line = 1, column = 1 } }
+    local to_loc = { file_path = "/test/project/file2.lua", position = { line = 2, column = 2 } }
+    history_manager.record_jump(from_loc, to_loc, "manual")
+
+    local trail = history_manager.get_current_trail()
+    MiniTest.expect.equality(#trail.entries, 1)
+
+    -- Clear current project
+    local success = history_manager.clear_current_project_history()
+    MiniTest.expect.equality(success, true)
+
+    -- Should have no trail for current project
+    trail = history_manager.get_current_trail()
+    MiniTest.expect.equality(trail, nil)
+
+    -- Add entries again
+    history_manager.set_current_project("/test/project2")
+    history_manager.record_jump(from_loc, to_loc, "manual")
+
+    -- Clear all history
+    success = history_manager.clear_all_history()
+    MiniTest.expect.equality(success, true)
+end
+
+T["history manager"]["gets statistics"] = function()
+    -- Setup
+    history_manager.setup({})
+    history_manager.clear_all_history()
+    history_manager.set_current_project("/test/project")
+
+    -- Record some jumps
+    for i = 1, 3 do
+        local from_loc = { file_path = "/test/project/file" .. i .. ".lua", position = { line = i, column = 1 } }
+        local to_loc = { file_path = "/test/project/file" .. (i + 1) .. ".lua", position = { line = i + 1, column = 1 } }
+        history_manager.record_jump(from_loc, to_loc, "manual")
+    end
+
+    local stats = history_manager.get_stats()
+    MiniTest.expect.equality(stats.total_entries, 3)
+    MiniTest.expect.equality(stats.current_index, 3)
+    MiniTest.expect.equality(stats.project_root, "/test/project")
 end
 
 T["history manager"]["detects exploration state"] = function()
