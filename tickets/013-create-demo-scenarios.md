@@ -9,7 +9,7 @@ Demo scenarios documented. Implementation needed as features are completed.
 ### 1. Basic History Tracking
 
 **Prerequisites:**
-- v2 plugin installed
+- plugin installed
 - History manager initialized
 
 **Steps:**
@@ -31,7 +31,7 @@ Demo scenarios documented. Implementation needed as features are completed.
 
 **Prerequisites:**
 - Multiple projects available
-- v2 plugin installed
+- plugin installed
 
 **Steps:**
 1. Open file from project A
@@ -122,7 +122,7 @@ Demo scenarios documented. Implementation needed as features are completed.
 
 **Required:**
 - Neovim 0.8+
-- v2 plugin installed
+- plugin installed
 - History manager working
 
 **Optional:**

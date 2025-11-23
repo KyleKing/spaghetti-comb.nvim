@@ -5,7 +5,7 @@ local M = {}
 M.version = "0.1.0"
 
 -- Default configuration
-local default_config = require("spaghetti-comb-v2.config").default
+local default_config = require("spaghetti-comb.config").default
 
 -- Plugin state
 local state = {
@@ -21,20 +21,20 @@ function M.setup(opts)
     state.config = vim.tbl_deep_extend("force", default_config, opts or {})
 
     -- Initialize core components
-    local history_manager = require("spaghetti-comb-v2.history.manager")
-    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
-    local commands = require("spaghetti-comb-v2.navigation.commands")
-    local events = require("spaghetti-comb-v2.navigation.events")
-    local jumplist = require("spaghetti-comb-v2.navigation.jumplist")
-    local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
-    local debug_utils = require("spaghetti-comb-v2.utils.debug")
+    local history_manager = require("spaghetti-comb.history.manager")
+    local bookmarks = require("spaghetti-comb.history.bookmarks")
+    local commands = require("spaghetti-comb.navigation.commands")
+    local events = require("spaghetti-comb.navigation.events")
+    local jumplist = require("spaghetti-comb.navigation.jumplist")
+    local lsp_integration = require("spaghetti-comb.navigation.lsp")
+    local debug_utils = require("spaghetti-comb.utils.debug")
 
     -- UI components
-    local breadcrumbs = require("spaghetti-comb-v2.ui.breadcrumbs")
-    local preview = require("spaghetti-comb-v2.ui.preview")
-    local floating_tree = require("spaghetti-comb-v2.ui.floating_tree")
-    local picker = require("spaghetti-comb-v2.ui.picker")
-    local statusline = require("spaghetti-comb-v2.ui.statusline")
+    local breadcrumbs = require("spaghetti-comb.ui.breadcrumbs")
+    local preview = require("spaghetti-comb.ui.preview")
+    local floating_tree = require("spaghetti-comb.ui.floating_tree")
+    local picker = require("spaghetti-comb.ui.picker")
+    local statusline = require("spaghetti-comb.ui.statusline")
 
     -- Setup debug logging first
     debug_utils.setup(state.config.debug)

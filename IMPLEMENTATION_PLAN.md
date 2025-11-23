@@ -1,4 +1,4 @@
-# Spaghetti Comb v2 - Neovim Plugin Implementation Plan
+# Spaghetti Comb - Neovim Plugin Implementation Plan
 
 ## Overview
 
@@ -22,7 +22,7 @@
 
 ```
 lua/
-├── spaghetti-comb-v2/
+├── spaghetti-comb/
 │   ├── init.lua              -- Main plugin interface and setup
 │   ├── analyzer.lua          -- LSP-based code analysis and symbol extraction
 │   ├── navigation.lua        -- Navigation stack management and history
@@ -306,7 +306,7 @@ local navigation_stack = {
 
 ```lua
 -- New module structure
-lua/spaghetti-comb-v2/ui/
+lua/spaghetti-comb/ui/
 ├── breadcrumbs.lua          -- Core breadcrumb logic and display
 ├── breadcrumb_menu.lua      -- Interactive navigation menu
 └── statusline.lua           -- Statusline integration helpers
@@ -454,7 +454,7 @@ breadcrumbs = {
 ## Configuration Example
 
 ```lua
-require('spaghetti-comb-v2').setup({
+require('spaghetti-comb').setup({
   -- Relations panel configuration
   relations = {
     height = 15,              -- Normal split height
@@ -508,4 +508,4 @@ require('spaghetti-comb-v2').setup({
 - Screenshot testing for UI validation
 - Performance benchmarking for optimization validation
 
-This implementation plan provides a comprehensive roadmap for building Spaghetti Comb v2 into a powerful code exploration tool that helps developers untangle complex codebases through intelligent relationship visualization and navigation.
+This implementation plan provides a comprehensive roadmap for building Spaghetti Comb into a powerful code exploration tool that helps developers untangle complex codebases through intelligent relationship visualization and navigation.

@@ -13,7 +13,7 @@ function M.setup(config)
 
     -- Set up log file path
     local log_dir = vim.fn.stdpath("log")
-    state.log_file = log_dir .. "/spaghetti-comb-v2.log"
+    state.log_file = log_dir .. "/spaghetti-comb.log"
 end
 
 -- Log levels
@@ -78,7 +78,7 @@ function M.log(level, message, data)
             vim_level = vim.log.levels.WARN
         end
 
-        vim.notify("spaghetti-comb-v2: " .. message, vim_level)
+        vim.notify("spaghetti-comb: " .. message, vim_level)
     end
 end
 
@@ -93,7 +93,7 @@ function M.error(message, data) M.log("ERROR", message, data) end
 
 -- Task 9.1: State inspection commands
 function M.dump_history()
-    local history_manager = require("spaghetti-comb-v2.history.manager")
+    local history_manager = require("spaghetti-comb.history.manager")
     local trail = history_manager.get_current_trail()
 
     if not trail then
@@ -112,7 +112,7 @@ function M.dump_history()
 end
 
 function M.dump_config()
-    local plugin = require("spaghetti-comb-v2")
+    local plugin = require("spaghetti-comb")
     local config = plugin.get_config()
 
     M.info("Current configuration", config)
@@ -120,7 +120,7 @@ function M.dump_config()
 end
 
 function M.dump_bookmarks()
-    local bookmarks = require("spaghetti-comb-v2.history.bookmarks")
+    local bookmarks = require("spaghetti-comb.history.bookmarks")
     local all_bookmarks = bookmarks.get_all_bookmarks()
 
     M.info("Bookmarks", {
@@ -133,7 +133,7 @@ function M.dump_bookmarks()
 end
 
 function M.dump_all_state()
-    M.info("=== Spaghetti Comb v2 State Dump ===")
+    M.info("=== Spaghetti Comb State Dump ===")
     M.dump_config()
     M.dump_history()
     M.dump_bookmarks()

@@ -5,7 +5,7 @@ Concise reference for AI agents working on this codebase. For detailed human-foc
 ## Quick Commands
 
 ### Testing
-- `mise run test` - Run all v2 tests (mini.test framework)
+- `mise run test` - Run all tests (mini.test framework)
 - `mise run test-file --file=<file>` - Run specific test file
 
 ### Code Quality
@@ -22,9 +22,9 @@ Concise reference for AI agents working on this codebase. For detailed human-foc
 
 ## Architecture Overview
 
-**Plugin**: Spaghetti Comb v2 - Code exploration via breadcrumb navigation
+**Plugin**: Spaghetti Comb - Code exploration via breadcrumb navigation
 
-**Current Status**: v2 in active development (history manager implemented, UI components in progress)
+**Current Status**: in active development (history manager implemented, UI components in progress)
 
 **Architecture Pattern**:
 - Modular structure: `history/`, `ui/`, `navigation/`, `utils/`
@@ -39,14 +39,14 @@ Concise reference for AI agents working on this codebase. For detailed human-foc
 
 **v1 vs v2**:
 - v1: Relations panel UI (fully implemented, will be removed)
-- v2: Breadcrumb-based (in development, extends Neovim built-ins)
+- : Breadcrumb-based (in development, extends Neovim built-ins)
 
 ## Code Locations
 
-- **v2 Code**: `lua/spaghetti-comb-v2/`
+- ** Code**: `lua/spaghetti-comb/`
 - **v1 Code**: `lua/spaghetti-comb-v1/` (to be removed after migration)
-- **Tests**: `lua/spaghetti-comb-v2/tests/` (v2), `tests-v1/` (v1)
-- **Plugin Loaders**: `plugin/spaghetti-comb-v2.lua`
+- **Tests**: `lua/spaghetti-comb/tests/` (current), `tests-v1/` (v1)
+- **Plugin Loaders**: `plugin/spaghetti-comb.lua`
 
 ## Testing Framework
 
@@ -54,6 +54,6 @@ Uses `mini.test` with child Neovim processes. See `deps/mini-test.md` for framew
 
 ## Common Tasks
 
-**Add a feature**: Check `lua/spaghetti-comb-v2/` for TODO comments, implement in appropriate module
+**Add a feature**: Check `lua/spaghetti-comb/` for TODO comments, implement in appropriate module
 **Fix a bug**: Check test coverage, add test if missing, fix implementation
-**Port from v1**: See ticket 006 for porting checklist, adapt v1 code to v2 architecture
+**Port from v1**: See ticket 006 for porting checklist, adapt v1 code to architecture

@@ -1,14 +1,14 @@
-# Spaghetti Comb v2 - Phase 2 Implementation Summary
+# Spaghetti Comb - Phase 2 Implementation Summary
 
 ## Overview
 
-Phase 2 implementation is **COMPLETE**. All UI components have been successfully implemented and integrated into the Spaghetti Comb v2 navigation system.
+Phase 2 implementation is **COMPLETE**. All UI components have been successfully implemented and integrated into the Spaghetti Comb navigation system.
 
 ## Completed Tasks
 
 ### ✅ Task 6: Hotkey-Triggered Breadcrumb System
 
-**Implementation:** `lua/spaghetti-comb-v2/ui/breadcrumbs.lua` (335 lines)
+**Implementation:** `lua/spaghetti-comb/ui/breadcrumbs.lua` (335 lines)
 
 #### 6.1: Hotkey-only breadcrumb display
 - Floating window that appears only on hotkey press (non-intrusive design)
@@ -48,8 +48,8 @@ Phase 2 implementation is **COMPLETE**. All UI components have been successfully
 ### ✅ Task 7: Floating Tree Window with Unicode Visualization
 
 **Implementation:**
-- `lua/spaghetti-comb-v2/ui/floating_tree.lua` (372 lines)
-- `lua/spaghetti-comb-v2/ui/preview.lua` (211 lines)
+- `lua/spaghetti-comb/ui/floating_tree.lua` (372 lines)
+- `lua/spaghetti-comb/ui/preview.lua` (211 lines)
 
 #### 7.1: Unicode tree rendering system
 - Unicode box-drawing characters: `├─`, `└─`, `│`
@@ -91,7 +91,7 @@ Phase 2 implementation is **COMPLETE**. All UI components have been successfully
 
 ### ✅ Task 8: Dual-Mode Picker System
 
-**Implementation:** `lua/spaghetti-comb-v2/ui/picker.lua` (380 lines)
+**Implementation:** `lua/spaghetti-comb/ui/picker.lua` (380 lines)
 
 #### 8.1: Bookmark management picker mode
 - Dual-mode picker supporting bookmarks and navigation
@@ -134,7 +134,7 @@ Phase 2 implementation is **COMPLETE**. All UI components have been successfully
 ### Module Structure
 
 ```
-lua/spaghetti-comb-v2/ui/
+lua/spaghetti-comb/ui/
 ├── breadcrumbs.lua      (335 lines) - Hotkey-triggered breadcrumb display
 ├── floating_tree.lua    (372 lines) - Unicode tree with split-screen layout
 ├── preview.lua          (211 lines) - Shared preview system
@@ -150,10 +150,10 @@ All UI components are initialized in `init.lua`:
 
 ```lua
 -- UI components
-local breadcrumbs = require("spaghetti-comb-v2.ui.breadcrumbs")
-local preview = require("spaghetti-comb-v2.ui.preview")
-local floating_tree = require("spaghetti-comb-v2.ui.floating_tree")
-local picker = require("spaghetti-comb-v2.ui.picker")
+local breadcrumbs = require("spaghetti-comb.ui.breadcrumbs")
+local preview = require("spaghetti-comb.ui.preview")
+local floating_tree = require("spaghetti-comb.ui.floating_tree")
+local picker = require("spaghetti-comb.ui.picker")
 
 -- Setup UI components
 preview.setup(state.config)
@@ -185,7 +185,7 @@ picker.setup(state.config)
 ### Breadcrumbs
 
 ```lua
-local breadcrumbs = require("spaghetti-comb-v2.ui.breadcrumbs")
+local breadcrumbs = require("spaghetti-comb.ui.breadcrumbs")
 
 -- Show breadcrumbs (hotkey-triggered)
 breadcrumbs.show_on_hotkey()
@@ -206,7 +206,7 @@ breadcrumbs.hide()
 ### Floating Tree
 
 ```lua
-local floating_tree = require("spaghetti-comb-v2.ui.floating_tree")
+local floating_tree = require("spaghetti-comb.ui.floating_tree")
 
 -- Show tree view with preview
 floating_tree.show_branch_history()
@@ -227,7 +227,7 @@ floating_tree.hide()
 ### Picker
 
 ```lua
-local picker = require("spaghetti-comb-v2.ui.picker")
+local picker = require("spaghetti-comb.ui.picker")
 
 -- Show bookmark picker
 picker.show_bookmark_mode()
@@ -260,7 +260,7 @@ local has_mini_pick = picker.is_using_mini_pick()
 All UI components use the configuration from `config.lua`:
 
 ```lua
-require("spaghetti-comb-v2").setup({
+require("spaghetti-comb").setup({
     display = {
         enabled = true,
         max_items = 10,              -- Breadcrumb truncation
@@ -352,7 +352,7 @@ All UI components are designed for efficiency:
 
 ## Summary
 
-Phase 2 implementation delivers a complete visual interface for the Spaghetti Comb v2 navigation system:
+Phase 2 implementation delivers a complete visual interface for the Spaghetti Comb navigation system:
 
 - ✅ **3 major UI components** (breadcrumbs, tree, picker)
 - ✅ **1 shared component** (preview)

@@ -19,9 +19,9 @@ function M.setup(config)
     if state.initialized then return end
 
     -- Load dependencies
-    history_manager = require("spaghetti-comb-v2.history.manager")
-    debug_utils = require("spaghetti-comb-v2.utils.debug")
-    project_utils = require("spaghetti-comb-v2.utils.project")
+    history_manager = require("spaghetti-comb.history.manager")
+    debug_utils = require("spaghetti-comb.utils.debug")
+    project_utils = require("spaghetti-comb.utils.project")
 
     -- Setup dependencies
     debug_utils.setup(config.debug or {})

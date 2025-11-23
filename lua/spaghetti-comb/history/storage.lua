@@ -2,12 +2,12 @@
 local M = {}
 
 -- Module dependencies
-local types = require("spaghetti-comb-v2.types")
+local types = require("spaghetti-comb.types")
 
 -- Storage paths
 local function get_storage_dir()
     local data_path = vim.fn.stdpath("data")
-    return data_path .. "/spaghetti-comb-v2"
+    return data_path .. "/spaghetti-comb"
 end
 
 local function get_history_dir()

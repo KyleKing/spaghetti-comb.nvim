@@ -1,4 +1,4 @@
-# Next Steps for Spaghetti Comb v2
+# Next Steps for Spaghetti Comb 
 
 ## Overview
 
@@ -24,14 +24,14 @@ This document outlines the remaining work to complete Spaghetti Comb v2, includi
 
 **Phase 4: Persistence**
 - ✅ Task 12: Optional persistence system (history + bookmarks)
-  - JSON-based storage in `stdpath('data')/spaghetti-comb-v2/`
+  - JSON-based storage in `stdpath('data')/spaghetti-comb/`
   - Auto-save on VimLeavePre (when enabled)
   - Manual save/load commands
   - Storage cleanup and statistics
 
 **Cleanup**
 - ✅ V1 implementation removed (21 files, ~6,000 lines deleted)
-- ✅ All documentation updated to v2
+- ✅ All documentation updated to 
 - ✅ Codebase simplified to single implementation
 
 ### 📋 Remaining Tasks (13-14)
@@ -51,12 +51,12 @@ This document outlines the remaining work to complete Spaghetti Comb v2, includi
 
 **Implementation approach:**
 ```lua
--- File: lua/spaghetti-comb-v2/tests/history_spec.lua
+-- File: lua/spaghetti-comb/tests/history_spec.lua
 local eq = MiniTest.expect.equality
 local T = MiniTest.new_set()
 
 T['record_jump'] = function()
-    local manager = require('spaghetti-comb-v2.history.manager')
+    local manager = require('spaghetti-comb.history.manager')
     manager.setup({})
 
     -- Test recording a jump
@@ -74,10 +74,10 @@ end
 ```
 
 **Test files to create:**
-- `lua/spaghetti-comb-v2/tests/history_spec.lua` - History manager tests
-- `lua/spaghetti-comb-v2/tests/bookmarks_spec.lua` - Already exists! (383 lines)
-- `lua/spaghetti-comb-v2/tests/navigation_spec.lua` - Navigation commands
-- `lua/spaghetti-comb-v2/tests/pruning_spec.lua` - Pruning and recovery tests
+- `lua/spaghetti-comb/tests/history_spec.lua` - History manager tests
+- `lua/spaghetti-comb/tests/bookmarks_spec.lua` - Already exists! (383 lines)
+- `lua/spaghetti-comb/tests/navigation_spec.lua` - Navigation commands
+- `lua/spaghetti-comb/tests/pruning_spec.lua` - Pruning and recovery tests
 
 **Estimated effort:** 2-3 days
 - Core history tests: ~300 lines
@@ -94,7 +94,7 @@ end
 
 **Implementation approach:**
 ```lua
--- File: lua/spaghetti-comb-v2/tests/integration_spec.lua
+-- File: lua/spaghetti-comb/tests/integration_spec.lua
 
 T['lsp_definition_tracking'] = function()
     -- Mock LSP definition jump
@@ -103,19 +103,19 @@ T['lsp_definition_tracking'] = function()
         vim.api.nvim_win_set_cursor(0, {10, 5})
     end
 
-    local lsp = require('spaghetti-comb-v2.navigation.lsp')
+    local lsp = require('spaghetti-comb.navigation.lsp')
     lsp.go_to_definition()
 
     -- Verify jump was recorded in history
-    local trail = require('spaghetti-comb-v2.history.manager').get_current_trail()
+    local trail = require('spaghetti-comb.history.manager').get_current_trail()
     eq(trail.entries[#trail.entries].jump_type, 'lsp_definition')
 end
 ```
 
 **Test files to create:**
-- `lua/spaghetti-comb-v2/tests/integration/lsp_spec.lua` - LSP integration
-- `lua/spaghetti-comb-v2/tests/integration/jumplist_spec.lua` - Jumplist
-- `lua/spaghetti-comb-v2/tests/integration/project_spec.lua` - Project separation
+- `lua/spaghetti-comb/tests/integration/lsp_spec.lua` - LSP integration
+- `lua/spaghetti-comb/tests/integration/jumplist_spec.lua` - Jumplist
+- `lua/spaghetti-comb/tests/integration/project_spec.lua` - Project separation
 
 **Estimated effort:** 2-3 days
 - LSP integration tests: ~250 lines
@@ -132,10 +132,10 @@ end
 
 **Implementation approach:**
 ```lua
--- File: lua/spaghetti-comb-v2/tests/ui_spec.lua
+-- File: lua/spaghetti-comb/tests/ui_spec.lua
 
 T['breadcrumbs_display'] = function()
-    local breadcrumbs = require('spaghetti-comb-v2.ui.breadcrumbs')
+    local breadcrumbs = require('spaghetti-comb.ui.breadcrumbs')
     breadcrumbs.setup({})
 
     -- Create mock history trail
@@ -158,10 +158,10 @@ end
 ```
 
 **Test files to create:**
-- `lua/spaghetti-comb-v2/tests/ui/breadcrumbs_spec.lua` - Breadcrumbs
-- `lua/spaghetti-comb-v2/tests/ui/tree_spec.lua` - Tree visualization
-- `lua/spaghetti-comb-v2/tests/ui/picker_spec.lua` - Picker modes
-- `lua/spaghetti-comb-v2/tests/ui/preview_spec.lua` - Preview extraction
+- `lua/spaghetti-comb/tests/ui/breadcrumbs_spec.lua` - Breadcrumbs
+- `lua/spaghetti-comb/tests/ui/tree_spec.lua` - Tree visualization
+- `lua/spaghetti-comb/tests/ui/picker_spec.lua` - Picker modes
+- `lua/spaghetti-comb/tests/ui/preview_spec.lua` - Preview extraction
 
 **Estimated effort:** 2-3 days
 - Breadcrumbs tests: ~200 lines
@@ -212,7 +212,7 @@ state.trails[project].file_index = {}   -- O(1) lookup by file
 ```
 
 **Implementation:**
-- File: `lua/spaghetti-comb-v2/history/manager.lua`
+- File: `lua/spaghetti-comb/history/manager.lua`
 - Add index building in `record_jump()`
 - Update all lookups to use indexes
 - **Estimated effort:** 1 day
@@ -230,7 +230,7 @@ return state.bookmark_index[key]
 ```
 
 **Implementation:**
-- File: `lua/spaghetti-comb-v2/history/bookmarks.lua`
+- File: `lua/spaghetti-comb/history/bookmarks.lua`
 - Already has `get_location_key()` helper
 - Add `bookmark_index` to state
 - Update `toggle_bookmark()` to use index
@@ -248,7 +248,7 @@ tree.render_partial(visible_entries)
 ```
 
 **Implementation:**
-- File: `lua/spaghetti-comb-v2/ui/floating_tree.lua`
+- File: `lua/spaghetti-comb/ui/floating_tree.lua`
 - Add virtual scrolling with 50-entry window
 - Render only visible entries
 - **Estimated effort:** 2 days
@@ -265,7 +265,7 @@ end)
 ```
 
 **Implementation:**
-- File: `lua/spaghetti-comb-v2/ui/preview.lua`
+- File: `lua/spaghetti-comb/ui/preview.lua`
 - Use `vim.loop.fs_*` for async I/O
 - Add preview cache with LRU eviction
 - **Estimated effort:** 1-2 days
@@ -403,7 +403,7 @@ end
 **Issue:** No comprehensive user documentation
 
 **Missing docs:**
-- Vim help file (`:help spaghetti-comb-v2`)
+- Vim help file (`:help spaghetti-comb`)
 - Architecture overview for contributors
 - Troubleshooting guide
 - Performance tuning guide
@@ -454,7 +454,7 @@ The project will be considered complete when:
 - [ ] **Code quality:** All code passes linter checks
 
 #### 3. Documentation 📝
-- [ ] **User docs:** Comprehensive `:help spaghetti-comb-v2` file
+- [ ] **User docs:** Comprehensive `:help spaghetti-comb` file
 - [ ] **README:** Installation, usage, and troubleshooting
 - [ ] **Developer docs:** ARCHITECTURE.md and CONTRIBUTING.md
 - [ ] **Examples:** Real-world usage examples
@@ -618,7 +618,7 @@ Features to consider for future releases:
 - Preview loading: < 200ms
 
 ### 3. Backwards Compatibility
-**Question:** Should v2 support v1 data migration?
+**Question:** Should support v1 data migration?
 **Options:**
 - No migration (clean break)
 - Optional migration script
@@ -637,7 +637,7 @@ Features to consider for future releases:
 
 ## Summary
 
-Spaghetti Comb v2 is **70% complete** with core functionality, UI, and persistence implemented. The remaining 30% focuses on:
+Spaghetti Comb is **70% complete** with core functionality, UI, and persistence implemented. The remaining 30% focuses on:
 
 1. **Testing** (Task 13): Comprehensive test coverage for reliability
 2. **Performance** (Task 14): Optimizations for large codebases

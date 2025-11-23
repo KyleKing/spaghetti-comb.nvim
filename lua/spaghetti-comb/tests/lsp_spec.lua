@@ -6,7 +6,7 @@ local T = MiniTest.new_set()
 T["lsp"] = MiniTest.new_set()
 
 T["lsp"]["setup initializes correctly"] = function()
-    local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
+    local lsp_integration = require("spaghetti-comb.navigation.lsp")
 
     -- Test setup with default config
     lsp_integration.setup({
@@ -19,7 +19,7 @@ T["lsp"]["setup initializes correctly"] = function()
 end
 
 T["lsp"]["check_lsp_availability works"] = function()
-    local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
+    local lsp_integration = require("spaghetti-comb.navigation.lsp")
 
     -- Test LSP availability check
     local available = lsp_integration.check_lsp_availability()
@@ -29,7 +29,7 @@ T["lsp"]["check_lsp_availability works"] = function()
 end
 
 T["lsp"]["get_context_at_position works"] = function()
-    local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
+    local lsp_integration = require("spaghetti-comb.navigation.lsp")
 
     -- Create a test buffer
     local buf = vim.api.nvim_create_buf(true, true)
@@ -49,7 +49,7 @@ T["lsp"]["get_context_at_position works"] = function()
 end
 
 T["lsp"]["extract_function_name works"] = function()
-    local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
+    local lsp_integration = require("spaghetti-comb.navigation.lsp")
 
     -- Test various function patterns
     local test_cases = {
@@ -66,7 +66,7 @@ T["lsp"]["extract_function_name works"] = function()
 end
 
 T["lsp"]["lsp_result_to_locations handles single location"] = function()
-    local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
+    local lsp_integration = require("spaghetti-comb.navigation.lsp")
 
     -- Test single location result
     local result = {
@@ -84,7 +84,7 @@ T["lsp"]["lsp_result_to_locations handles single location"] = function()
 end
 
 T["lsp"]["lsp_result_to_locations handles array of locations"] = function()
-    local lsp_integration = require("spaghetti-comb-v2.navigation.lsp")
+    local lsp_integration = require("spaghetti-comb.navigation.lsp")
 
     -- Test array result
     local result = {

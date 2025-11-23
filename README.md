@@ -1,4 +1,4 @@
-# Spaghetti Comb v2
+# Spaghetti Comb
 
 A Neovim plugin for code exploration designed to help developers untangle complex codebases by visualizing code relationships and dependencies.
 
@@ -31,7 +31,7 @@ later(function()
         depends = {},
     })
 
-    require("spaghetti-comb-v2").setup({
+    require("spaghetti-comb").setup({
         -- Configuration options (optional)
         relations = {
             height = 15,              -- Normal split height
@@ -62,7 +62,7 @@ You can also add the plugin directory directly to Neovim's runtime path:
 vim.opt.runtimepath:append("/path/to/your/local/spaghetti-comb.nvim")
 
 -- Then setup normally
-require("spaghetti-comb-v2").setup()
+require("spaghetti-comb").setup()
 ```
 
 ## Usage
@@ -150,7 +150,7 @@ Press `<Tab>` in the Relations panel to enter **Focus Mode**:
 └─────────────────────────────┴───────────────────────┘
 ```
 
-See `:help spaghetti-comb-v2` for complete documentation.
+See `:help spaghetti-comb` for complete documentation.
 
 ## Requirements
 
@@ -161,14 +161,14 @@ See `:help spaghetti-comb-v2` for complete documentation.
 ---
 
 
-# spaghetti-comb-v2.nvim
+# spaghetti-comb.nvim
 
 A Neovim plugin that extends built-in navigation capabilities with a visual, non-obtrusive breadcrumb system for efficient codebase exploration.
 
 ## Project Structure
 
 ```
-lua/spaghetti-comb-v2/
+lua/spaghetti-comb/
 ├── init.lua              -- Main plugin entry point
 ├── config.lua            -- Configuration management with validation
 ├── types.lua             -- Core data model interfaces and types
@@ -237,13 +237,13 @@ Tests are organized using mini.test framework with focus on high-signal integrat
 
 ```lua
 -- Run all tests
-require('spaghetti-comb-v2.tests').run_all()
+require('spaghetti-comb.tests').run_all()
 
 -- Run specific test categories
-require('spaghetti-comb-v2.tests').run_history()
-require('spaghetti-comb-v2.tests').run_ui()
-require('spaghetti-comb-v2.tests').run_navigation()
-require('spaghetti-comb-v2.tests').run_integration()
+require('spaghetti-comb.tests').run_history()
+require('spaghetti-comb.tests').run_ui()
+require('spaghetti-comb.tests').run_navigation()
+require('spaghetti-comb.tests').run_integration()
 ```
 
 ## Next Steps

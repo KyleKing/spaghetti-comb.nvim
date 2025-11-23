@@ -1,4 +1,4 @@
-# Ticket 011: v2 Core Features
+# Ticket 011: Core Features
 
 ## Status: 📝 PLANNED
 
@@ -48,17 +48,17 @@ Core features identified. Implementation needed.
 
 **LSP Integration:**
 - Port `analyzer.lua` LSP patterns
-- Adapt for v2 architecture
+- Adapt for architecture
 - Extend rather than replace
 
 **Code Preview:**
 - Port `ui/preview.lua` functionality
-- Adapt for v2 UI components
+- Adapt for UI components
 - Ensure fast loading
 
 **Storage:**
 - Port `persistence/storage.lua` patterns
-- Adapt for v2 data models
+- Adapt for data models
 - Make optional
 
 ## Implementation Order
@@ -73,7 +73,7 @@ Core features identified. Implementation needed.
 
 ```bash
 # Verify features are implemented
-grep -r "TODO" lua/spaghetti-comb-v2/navigation/commands.lua
+grep -r "TODO" lua/spaghetti-comb/navigation/commands.lua
 # Should show fewer TODOs as features are implemented
 
 # Test in nvim
