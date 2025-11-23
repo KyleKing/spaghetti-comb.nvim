@@ -54,6 +54,12 @@ function M.setup(opts)
     picker.setup(state.config)
     statusline.setup(state.config)
 
+    -- Setup persistence (auto-save on exit if enabled)
+    if state.config.history and state.config.history.save_on_exit then
+        history_manager.setup_auto_save()
+        bookmarks.setup_auto_save()
+    end
+
     state.initialized = true
 end
 

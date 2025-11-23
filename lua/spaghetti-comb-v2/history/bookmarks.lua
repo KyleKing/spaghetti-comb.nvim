@@ -317,4 +317,108 @@ function M.reset()
     }
 end
 
+-- Task 12.2: Bookmark persistence integration
+
+-- Save current project bookmarks to disk
+function M.save_current_project_bookmarks()
+    if not state.initialized then return false, "Bookmark manager not initialized" end
+    if not state.current_project then return false, "No current project" end
+
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local bookmarks = get_project_bookmarks()
+
+    if #bookmarks == 0 then
+        return false, "No bookmarks to save"
+    end
+
+    return storage.save_bookmarks(bookmarks, state.current_project)
+end
+
+-- Save all project bookmarks to disk
+function M.save_all_bookmarks()
+    if not state.initialized then return false, "Bookmark manager not initialized" end
+
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local saved_count = 0
+    local errors = {}
+
+    for project_root, bookmarks in pairs(state.bookmarks) do
+        if bookmarks and #bookmarks > 0 then
+            local success, err = storage.save_bookmarks(bookmarks, project_root)
+            if success then
+                saved_count = saved_count + 1
+            else
+                table.insert(errors, string.format("%s: %s", project_root, err or "unknown error"))
+            end
+        end
+    end
+
+    if #errors > 0 then
+        return false, string.format("Saved %d projects, %d errors: %s", saved_count, #errors, table.concat(errors, "; "))
+    end
+
+    return true, string.format("Saved %d project bookmarks", saved_count)
+end
+
+-- Load bookmarks for a project from disk
+function M.load_project_bookmarks(project_root)
+    if not state.initialized then return false, "Bookmark manager not initialized" end
+    if not project_root then return false, "Invalid project root" end
+
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local bookmarks, err = storage.load_bookmarks(project_root)
+
+    if not bookmarks then
+        return false, err or "Failed to load bookmarks"
+    end
+
+    state.bookmarks[project_root] = bookmarks
+    return true, string.format("Loaded %d bookmarks", #bookmarks)
+end
+
+-- Auto-save bookmarks on VimLeavePre
+function M.setup_auto_save()
+    if not state.initialized then return false, "Bookmark manager not initialized" end
+
+    local config = state.config or {}
+    if not (config.history and config.history.save_on_exit) then
+        return false, "Auto-save disabled in config"
+    end
+
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+        group = vim.api.nvim_create_augroup("SpaghettiCombBookmarkPersistence", { clear = true }),
+        callback = function()
+            M.save_all_bookmarks()
+        end,
+    })
+
+    return true, "Bookmark auto-save enabled"
+end
+
+-- Auto-load bookmarks on project switch
+function M.try_load_on_project_switch(project_root)
+    if not state.initialized then return false, "Bookmark manager not initialized" end
+    if not project_root then return false, "Invalid project root" end
+
+    local config = state.config or {}
+    if not (config.history and config.history.save_on_exit) then
+        return false, "Persistence disabled in config"
+    end
+
+    -- Don't load if we already have bookmarks for this project
+    if state.bookmarks[project_root] and #state.bookmarks[project_root] > 0 then
+        return false, "Bookmarks already loaded"
+    end
+
+    local storage = require("spaghetti-comb-v2.history.storage")
+    local bookmarks, err = storage.load_bookmarks(project_root)
+
+    if bookmarks then
+        state.bookmarks[project_root] = bookmarks
+        return true, string.format("Loaded %d bookmarks from disk", #bookmarks)
+    end
+
+    return false, err or "No saved bookmarks"
+end
+
 return M
