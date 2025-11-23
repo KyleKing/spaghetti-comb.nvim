@@ -17,7 +17,7 @@ sources = ["deps/mini.nvim"]
 [tasks.test]
 depends = ["deps-mini-nvim"]
 description = "Run all test files"
-run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua require('spaghetti-comb-v2.tests.init').run_all()\""
+run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua require('spaghetti-comb.tests.init').run_all()\""
 
 [tasks.test-file]
 depends = ["deps-mini-nvim"]

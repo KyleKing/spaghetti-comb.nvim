@@ -98,7 +98,7 @@ function M._create_breadcrumb_window()
 
     -- Calculate window dimensions with minimum constraints
     local width = math.max(10, math.min(100, vim.o.columns - 4))
-    local height = math.max(3, math.min(3, vim.o.lines - 4))
+    local height = math.max(3, math.min(10, vim.o.lines - 4))
     local row = 0
     local col = math.max(0, math.floor((vim.o.columns - width) / 2))
 

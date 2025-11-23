@@ -48,9 +48,18 @@ end, {
 -- History Management Commands
 vim.api.nvim_create_user_command("SpaghettiCombHistoryClear", function(opts)
     local history_manager = require("spaghetti-comb.history.manager")
-    local project = opts.args ~= "all"
-    -- Implementation would clear history
-    vim.notify("History clearing not yet fully implemented", vim.log.levels.WARN)
+    local success, msg
+
+    if opts.args == "all" then
+        success = history_manager.clear_all_history()
+        msg = success and "All history cleared" or "Failed to clear history"
+    else
+        success, msg = history_manager.clear_current_project_history()
+        msg = success and "Current project history cleared" or (msg or "Failed to clear history")
+    end
+
+    local level = success and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(msg, level)
 end, {
     nargs = "?",
     complete = function() return { "all" } end,
