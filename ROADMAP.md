@@ -11,10 +11,10 @@ The test infrastructure was broken until July 2026 (the runner never collected a
 - [x] Fix the test runner so mini.test actually collects and runs spec files
 - [x] Fix `mise.toml` tasks (stale module path, removed `tests-v1/`, Lua toolchain removed)
 - [x] Restore the CI workflow from the orphaned `claude/add-ci-pipeline` branch
-- [ ] Salvage the expanded specs from that branch (history, navigation, ui, integration: ~600 lines of Task 13 tests, never executed; expect failures on first real run)
-- [ ] Replace remaining placeholder tests (`-- TODO: Implement in task 13.x`) with real cases, prioritizing: pruning and location recovery, project separation, jumplist integration, picker fallback
+- [x] Salvage the expanded specs from that branch (history, navigation, ui, integration: ~600 lines of Task 13 tests, never executed; expect failures on first real run)
+- [x] Replace remaining placeholder tests (`-- TODO: Implement in task 13.x`) with real cases, prioritizing: pruning and location recovery, project separation, jumplist integration, picker fallback
 - [ ] Adopt child-process isolation (`MiniTest.new_child_neovim`) for tests that touch windows, autocmds, or LSP so module-state leaks stop masking bugs
-- [ ] Clear the 21 selene warnings so `mise run typecheck` passes and can gate CI
+- [x] Clear the 21 selene warnings so `mise run typecheck` passes and can gate CI
 
 Exit criteria: CI green on stable and nightly, no placeholder tests in core paths.
 
