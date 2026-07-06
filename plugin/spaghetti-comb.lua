@@ -1,26 +1,34 @@
 -- Spaghetti Comb - Neovim Plugin for Code Exploration
 -- Prevent loading if already loaded or if Neovim version is too old
-if vim.g.loaded_spaghetti_comb or vim.fn.has("nvim-0.8") ~= 1 then return end
+if vim.g.loaded_spaghetti_comb or vim.fn.has("nvim-0.10") ~= 1 then return end
 vim.g.loaded_spaghetti_comb = 1
 
 -- Task 11: User commands and keybindings
 
 -- UI Commands
-vim.api.nvim_create_user_command("SpaghettiCombBreadcrumbs", function()
-    require("spaghetti-comb.ui.breadcrumbs").toggle()
-end, { desc = "Toggle breadcrumb trail view" })
+vim.api.nvim_create_user_command(
+    "SpaghettiCombBreadcrumbs",
+    function() require("spaghetti-comb.ui.breadcrumbs").toggle() end,
+    { desc = "Toggle breadcrumb trail view" }
+)
 
-vim.api.nvim_create_user_command("SpaghettiCombTree", function()
-    require("spaghetti-comb.ui.floating_tree").toggle()
-end, { desc = "Toggle navigation tree view with preview" })
+vim.api.nvim_create_user_command(
+    "SpaghettiCombTree",
+    function() require("spaghetti-comb.ui.floating_tree").toggle() end,
+    { desc = "Toggle navigation tree view with preview" }
+)
 
-vim.api.nvim_create_user_command("SpaghettiCombBookmarks", function()
-    require("spaghetti-comb.ui.picker").show_bookmark_mode()
-end, { desc = "Show bookmark picker" })
+vim.api.nvim_create_user_command(
+    "SpaghettiCombBookmarks",
+    function() require("spaghetti-comb.ui.picker").show_bookmark_mode() end,
+    { desc = "Show bookmark picker" }
+)
 
-vim.api.nvim_create_user_command("SpaghettiCombHistory", function()
-    require("spaghetti-comb.ui.picker").show_navigation_mode()
-end, { desc = "Show navigation history picker" })
+vim.api.nvim_create_user_command(
+    "SpaghettiCombHistory",
+    function() require("spaghetti-comb.ui.picker").show_navigation_mode() end,
+    { desc = "Show navigation history picker" }
+)
 
 -- Bookmark Commands
 vim.api.nvim_create_user_command("SpaghettiCombBookmarkToggle", function()
@@ -48,9 +56,18 @@ end, {
 -- History Management Commands
 vim.api.nvim_create_user_command("SpaghettiCombHistoryClear", function(opts)
     local history_manager = require("spaghetti-comb.history.manager")
-    local project = opts.args ~= "all"
-    -- Implementation would clear history
-    vim.notify("History clearing not yet fully implemented", vim.log.levels.WARN)
+    local success, msg
+
+    if opts.args == "all" then
+        success = history_manager.clear_all_history()
+        msg = success and "All history cleared" or "Failed to clear history"
+    else
+        success, msg = history_manager.clear_current_project_history()
+        msg = success and "Current project history cleared" or (msg or "Failed to clear history")
+    end
+
+    local level = success and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(msg, level)
 end, {
     nargs = "?",
     complete = function() return { "all" } end,
@@ -95,7 +112,16 @@ vim.api.nvim_create_user_command("SpaghettiCombStatus", function()
     local statusline = require("spaghetti-comb.ui.statusline")
     local status = statusline.get_branch_status()
     if status then
-        vim.notify(string.format("Branch: %s, Depth: %d/%d, State: %s", status.branch_id, status.depth, status.total, status.state), vim.log.levels.INFO)
+        vim.notify(
+            string.format(
+                "Branch: %s, Depth: %d/%d, State: %s",
+                status.branch_id,
+                status.depth,
+                status.total,
+                status.state
+            ),
+            vim.log.levels.INFO
+        )
     else
         vim.notify("No active navigation", vim.log.levels.INFO)
     end
@@ -228,8 +254,10 @@ vim.api.nvim_create_user_command("SpaghettiCombListProjects", function()
     local lines = { "Saved projects:" }
     for _, project in ipairs(projects) do
         local date = os.date("%Y-%m-%d %H:%M:%S", project.modified)
-        table.insert(lines, string.format("  %s (%s, %d bytes, modified: %s)",
-            project.hash, project.type, project.size, date))
+        table.insert(
+            lines,
+            string.format("  %s (%s, %d bytes, modified: %s)", project.hash, project.type, project.size, date)
+        )
     end
 
     vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)

@@ -39,7 +39,7 @@ end
 
 -- Check if LSP is available
 function M.check_lsp_availability()
-    local clients = vim.lsp.get_active_clients()
+    local clients = vim.lsp.get_clients()
     state.lsp_available = clients and #clients > 0
     return state.lsp_available
 end
