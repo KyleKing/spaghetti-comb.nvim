@@ -3,7 +3,11 @@ local MiniTest = require("mini.test")
 local T = MiniTest.new_set()
 
 -- Test LSP module initialization
-T["lsp"] = MiniTest.new_set()
+T["lsp"] = MiniTest.new_set({
+    hooks = {
+        post_case = function() require("spaghetti-comb.navigation.lsp").teardown() end,
+    },
+})
 
 T["lsp"]["setup initializes correctly"] = function()
     local lsp_integration = require("spaghetti-comb.navigation.lsp")

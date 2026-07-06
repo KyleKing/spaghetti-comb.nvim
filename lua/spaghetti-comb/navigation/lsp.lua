@@ -46,8 +46,11 @@ end
 
 -- Set up autocmds for LSP events
 function M.setup_lsp_autocmds()
+    local group = vim.api.nvim_create_augroup("SpaghettiCombLsp", { clear = true })
+
     -- Hook into LSP definition jumps
     vim.api.nvim_create_autocmd("LspAttach", {
+        group = group,
         callback = function(args)
             local client = vim.lsp.get_client_by_id(args.data.client_id)
             if not client then return end
@@ -59,8 +62,15 @@ function M.setup_lsp_autocmds()
 
     -- Hook into buffer changes to detect LSP navigation
     vim.api.nvim_create_autocmd({ "CursorMoved", "BufEnter" }, {
+        group = group,
         callback = function() M.handle_cursor_movement() end,
     })
+end
+
+-- Remove LSP autocmds and reset init state. Do not reuse without calling setup again.
+function M.teardown()
+    pcall(vim.api.nvim_del_augroup_by_name, "SpaghettiCombLsp")
+    state.initialized = false
 end
 
 -- Hook into LSP requests to track navigation
