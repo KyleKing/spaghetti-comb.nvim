@@ -67,7 +67,7 @@ end
 function M.get_current_project() return state.current_project end
 
 -- Core history tracking
-function M.record_jump(from_location, to_location, jump_type)
+function M.record_jump(_from_location, to_location, jump_type)
     if not state.initialized then return false, "History manager not initialized" end
 
     jump_type = jump_type or "manual"
@@ -225,7 +225,7 @@ function M.prune_with_recovery()
     local total_recovered = 0
 
     -- Prune each project's trail
-    for project_root, trail in pairs(state.trails) do
+    for project_root in pairs(state.trails) do
         local project_pruned, project_recovered = M.prune_project_trail(project_root, max_age_seconds, current_time)
         total_pruned = total_pruned + project_pruned
         total_recovered = total_recovered + project_recovered
@@ -321,7 +321,7 @@ function M.mark_unrecoverable(entry)
     entry.last_pruned = os.time()
 end
 
-function M.prune_old_entries(max_age)
+function M.prune_old_entries(_max_age)
     -- TODO: Implement in task 2.3
 end
 
@@ -396,7 +396,6 @@ function M.find_shifted_location(entry)
 
     -- If original line still exists and has content, check if it's the same
     if original_line <= #lines then
-        local current_line_content = lines[original_line]
         if entry.context and entry.context.before_lines then
             -- Try to match context around the original position
             local context_match = M.match_context_around_line(lines, original_line, entry.context)
@@ -509,7 +508,7 @@ function M.find_function_line(lines, function_name)
 end
 
 -- Find relative position within a function
-function M.find_relative_position_in_function(lines, function_line, context, relative_offset)
+function M.find_relative_position_in_function(lines, function_line, context, _relative_offset)
     if not context or not context.before_lines then return nil end
 
     -- Look for the context within a reasonable range around the function

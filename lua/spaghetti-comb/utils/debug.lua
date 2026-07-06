@@ -36,7 +36,6 @@ local function should_log(level)
         return level >= LOG_LEVELS.ERROR -- Always log errors
     end
 
-    local config_level = get_log_level(state.config.log_level or "info")
     local message_level = get_log_level(level)
 
     return state.config.enabled or message_level >= LOG_LEVELS.ERROR

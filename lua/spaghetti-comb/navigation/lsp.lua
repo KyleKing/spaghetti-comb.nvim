@@ -4,7 +4,7 @@ local M = {}
 -- Dependencies
 local history_manager = nil
 local debug_utils = nil
-local project_utils = nil
+local _project_utils = nil
 
 -- Module state
 local state = {
@@ -21,7 +21,7 @@ function M.setup(config)
     -- Load dependencies
     history_manager = require("spaghetti-comb.history.manager")
     debug_utils = require("spaghetti-comb.utils.debug")
-    project_utils = require("spaghetti-comb.utils.project")
+    _project_utils = require("spaghetti-comb.utils.project")
 
     -- Setup dependencies
     debug_utils.setup(config.debug or {})
@@ -175,7 +175,6 @@ function M.get_context_at_position(bufnr, position)
     if #lines == 0 then return {} end
 
     local line_num = position[1] - 1 -- Convert to 0-based
-    local col_num = position[2]
 
     -- Get context lines
     local before_lines = {}
@@ -304,7 +303,7 @@ function M.on_implementation_jump(from_pos, to_pos)
 end
 
 -- Handle LSP results
-function M.handle_definition_result(params, result)
+function M.handle_definition_result(_params, result)
     if not result then return end
 
     -- Convert LSP result to our format
@@ -312,7 +311,7 @@ function M.handle_definition_result(params, result)
     if #locations > 0 then M.on_references_found(locations) end
 end
 
-function M.handle_references_result(params, result)
+function M.handle_references_result(_params, result)
     if not result then return end
 
     -- Convert LSP result to our format
@@ -369,17 +368,6 @@ function M.enhanced_go_to_definition()
         M.fallback_go_to_definition()
         return
     end
-
-    -- Record current position before LSP call
-    local current_pos = vim.api.nvim_win_get_cursor(0)
-    local from_location = {
-        file_path = vim.api.nvim_buf_get_name(0),
-        position = {
-            line = current_pos[1],
-            column = current_pos[2],
-        },
-        context = M.get_context_at_position(0, current_pos),
-    }
 
     -- Call LSP go-to-definition
     vim.lsp.buf.definition({

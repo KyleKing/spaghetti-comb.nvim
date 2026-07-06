@@ -67,7 +67,7 @@ function M.toggle_bookmark(location)
     local bookmarks = get_project_bookmarks()
     if not bookmarks then return false, "Could not get project bookmarks" end
 
-    local idx, existing = find_bookmark(location, bookmarks)
+    local idx = find_bookmark(location, bookmarks)
 
     if idx then
         -- Remove existing bookmark
@@ -245,7 +245,7 @@ function M.update_frequent_locations()
                 local is_marked, _ = M.is_bookmarked(location)
                 if not is_marked then
                     -- Add automatic bookmark
-                    local success, msg = M.add_bookmark(location, false) -- false = automatic
+                    local success = M.add_bookmark(location, false) -- false = automatic
                     if success then promoted_count = promoted_count + 1 end
                 end
             end

@@ -165,7 +165,7 @@ helpers["bookmarks"] = MiniTest.new_set({}, {
         bookmarks.add_bookmark(create_test_location("/tmp/spaghetti-comb.nvim/test1.lua", 10, 5), true)
         bookmarks.add_bookmark(create_test_location("/tmp/spaghetti-comb.nvim/test2.lua", 20, 8), true)
 
-        local success, msg = bookmarks.clear_all_bookmarks(false)
+        local success, _msg = bookmarks.clear_all_bookmarks(false)
 
         expect_truthy(success)
 
@@ -184,7 +184,7 @@ helpers["bookmarks"] = MiniTest.new_set({}, {
         bookmarks.set_current_project("/tmp/project2")
         bookmarks.add_bookmark(create_test_location("/tmp/project2/test.lua", 20, 8), true)
 
-        local success, msg = bookmarks.clear_all_bookmarks(true)
+        local success, _msg = bookmarks.clear_all_bookmarks(true)
 
         expect_truthy(success)
 
@@ -335,7 +335,7 @@ helpers["bookmarks"] = MiniTest.new_set({}, {
         -- Visit location2 below threshold
         bookmarks.increment_visit_count(location2)
 
-        local success, msg = bookmarks.update_frequent_locations()
+        local success, _msg = bookmarks.update_frequent_locations()
 
         expect_truthy(success)
 

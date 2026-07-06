@@ -175,7 +175,7 @@ function M._format_entry_display(entry, is_current)
 end
 
 -- Apply syntax highlighting to breadcrumbs
-function M._apply_highlights(trail)
+function M._apply_highlights(_trail)
     if not state.buffer or not vim.api.nvim_buf_is_valid(state.buffer) then return end
 
     vim.api.nvim_buf_clear_namespace(state.buffer, state.namespace, 0, -1)
@@ -271,7 +271,7 @@ function M.collapse_unfocused()
 end
 
 -- Expand neighbors of focused item
-function M.expand_neighbors(focused_index)
+function M.expand_neighbors(_focused_index)
     -- Show focused item and immediate neighbors
     if not state.current_trail then return end
 

@@ -3,7 +3,6 @@ local M = {}
 
 -- Dependencies
 local history_manager = require("spaghetti-comb.history.manager")
-local project_utils = require("spaghetti-comb.utils.project")
 local debug_utils = require("spaghetti-comb.utils.debug")
 
 -- Module state

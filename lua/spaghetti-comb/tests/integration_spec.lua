@@ -227,23 +227,25 @@ T["jumplist"]["jump_to_index moves the cursor to a real file location"] = functi
 end
 
 -- Persistence round-trips isolated to a temporary data directory
+local persistence_original_stdpath
+local persistence_temp_data_dir
 T["persistence"] = MiniTest.new_set({
     hooks = {
         pre_case = function()
             history_manager.reset()
             history_manager.setup({})
-            _G.__original_stdpath = vim.fn.stdpath
-            _G.__temp_data_dir = vim.fn.tempname()
+            persistence_original_stdpath = vim.fn.stdpath
+            persistence_temp_data_dir = vim.fn.tempname()
             vim.fn.stdpath = function(what)
-                if what == "data" then return _G.__temp_data_dir end
-                return _G.__original_stdpath(what)
+                if what == "data" then return persistence_temp_data_dir end
+                return persistence_original_stdpath(what)
             end
         end,
         post_case = function()
-            vim.fn.stdpath = _G.__original_stdpath
-            if _G.__temp_data_dir then vim.fn.delete(_G.__temp_data_dir, "rf") end
-            _G.__temp_data_dir = nil
-            _G.__original_stdpath = nil
+            vim.fn.stdpath = persistence_original_stdpath
+            if persistence_temp_data_dir then vim.fn.delete(persistence_temp_data_dir, "rf") end
+            persistence_temp_data_dir = nil
+            persistence_original_stdpath = nil
         end,
     },
 })
@@ -325,7 +327,7 @@ T["persistence"]["get_storage_stats reports the temporary directory"] = function
     MiniTest.expect.equality(type(stats.bookmark_count), "number")
     MiniTest.expect.equality(type(stats.total_size), "number")
     MiniTest.expect.equality(type(stats.storage_dir), "string")
-    MiniTest.expect.equality(stats.storage_dir:find(_G.__temp_data_dir, 1, true) ~= nil, true)
+    MiniTest.expect.equality(stats.storage_dir:find(persistence_temp_data_dir, 1, true) ~= nil, true)
 end
 
 -- Type layer validation shared across persistence and history modules
