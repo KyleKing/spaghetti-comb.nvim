@@ -1,6 +1,6 @@
 # SPEC.md - Specification
 
-Complete specification for Spaghetti Comb v2, including use cases, feature specifications, error handling strategies, limitations, and architecture decisions.
+Complete specification for spaghetti-comb.nvim, including use cases, feature specifications, error handling strategies, limitations, and architecture decisions.
 
 ## Table of Contents
 
@@ -115,7 +115,7 @@ Complete specification for Spaghetti Comb v2, including use cases, feature speci
 
 #### Breadcrumb Navigation
 
-**Status**: 🚧 Planned
+**Status**: ✅ Implemented
 
 **Specification**:
 - Hotkey-triggered display (not persistent)
@@ -133,7 +133,7 @@ Complete specification for Spaghetti Comb v2, including use cases, feature speci
 
 #### Floating Tree Window
 
-**Status**: 🚧 Planned
+**Status**: ✅ Implemented
 
 **Specification**:
 - Unicode box-drawing tree visualization
@@ -151,7 +151,7 @@ Complete specification for Spaghetti Comb v2, including use cases, feature speci
 
 #### Code Previews
 
-**Status**: 🚧 Planned
+**Status**: ✅ Implemented
 
 **Specification**:
 - Context-aware code snippets
@@ -167,7 +167,7 @@ Complete specification for Spaghetti Comb v2, including use cases, feature speci
 
 #### Picker Integration
 
-**Status**: 🚧 Planned
+**Status**: ✅ Implemented
 
 **Specification**:
 - Dual-mode picker (bookmark/navigation)
@@ -184,7 +184,7 @@ Complete specification for Spaghetti Comb v2, including use cases, feature speci
 
 #### Statusline Integration
 
-**Status**: 🚧 Planned
+**Status**: ✅ Implemented
 
 **Specification**:
 - Minimal branch status display
@@ -202,7 +202,7 @@ Complete specification for Spaghetti Comb v2, including use cases, feature speci
 
 #### LSP Integration
 
-**Status**: 🚧 Planned
+**Status**: ✅ Implemented
 
 **Specification**:
 - Extends built-in LSP commands (doesn't replace)
@@ -219,7 +219,7 @@ Complete specification for Spaghetti Comb v2, including use cases, feature speci
 
 #### Jumplist Enhancement
 
-**Status**: 🚧 Planned
+**Status**: ✅ Implemented
 
 **Specification**:
 - Enhances Ctrl-O and Ctrl-I
@@ -235,7 +235,7 @@ Complete specification for Spaghetti Comb v2, including use cases, feature speci
 
 ### Bookmark System
 
-**Status**: 🚧 Planned
+**Status**: ✅ Implemented
 
 **Specification**:
 - Manual bookmarks (user-created)
@@ -370,7 +370,7 @@ end
 **LSP Availability:**
 ```lua
 local function ensure_lsp_available()
-  if not vim.lsp.get_active_clients() or #vim.lsp.get_active_clients() == 0 then
+  if not vim.lsp.get_clients() or #vim.lsp.get_clients() == 0 then
     debug.info("LSP not available, using fallback navigation")
     return false
   end
@@ -416,47 +416,30 @@ end
 
 ### Current Limitations
 
-1. **UI Components Not Implemented**
-   - Breadcrumbs, floating tree, picker, statusline integration are planned but not yet implemented
+1. **Test coverage is thin**
+   - Several specs contain placeholder cases; see ROADMAP.md Phase 1
 
-2. **LSP Integration Incomplete**
-   - LSP hooks are planned but not yet implemented
-   - Currently only history tracking works
+2. **No on-demand relations exploration yet**
+   - References/definitions/call-hierarchy exploration is planned (ROADMAP.md Phase 3)
 
-3. **Bookmark System Not Implemented**
-   - Manual and automatic bookmarks are planned but not yet implemented
+3. **Persistence is opt-in**
+   - Enable `history.save_on_exit` or use the save/load commands
 
-4. **Persistence Optional**
-   - History persistence is planned but optional
-   - No automatic save/restore yet
-
-5. **v1 Features Not Ported**
-   - Coupling analysis not yet ported
-   - Session management not yet ported
-   - Relations panel approach not used in 
+4. **No performance validation at scale**
+   - Targets below are unverified for 1000+ entry trails (ROADMAP.md Phase 4)
 
 ### Platform Constraints
 
-- **Neovim 0.8+** required
-- **Lua 5.4** required
+- **Neovim 0.10+** required
 - **LSP server** required for full functionality
 - **mini.pick** optional (for picker features)
 
-### Known Issues
-
-- None documented yet (plugin in early development)
-
 ## Architecture Decisions
 
-### Why v2?
+### Why breadcrumbs instead of a relations panel?
 
-**v1 Approach:**
-- Relations panel with split window UI
-- Custom UI components
-- Coupling analysis with visual indicators
-- Session management
+An earlier iteration of this plugin used a persistent split-window relations panel with coupling metrics (removed; see git history). The current design chose:
 
-** Approach:**
 - Breadcrumb-based navigation
 - Extends built-in Neovim functionality
 - Minimal UI footprint
@@ -585,11 +568,5 @@ Config = {
 }
 ```
 
-## Content Sources
-
-This specification was compiled from:
-- `.kiro/specs/spaghetti-comb.nvim/design.md` - Design decisions and architecture
-- `.kiro/specs/spaghetti-comb.nvim/requirements.md` - User stories and requirements
-- `IMPLEMENTATION_PLAN.md` - Implementation details and phases
-- Code analysis of current implementation
+For planned work and phasing, see [ROADMAP.md](ROADMAP.md).
 

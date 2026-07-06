@@ -1,251 +1,147 @@
-# Spaghetti Comb
+# spaghetti-comb.nvim
 
-A Neovim plugin for code exploration designed to help developers untangle complex codebases by visualizing code relationships and dependencies.
+A Neovim plugin that extends built-in navigation with project-aware history, bookmarks, and visual exploration tools. The name is a playful reference to "spaghetti code": this plugin is a comb for untangling unfamiliar codebases.
+
+## Why
+
+When exploring a large or generated codebase, it is easy to lose track of how you arrived somewhere. This plugin records your navigation jumps (LSP definitions, references, jumplist movement) into a per-project trail with branching, then gives you lightweight UIs to review and jump around that trail.
 
 ## Features
 
-- **Split Window Relations Panel** - Opens at bottom of screen like vim's `:help` command
-- **Focus Mode** - Press `<Tab>` to expand relations window and show side-by-side code preview
-- **Vim Motion Navigation** - Use `j/k`, arrow keys, and other vim motions to navigate relations
-- **LSP Integration** - Works with any LSP server for references, definitions, and call hierarchy
-- **Navigation Stack** - Bidirectional exploration history with bookmark support
-- **Coupling Analysis** - Visual indicators showing code relationship strength
-- **Session Persistence** - Save and restore exploration sessions
+- Navigation history recorded per project, with branching when you jump from mid-trail
+- Intelligent pruning: drops inconsequential jumps, recovers positions after line shifts, debounced cleanup
+- Manual bookmarks plus automatic detection of frequently visited locations
+- Hotkey-triggered breadcrumb bar showing your trail (`file1.lua:10 › file2.lua:25`)
+- Floating tree view of the trail with a live code preview pane
+- Dual-mode picker (bookmarks and history) using mini.pick when available, with a built-in fallback
+- Statusline component showing exploration state and branch depth
+- Optional JSON persistence of history and bookmarks under `stdpath('data')/spaghetti-comb/`
 
-## Installation (Local Download)
+## Requirements
 
-If you've downloaded this plugin locally instead of cloning from git, you can install it using mini.deps:
+- Neovim 0.10+
+- An LSP server for your language (optional; jumplist tracking works without one)
+- [mini.pick](https://github.com/echasnovski/mini.nvim) (optional, for the picker UI)
 
-### Using mini.deps
+## Installation
 
-Add the following to your Neovim configuration:
+With mini.deps:
 
 ```lua
-local add, _now, later = MiniDeps.add, MiniDeps.now, MiniDeps.later
+local add, later = MiniDeps.add, MiniDeps.later
 
--- Setup the plugin
 later(function()
-    add({
-        -- Install from local directory replacing with the actual path
-        source = "file:///Users/kyleking/Developer/local-code/spaghetti-comb.nvim",
-        depends = {},
-    })
-
-    require("spaghetti-comb").setup({
-        -- Configuration options (optional)
-        relations = {
-            height = 15,              -- Normal split height
-            focus_height = 30,        -- Expanded height in focus mode
-            position = "bottom",      -- Split position
-            auto_preview = true,      -- Auto-update preview in focus mode
-            show_coupling = true,     -- Show coupling metrics
-        },
-        keymaps = {
-            show_relations = "<leader>sr",
-            find_references = "<leader>sf",
-            go_definition = "<leader>sd",
-            navigate_next = "<leader>sn",
-            navigate_prev = "<leader>sp",
-            save_session = "<leader>ss",
-            load_session = "<leader>sl",
-        },
-    })
+    add({ source = "KyleKing/spaghetti-comb.nvim" })
+    require("spaghetti-comb").setup()
 end)
 ```
 
-### Alternative: Manual Plugin Path
-
-You can also add the plugin directory directly to Neovim's runtime path:
+Or from a local checkout:
 
 ```lua
--- Add to your init.lua
-vim.opt.runtimepath:append("/path/to/your/local/spaghetti-comb.nvim")
-
--- Then setup normally
+vim.opt.runtimepath:append("/path/to/spaghetti-comb.nvim")
 require("spaghetti-comb").setup()
 ```
 
 ## Usage
 
-### Quick Start
+Navigate as you normally would (LSP go-to-definition, `<C-o>`/`<C-i>`, file switching). The plugin records jumps automatically. Then:
 
-1. Position your cursor on any function, variable, or symbol
-1. Press `<leader>sr` to open the Relations panel
-1. Use `j/k` or arrow keys to navigate the results
-1. Press `<Tab>` to enter **Focus Mode** for expanded view with preview
-1. Press `<Enter>` to jump to a location, or `<C-]>` to explore it further
+- `<leader>sb` toggles the breadcrumb trail view
+- `<leader>st` toggles the floating tree with preview
+- `<leader>sh` opens the history picker
+- `<leader>sm` opens the bookmark picker
+- `<leader>sB` toggles a bookmark at the cursor
+- `<leader>ss` shows the current navigation status
 
-### Default Keymaps
+### Commands
 
-**Global keymaps:**
+| Command | Description |
+| --- | --- |
+| `:SpaghettiCombBreadcrumbs` | Toggle breadcrumb trail view |
+| `:SpaghettiCombTree` | Toggle navigation tree with preview |
+| `:SpaghettiCombHistory` | Navigation history picker |
+| `:SpaghettiCombBookmarks` | Bookmark picker |
+| `:SpaghettiCombBookmarkToggle` | Toggle bookmark at cursor |
+| `:SpaghettiCombBookmarkClear [global]` | Clear bookmarks |
+| `:SpaghettiCombBack` / `:SpaghettiCombForward` | Move through the trail |
+| `:SpaghettiCombJumpTo {index}` | Jump to a trail entry |
+| `:SpaghettiCombHistoryClear [all]` | Clear navigation history |
+| `:SpaghettiCombStatus` | Show navigation status |
+| `:SpaghettiCombSaveHistory` / `:SpaghettiCombLoadHistory` | Persist or restore history for the current project |
+| `:SpaghettiCombSaveBookmarks` / `:SpaghettiCombLoadBookmarks` | Persist or restore bookmarks |
+| `:SpaghettiCombStorageStats` | Persistence storage statistics |
+| `:SpaghettiCombCleanupPersistence [days]` | Delete old persistence files |
+| `:SpaghettiCombListProjects` | List projects with saved data |
+| `:SpaghettiCombDebug` / `:SpaghettiCombLogLevel {level}` | Debug helpers |
 
-- `<leader>sr` - Show Relations panel for symbol under cursor
-- `<leader>sf` - Find references to current symbol
-- `<leader>sd` - Go to definition of current symbol
-- `<leader>sn` - Navigate forward in exploration stack
-- `<leader>sp` - Navigate backward in exploration stack
-- `<leader>ss` - Save current exploration session
-- `<leader>sl` - Load saved exploration session
+## Configuration
 
-**Within Relations panel:**
+Defaults shown; pass overrides to `setup()`:
 
-- `<Enter>` - Navigate to selected location
-- `<C-]>` - Explore symbol at selected location (go deeper)
-- `<C-o>` - Navigate backward in exploration stack
-- `<Tab>` - Toggle focus mode (expand window + show preview)
-- `m` - Toggle bookmark for selected item
-- `c` - Show coupling metrics for selected item
-- `/` - Search relations
-- `f` - Cycle coupling filter (all/high/medium/low)
-- `s` - Cycle sort mode (default/coupling/file/line)
-- `b` - Toggle bookmarked items only
-- `r` - Reset all filters
-- `q` or `<Esc>` - Close Relations panel
-
-### Focus Mode
-
-Press `<Tab>` in the Relations panel to enter **Focus Mode**:
-
-- Relations window expands to double height
-- Preview window opens on the right showing code context
-- Preview automatically updates as you navigate with `j/k`
-- Press `<Tab>` again to return to normal mode
-
-### UI Layout
-
-**Normal Mode:**
-
-```
-┌─ Your Code Buffer ──────────────────────────────────┐
-│ function calculateTotal() {                         │
-│   const tax = getTax();     ← cursor here           │
-│   return base + tax - discount;                     │
-│ }                                                   │
-├─ Relations Panel ───────────────────────────────────┤
-│ Relations for 'getTax':                             │
-│ References (3):                                     │
-│ ├─ 📄 checkout.ts:42 [C:0.7]                      │
-│ ├─ 📄 invoice.ts:18 [C:0.4]                       │
-│ └─ 📄 report.ts:95 [C:0.2]                        │
-│                                                     │
-│ Press <Tab> for Focus Mode                          │
-└─────────────────────────────────────────────────────┘
-```
-
-**Focus Mode:**
-
-```
-┌─ Your Code Buffer ──────────────────────────────────┐
-│ function calculateTotal() {                         │
-│   const tax = getTax();     ← cursor here           │
-├─ Relations Panel ───────────┬─ Preview ─────────────┤
-│ Relations for 'getTax':     │ [Preview: checkout.ts]│
-│ References (3):             │  41 │ const total =   │
-│ ├─ 📄 checkout.ts:42 [C:0.7]│▶42 │   calculateTotal│
-│ ├─ 📄 invoice.ts:18 [C:0.4] │  43 │ return total;   │
-│ └─ 📄 report.ts:95 [C:0.2]  │                       │
-│                             │ Navigate with j/k     │
-│ Use j/k to navigate         │ to update preview     │
-│ Press <Tab> to exit         │                       │
-└─────────────────────────────┴───────────────────────┘
+```lua
+require("spaghetti-comb").setup({
+    display = {
+        enabled = true,
+        max_items = 10,          -- Breadcrumb entries shown
+        hotkey_only = true,      -- Show breadcrumbs only on demand
+        collapse_unfocused = true,
+    },
+    history = {
+        max_entries = 1000,
+        max_age_minutes = 30,
+        pruning_debounce_minutes = 2,
+        save_on_exit = false,    -- Enable persistence on VimLeavePre
+        exploration_timeout_minutes = 5,
+    },
+    integration = {
+        jumplist = true,
+        lsp = true,
+        mini_pick = true,
+        statusline = true,
+    },
+    visual = {
+        use_unicode_tree = true,
+        color_scheme = "subtle",
+        floating_window_width = 80,
+        floating_window_height = 20,
+    },
+    bookmarks = {
+        frequent_threshold = 3,  -- Visits before auto-bookmarking
+        auto_bookmark_frequent = true,
+    },
+    debug = {
+        enabled = false,
+        log_level = "info",
+    },
+})
 ```
 
-See `:help spaghetti-comb` for complete documentation.
-
-## Requirements
-
-- Neovim 0.8+
-- LSP server configured for your language
-- mini.deps (for installation method shown above)
-
----
-
-
-# spaghetti-comb.nvim
-
-A Neovim plugin that extends built-in navigation capabilities with a visual, non-obtrusive breadcrumb system for efficient codebase exploration.
+For the statusline component, call `require("spaghetti-comb.ui.statusline").get_status()` from your statusline config.
 
 ## Project Structure
 
 ```
 lua/spaghetti-comb/
-├── init.lua              -- Main plugin entry point
-├── config.lua            -- Configuration management with validation
-├── types.lua             -- Core data model interfaces and types
-├── history/              -- Navigation history management
-│   ├── manager.lua       -- Core history tracking logic
-│   ├── storage.lua       -- Persistence and pruning
-│   ├── events.lua        -- Navigation event handling
-│   └── bookmarks.lua     -- Sticky bookmarks and frequent locations
-├── ui/                   -- User interface components
-│   ├── breadcrumbs.lua   -- Visual breadcrumb rendering with collapse/expand
-│   ├── floating_tree.lua -- Branch history floating window with unicode tree
-│   ├── preview.lua       -- Code preview functionality
-│   ├── picker.lua        -- Integration with mini.pick (dual modes)
-│   └── statusline.lua    -- Branch status display in statusline
-├── navigation/           -- Enhanced navigation commands
-│   ├── commands.lua      -- Enhanced navigation commands
-│   ├── lsp.lua           -- LSP integration hooks
-│   └── jumplist.lua      -- Jumplist enhancement
-├── utils/                -- Utility modules
-│   ├── project.lua       -- Project detection and management
-│   └── debug.lua         -- Debug logging utilities
-└── tests/                -- Test suite using mini.test
-    ├── init.lua          -- Test runner
-    ├── history_spec.lua  -- History manager tests
-    ├── ui_spec.lua       -- UI component tests
-    ├── navigation_spec.lua -- Navigation command tests
-    └── integration_spec.lua -- Integration tests
+├── init.lua              -- Setup and component wiring
+├── config.lua            -- Config schema and validation
+├── types.lua             -- NavigationEntry / NavigationTrail / BookmarkEntry
+├── history/              -- Trail recording, pruning, bookmarks, persistence
+├── navigation/           -- Commands, LSP hooks, jumplist integration, events
+├── ui/                   -- Breadcrumbs, floating tree, preview, picker, statusline
+├── utils/                -- Project detection, debug logging
+└── tests/                -- mini.test specs
 ```
 
-## Core Data Models
+## Development
 
-### NavigationEntry
-- Tracks individual navigation jumps with position recovery fields
-- Includes original and current positions for line shift handling
-- Supports visit counting for frequency detection
-- Contains context information for previews
+See [DEVELOPER.md](DEVELOPER.md) for setup and [ROADMAP.md](ROADMAP.md) for planned work. Quick commands:
 
-### NavigationTrail
-- Manages sequences of navigation entries
-- Supports branching navigation paths
-- Project-aware with separate contexts per project
-
-### BookmarkEntry
-- Handles both manual and automatic bookmarks
-- Tracks visit frequency for automatic promotion
-- Includes code context for quick previews
-
-## Configuration
-
-The plugin uses a comprehensive configuration schema with sensible defaults:
-
-- **Display**: Hotkey-only breadcrumbs with collapsible interface
-- **History**: Intelligent pruning with 2-minute debounce and location recovery
-- **Integration**: Extends built-in Neovim functionality (LSP, jumplist)
-- **Visual**: Unicode tree rendering with subtle color schemes
-- **Bookmarks**: Automatic frequent location detection
-- **Debug**: Configurable logging following Neovim standards
-
-## Development Status
-
-This is the foundational setup for the plugin. All modules contain placeholder functions with TODO comments indicating which task will implement each feature. The structure follows the implementation plan defined in the spec.
-
-## Testing
-
-Tests are organized using mini.test framework with focus on high-signal integration tests:
-
-```lua
--- Run all tests
-require('spaghetti-comb.tests').run_all()
-
--- Run specific test categories
-require('spaghetti-comb.tests').run_history()
-require('spaghetti-comb.tests').run_ui()
-require('spaghetti-comb.tests').run_navigation()
-require('spaghetti-comb.tests').run_integration()
+```bash
+mise run test       # Run the test suite (headless nvim + mini.test)
+mise run lint       # stylua check
+mise run format     # stylua fix
+mise run typecheck  # selene
 ```
 
-## Next Steps
-
-The project structure is now ready for implementation. Each module contains clear interfaces and placeholder functions that reference the specific tasks where they will be implemented. The next task in the implementation plan is "2.1 Create basic history tracking functionality".
+Feature specification lives in [SPEC.md](SPEC.md).

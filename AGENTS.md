@@ -1,59 +1,39 @@
 # AGENTS.md - AI Development Guide
 
-Concise reference for AI agents working on this codebase. For detailed human-focused documentation, see [DEVELOPER.md](DEVELOPER.md).
+Concise reference for AI agents working on this codebase. For detailed human-focused documentation, see [DEVELOPER.md](DEVELOPER.md). For planned work, see [ROADMAP.md](ROADMAP.md).
 
 ## Quick Commands
 
-### Testing
-- `mise run test` - Run all tests (mini.test framework)
-- `mise run test-file --file=<file>` - Run specific test file
-
-### Code Quality
+- `mise run test` - Run all tests (mini.test, headless nvim)
+- `mise run test-file --file=<file>` - Run a specific spec file
 - `mise run lint` - Check formatting (stylua)
 - `mise run format` - Format code (stylua fix)
-- `mise run typecheck` - Run selene type checking
-
-### Documentation
-- `mise run docs` - Generate vim help tags
-- `mise run docs-auto` - Auto-generate docs (experimental)
-
-### Setup
-- `mise run deps-mini-nvim` - Install mini.nvim dependency
+- `mise run typecheck` - Run selene lint
+- `mise run deps-mini-nvim` - Install mini.nvim test dependency (required before first test run)
 
 ## Architecture Overview
 
-**Plugin**: Spaghetti Comb - Code exploration via breadcrumb navigation
+**Plugin**: spaghetti-comb.nvim, code exploration via project-aware navigation history and breadcrumbs.
 
-**Current Status**: in active development (history manager implemented, UI components in progress)
+**Pattern**: extends built-in Neovim behavior (jumplist, LSP) rather than replacing it. Modular structure under `lua/spaghetti-comb/`: `history/`, `ui/`, `navigation/`, `utils/`, `tests/`. Each module is a table with `setup(config)` and module-local state; most expose `reset()` for tests.
 
-**Architecture Pattern**:
-- Modular structure: `history/`, `ui/`, `navigation/`, `utils/`
-- Extends built-in Neovim (jumplist, LSP) rather than replacing
-- Project-aware history with intelligent pruning
+**Key modules**:
+- `history/manager.lua` - Trail recording, branching, pruning, exploration state
+- `history/bookmarks.lua` - Manual and frequency-based bookmarks
+- `history/storage.lua` - JSON persistence in `stdpath('data')/spaghetti-comb/`
+- `navigation/lsp.lua` - LSP hooks recording jumps
+- `ui/floating_tree.lua` + `ui/preview.lua` - Tree view with code preview
+- `plugin/spaghetti-comb.lua` - User commands and default keymaps
 
-**Key Modules**:
-- `history/manager.lua` - Core history tracking (✅ implemented)
-- `ui/breadcrumbs.lua` - Breadcrumb rendering (🚧 TODO)
-- `navigation/commands.lua` - Navigation commands (🚧 TODO)
-- `navigation/lsp.lua` - LSP integration (🚧 TODO)
+## Constraints
 
-**v1 vs v2**:
-- v1: Relations panel UI (fully implemented, will be removed)
-- : Breadcrumb-based (in development, extends Neovim built-ins)
-
-## Code Locations
-
-- ** Code**: `lua/spaghetti-comb/`
-- **v1 Code**: `lua/spaghetti-comb-v1/` (to be removed after migration)
-- **Tests**: `lua/spaghetti-comb/tests/` (current), `tests-v1/` (v1)
-- **Plugin Loaders**: `plugin/spaghetti-comb.lua`
-
-## Testing Framework
-
-Uses `mini.test` with child Neovim processes. See `deps/mini-test.md` for framework details.
+- Neovim 0.10+ (uses `vim.lsp.get_clients`)
+- Tests must not depend on state from earlier cases; use `reset()` in hooks
+- mini.test quirk: `MiniTest.run()` takes options, not a test set; the runner in `tests/init.lua` passes spec file paths via `collect.find_files`
+- `MiniTest.expect` has no `truthy`; use `equality` or the local helper in `bookmarks_spec.lua`
 
 ## Common Tasks
 
-**Add a feature**: Check `lua/spaghetti-comb/` for TODO comments, implement in appropriate module
-**Fix a bug**: Check test coverage, add test if missing, fix implementation
-**Port from v1**: See ticket 006 for porting checklist, adapt v1 code to architecture
+- **Add a feature**: check ROADMAP.md phasing first; write the spec test alongside
+- **Fix a bug**: add a regression case to the matching `*_spec.lua`
+- **Before committing**: `mise run format && mise run test`

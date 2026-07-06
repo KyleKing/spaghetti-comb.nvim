@@ -16,9 +16,8 @@ Comprehensive guide for developers working on Spaghetti Comb. For quick AI refer
 
 ### Prerequisites
 
-- **Neovim 0.8+** - Required for plugin development
+- **Neovim 0.10+** - Required for plugin development
 - **mise** - Tool version manager (replaces asdf/nvm)
-- **Lua 5.4** - Managed by mise
 - **stylua** - Code formatter (managed by mise)
 - **selene** - Lua linter (managed by mise)
 
@@ -47,7 +46,6 @@ Comprehensive guide for developers working on Spaghetti Comb. For quick AI refer
 The project uses `mise` for tool management. All development commands are defined in `mise.toml`.
 
 **Key tools:**
-- `lua 5.4` - Lua runtime
 - `stylua` - Code formatter
 - `selene` - Lua linter
 - `mini.nvim` - Testing framework (in `deps/mini.nvim/`)
@@ -59,21 +57,18 @@ The project uses `mise` for tool management. All development commands are define
 ```
 spaghetti-comb.nvim/
 ├── lua/
-│   ├── spaghetti-comb-v1/     # v1 implementation (to be removed)
-│   └── spaghetti-comb/     # implementation (current focus)
+│   └── spaghetti-comb/
 │       ├── init.lua           # Plugin entry point
 │       ├── config.lua         # Configuration management
 │       ├── types.lua          # Core data models
-│       ├── history/            # History management
+│       ├── history/           # History management
 │       ├── ui/                # UI components
 │       ├── navigation/        # Navigation commands
 │       ├── utils/             # Utility modules
 │       └── tests/             # Test suite
-├── plugin/                    # Plugin loaders
-├── tests-v1/                  # v1 test suite
+├── plugin/                    # Plugin loader (commands, keymaps)
 ├── scripts/                   # Utility scripts
-├── doc/                       # Vim help documentation
-└── tickets/                   # Implementation tickets
+└── deps/                      # mini.nvim (test framework, git-ignored)
 ```
 
 ### Module Organization
@@ -84,23 +79,23 @@ spaghetti-comb.nvim/
 - `types.lua` - Data model definitions (NavigationEntry, NavigationTrail, etc.)
 
 **History Management:**
-- `history/manager.lua` - Core history tracking (✅ implemented)
-- `history/storage.lua` - Persistence (🚧 TODO)
-- `history/events.lua` - Event handling (🚧 TODO)
-- `history/bookmarks.lua` - Bookmark management (🚧 TODO)
+- `history/manager.lua` - Core history tracking, branching, pruning
+- `history/storage.lua` - JSON persistence
+- `history/events.lua` - Event handling
+- `history/bookmarks.lua` - Manual and frequency-based bookmarks
 
 **UI Components:**
-- `ui/breadcrumbs.lua` - Breadcrumb rendering (🚧 TODO)
-- `ui/floating_tree.lua` - Floating tree window (🚧 TODO)
-- `ui/preview.lua` - Code preview (🚧 TODO)
-- `ui/picker.lua` - Picker integration (🚧 TODO)
-- `ui/statusline.lua` - Statusline integration (🚧 TODO)
+- `ui/breadcrumbs.lua` - Breadcrumb rendering
+- `ui/floating_tree.lua` - Floating tree window
+- `ui/preview.lua` - Code preview
+- `ui/picker.lua` - mini.pick integration with fallback
+- `ui/statusline.lua` - Statusline integration
 
 **Navigation:**
-- `navigation/commands.lua` - Navigation commands (🚧 TODO)
-- `navigation/lsp.lua` - LSP integration (🚧 TODO)
-- `navigation/jumplist.lua` - Jumplist enhancement (🚧 TODO)
-- `navigation/events.lua` - Navigation events (🚧 TODO)
+- `navigation/commands.lua` - Navigation commands
+- `navigation/lsp.lua` - LSP integration
+- `navigation/jumplist.lua` - Jumplist enhancement
+- `navigation/events.lua` - Navigation events
 
 **Utilities:**
 - `utils/project.lua` - Project detection
@@ -187,7 +182,7 @@ T["history manager"]["records jumps"] = function()
 end
 ```
 
-**Test Patterns from v1:**
+**Test Patterns:**
 - Use `MiniTest.new_child_neovim()` for integration tests
 - Use `child.lua()` and `child.lua_get()` for executing Lua in child Neovim
 - Use `expect.no_error()` for error checking
@@ -359,7 +354,7 @@ When reporting issues:
 **Tests fail to run:**
 - Ensure `mise run deps-mini-nvim` has been run
 - Check that `deps/mini.nvim/` exists
-- Verify Neovim version is 0.8+
+- Verify Neovim version is 0.10+
 
 **Formatting issues:**
 - Run `mise run format` to auto-fix
