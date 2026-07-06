@@ -223,7 +223,14 @@ function M.mark_bookmarked_nodes()
 
     for i, entry in ipairs(state.current_trail.entries) do
         if entry.is_bookmarked or (bookmarks.is_bookmarked and bookmarks.is_bookmarked(entry)) then
-            vim.api.nvim_buf_add_highlight(state.tree_buffer, state.namespace, "SpaghettiCombTreeBookmark", i - 1, 0, -1)
+            vim.api.nvim_buf_add_highlight(
+                state.tree_buffer,
+                state.namespace,
+                "SpaghettiCombTreeBookmark",
+                i - 1,
+                0,
+                -1
+            )
         end
     end
 end
@@ -236,7 +243,14 @@ function M.mark_important_nodes()
 
     for i, entry in ipairs(state.current_trail.entries) do
         if entry.is_frequent or (bookmarks.is_frequent and bookmarks.is_frequent(entry)) then
-            vim.api.nvim_buf_add_highlight(state.tree_buffer, state.namespace, "SpaghettiCombTreeFrequent", i - 1, 0, -1)
+            vim.api.nvim_buf_add_highlight(
+                state.tree_buffer,
+                state.namespace,
+                "SpaghettiCombTreeFrequent",
+                i - 1,
+                0,
+                -1
+            )
         end
     end
 end

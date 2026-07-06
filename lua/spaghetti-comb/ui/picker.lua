@@ -185,7 +185,10 @@ function M.filter_by_filename_or_code(bookmarks, query)
         local filename = vim.fn.fnamemodify(bookmark.file_path, ":t"):lower()
         local has_context = bookmark.context and bookmark.context.function_name
 
-        if filename:find(query, 1, true) or (has_context and bookmark.context.function_name:lower():find(query, 1, true)) then
+        if
+            filename:find(query, 1, true)
+            or (has_context and bookmark.context.function_name:lower():find(query, 1, true))
+        then
             table.insert(filtered, bookmark)
         end
     end

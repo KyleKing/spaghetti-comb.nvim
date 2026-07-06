@@ -1,5 +1,4 @@
 [tools]
-lua = "5.4"
 stylua = "latest"
 "cargo:selene" = "latest"
 
@@ -17,46 +16,32 @@ sources = ["deps/mini.nvim"]
 [tasks.test]
 depends = ["deps-mini-nvim"]
 description = "Run all test files"
-run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua require('spaghetti-comb-v2.tests.init').run_all()\""
+run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua require('spaghetti-comb.tests.init').run_all()\" -c \"qa!\""
 
 [tasks.test-file]
 depends = ["deps-mini-nvim"]
 description = "Run test from specified file"
-run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua MiniTest.run_file('{{flag(name='file')}}')\""
+run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua MiniTest.run_file('{{flag(name='file')}}')\" -c \"qa!\""
 usage = '''
 flag "-f --file"
 '''
 
 [tasks.lint]
 description = "Format code using stylua (check mode)"
-run = "stylua tests-v1/ scripts/ plugin/ lua/ --check"
+run = "stylua scripts/ plugin/ lua/ --check"
 
 [tasks.format]
 description = "Format code using stylua (fix mode)"
-run = "stylua tests-v1/ scripts/ plugin/ lua/"
+run = "stylua scripts/ plugin/ lua/"
 
 [tasks.typecheck]
 description = "Check for errors with selene"
-run = "selene tests-v1/ scripts/ plugin/ lua/"
-
-[tasks.luals]
-description = "Run lua-language-server type checking"
-run = "echo 'lua-language-server type checking not implemented yet'"
+run = "selene scripts/ plugin/ lua/"
 
 [tasks.docs]
 depends = ["deps-mini-nvim"]
-description = "Generate plugin documentation using mini.doc"
+description = "Generate vim help tags (help doc not yet written; see ROADMAP.md)"
 run = [
-  "echo 'Documentation is currently maintained manually in doc/spaghetti-comb-v2.txt'",
-  "echo 'Generating help tags...'",
+  "mkdir -p doc",
   "nvim --headless -c 'helptags doc/' -c 'qa!'",
-  "echo 'Help tags generated successfully! Use :help spaghetti-comb-v2.txt to view documentation'"
-]
-
-[tasks.docs-auto]
-depends = ["deps-mini-nvim"]
-description = "Attempt automatic documentation generation (experimental)"
-run = [
-  "echo 'Experimental: Generating documentation from code annotations...'",
-  "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c 'luafile scripts/gendoc.lua' -c 'qa!' || echo 'Auto-generation failed, using manual documentation'"
 ]

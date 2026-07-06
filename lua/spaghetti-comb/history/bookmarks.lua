@@ -220,9 +220,11 @@ function M.update_frequent_locations()
     if not state.initialized then return false, "Bookmark manager not initialized" end
 
     local threshold = (state.config.bookmarks and state.config.bookmarks.frequent_threshold ~= nil)
-        and state.config.bookmarks.frequent_threshold or 3
+            and state.config.bookmarks.frequent_threshold
+        or 3
     local auto_bookmark = (state.config.bookmarks and state.config.bookmarks.auto_bookmark_frequent ~= nil)
-        and state.config.bookmarks.auto_bookmark_frequent or true
+            and state.config.bookmarks.auto_bookmark_frequent
+        or true
 
     if not auto_bookmark then return true, "Auto-bookmark disabled" end
 
@@ -258,7 +260,8 @@ function M.get_frequent_locations()
     if not state.initialized then return {} end
 
     local threshold = (state.config.bookmarks and state.config.bookmarks.frequent_threshold ~= nil)
-        and state.config.bookmarks.frequent_threshold or 3
+            and state.config.bookmarks.frequent_threshold
+        or 3
     local frequent = {}
 
     for location_key, count in pairs(state.visit_counts) do
@@ -287,7 +290,8 @@ function M.is_frequent(location)
     if not location or not location.file_path then return false end
 
     local threshold = (state.config.bookmarks and state.config.bookmarks.frequent_threshold ~= nil)
-        and state.config.bookmarks.frequent_threshold or 3
+            and state.config.bookmarks.frequent_threshold
+        or 3
     local location_key = get_location_key(location.file_path, location.position)
     local count = state.visit_counts[location_key] or 0
 
@@ -327,9 +331,7 @@ function M.save_current_project_bookmarks()
     local storage = require("spaghetti-comb.history.storage")
     local bookmarks = get_project_bookmarks()
 
-    if #bookmarks == 0 then
-        return false, "No bookmarks to save"
-    end
+    if #bookmarks == 0 then return false, "No bookmarks to save" end
 
     return storage.save_bookmarks(bookmarks, state.current_project)
 end
@@ -354,7 +356,8 @@ function M.save_all_bookmarks()
     end
 
     if #errors > 0 then
-        return false, string.format("Saved %d projects, %d errors: %s", saved_count, #errors, table.concat(errors, "; "))
+        return false,
+            string.format("Saved %d projects, %d errors: %s", saved_count, #errors, table.concat(errors, "; "))
     end
 
     return true, string.format("Saved %d project bookmarks", saved_count)
@@ -368,9 +371,7 @@ function M.load_project_bookmarks(project_root)
     local storage = require("spaghetti-comb.history.storage")
     local bookmarks, err = storage.load_bookmarks(project_root)
 
-    if not bookmarks then
-        return false, err or "Failed to load bookmarks"
-    end
+    if not bookmarks then return false, err or "Failed to load bookmarks" end
 
     state.bookmarks[project_root] = bookmarks
     return true, string.format("Loaded %d bookmarks", #bookmarks)
@@ -381,15 +382,11 @@ function M.setup_auto_save()
     if not state.initialized then return false, "Bookmark manager not initialized" end
 
     local config = state.config or {}
-    if not (config.history and config.history.save_on_exit) then
-        return false, "Auto-save disabled in config"
-    end
+    if not (config.history and config.history.save_on_exit) then return false, "Auto-save disabled in config" end
 
     vim.api.nvim_create_autocmd("VimLeavePre", {
         group = vim.api.nvim_create_augroup("SpaghettiCombBookmarkPersistence", { clear = true }),
-        callback = function()
-            M.save_all_bookmarks()
-        end,
+        callback = function() M.save_all_bookmarks() end,
     })
 
     return true, "Bookmark auto-save enabled"
@@ -401,9 +398,7 @@ function M.try_load_on_project_switch(project_root)
     if not project_root then return false, "Invalid project root" end
 
     local config = state.config or {}
-    if not (config.history and config.history.save_on_exit) then
-        return false, "Persistence disabled in config"
-    end
+    if not (config.history and config.history.save_on_exit) then return false, "Persistence disabled in config" end
 
     -- Don't load if we already have bookmarks for this project
     if state.bookmarks[project_root] and #state.bookmarks[project_root] > 0 then
