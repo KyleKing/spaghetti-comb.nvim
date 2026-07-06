@@ -5,7 +5,11 @@ local history_manager = require("spaghetti-comb.history.manager")
 local T = MiniTest.new_set()
 
 -- Test setup
-T["history manager"] = MiniTest.new_set()
+T["history manager"] = MiniTest.new_set({
+    hooks = {
+        pre_case = function() history_manager.reset() end,
+    },
+})
 
 T["history manager"]["setup"] = function()
     -- Test basic setup

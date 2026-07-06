@@ -14,6 +14,16 @@ local state = {
     exploration_timeout = 5 * 60, -- 5 minutes in seconds (default)
 }
 
+-- Reset all module state. Do not reuse existing trails after calling.
+function M.reset()
+    state.config = nil
+    state.initialized = false
+    state.trails = {}
+    state.current_project = nil
+    state.last_jump_time = 0
+    state.exploration_timeout = 5 * 60
+end
+
 -- Setup the history manager
 function M.setup(config)
     state.config = config or {}
@@ -328,24 +338,16 @@ function M.prune_inconsequential_jumps(entries)
     end
 
     for _, entry in ipairs(entries) do
-        local should_keep = false
+        local inconsequential = last_kept_entry
+            and entry.file_path == last_kept_entry.file_path
+            and M.is_inconsequential_jump(last_kept_entry, entry)
 
-        if not last_kept_entry then
-            -- Keep the first entry
-            should_keep = true -- selene: allow(if_same_then_else)
-        elseif entry.file_path ~= last_kept_entry.file_path then
-            -- Different file, keep this entry
-            should_keep = true -- selene: allow(if_same_then_else)
-        elseif M.is_inconsequential_jump(last_kept_entry, entry) then
-            -- Skip inconsequential jumps within the same file
-            -- Update the last kept entry's timestamp to the newer one
+        if inconsequential then
+            -- Absorb the jump into the last kept entry
             last_kept_entry.timestamp = entry.timestamp
         else
-            -- Keep significant jumps
-            should_keep = true -- selene: allow(if_same_then_else)
+            keep_entry(entry)
         end
-
-        if should_keep then keep_entry(entry) end
     end
 
     return pruned_entries
@@ -689,9 +691,7 @@ function M.save_current_project_history()
     local storage = require("spaghetti-comb.history.storage")
     local trail = state.trails[state.current_project]
 
-    if not trail or #trail.entries == 0 then
-        return false, "No history to save"
-    end
+    if not trail or #trail.entries == 0 then return false, "No history to save" end
 
     return storage.save_history(trail, state.current_project)
 end
@@ -716,7 +716,8 @@ function M.save_all_histories()
     end
 
     if #errors > 0 then
-        return false, string.format("Saved %d projects, %d errors: %s", saved_count, #errors, table.concat(errors, "; "))
+        return false,
+            string.format("Saved %d projects, %d errors: %s", saved_count, #errors, table.concat(errors, "; "))
     end
 
     return true, string.format("Saved %d project histories", saved_count)
@@ -730,9 +731,7 @@ function M.load_project_history(project_root)
     local storage = require("spaghetti-comb.history.storage")
     local trail, err = storage.load_history(project_root)
 
-    if not trail then
-        return false, err or "Failed to load history"
-    end
+    if not trail then return false, err or "Failed to load history" end
 
     state.trails[project_root] = trail
     return true, "History loaded successfully"
@@ -743,15 +742,11 @@ function M.setup_auto_save()
     if not state.initialized then return false, "History manager not initialized" end
 
     local config = state.config or {}
-    if not (config.history and config.history.save_on_exit) then
-        return false, "Auto-save disabled in config"
-    end
+    if not (config.history and config.history.save_on_exit) then return false, "Auto-save disabled in config" end
 
     vim.api.nvim_create_autocmd("VimLeavePre", {
         group = vim.api.nvim_create_augroup("SpaghettiCombPersistence", { clear = true }),
-        callback = function()
-            M.save_all_histories()
-        end,
+        callback = function() M.save_all_histories() end,
     })
 
     return true, "Auto-save enabled"
@@ -763,9 +758,7 @@ function M.try_load_on_project_switch(project_root)
     if not project_root then return false, "Invalid project root" end
 
     local config = state.config or {}
-    if not (config.history and config.history.save_on_exit) then
-        return false, "Persistence disabled in config"
-    end
+    if not (config.history and config.history.save_on_exit) then return false, "Persistence disabled in config" end
 
     -- Don't load if we already have history for this project
     if state.trails[project_root] and #state.trails[project_root].entries > 0 then

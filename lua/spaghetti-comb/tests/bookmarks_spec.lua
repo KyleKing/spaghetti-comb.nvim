@@ -1,9 +1,12 @@
 -- Bookmark management tests
-local helpers = require("mini.test").new_set()
+local MiniTest = require("mini.test")
+local helpers = MiniTest.new_set()
 local bookmarks = require("spaghetti-comb.history.bookmarks")
 local config = require("spaghetti-comb.config")
 
 -- Helper functions
+local function expect_truthy(value) MiniTest.expect.equality(value ~= nil and value ~= false, true) end
+
 local function create_test_location(file_path, line, col)
     return {
         file_path = file_path or "/tmp/test_file.lua",
@@ -17,14 +20,14 @@ local function create_test_location(file_path, line, col)
 end
 
 -- Tests
-helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
+helpers["bookmarks"] = MiniTest.new_set({}, {
     -- Setup and teardown
     ["setup initializes bookmark manager"] = function()
         bookmarks.reset()
         bookmarks.setup(config.default)
 
         local state = bookmarks.get_state()
-        MiniTest.expect.truthy(state.initialized)
+        expect_truthy(state.initialized)
     end,
 
     -- Task 5.1: Manual bookmark functionality
@@ -37,7 +40,7 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
 
         local success, action = bookmarks.toggle_bookmark(location)
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
         MiniTest.expect.equality(action, "added")
 
         local all_bookmarks = bookmarks.get_all_bookmarks()
@@ -57,7 +60,7 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
         -- Toggle again to remove
         local success, action = bookmarks.toggle_bookmark(location)
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
         MiniTest.expect.equality(action, "removed")
 
         local all_bookmarks = bookmarks.get_all_bookmarks()
@@ -73,12 +76,12 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
 
         local success, action = bookmarks.add_bookmark(location, true)
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
         MiniTest.expect.equality(action, "added")
 
         local all_bookmarks = bookmarks.get_all_bookmarks()
         MiniTest.expect.equality(#all_bookmarks, 1)
-        MiniTest.expect.truthy(all_bookmarks[1].is_manual)
+        expect_truthy(all_bookmarks[1].is_manual)
     end,
 
     ["add_bookmark creates automatic bookmark"] = function()
@@ -90,7 +93,7 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
 
         local success, action = bookmarks.add_bookmark(location, false)
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
         MiniTest.expect.equality(action, "added")
 
         local all_bookmarks = bookmarks.get_all_bookmarks()
@@ -111,12 +114,12 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
         -- Add again (should update to manual)
         local success, action = bookmarks.add_bookmark(location, true)
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
         MiniTest.expect.equality(action, "updated")
 
         local all_bookmarks = bookmarks.get_all_bookmarks()
         MiniTest.expect.equality(#all_bookmarks, 1)
-        MiniTest.expect.truthy(all_bookmarks[1].is_manual)
+        expect_truthy(all_bookmarks[1].is_manual)
     end,
 
     ["remove_bookmark removes existing bookmark"] = function()
@@ -132,7 +135,7 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
         -- Remove it
         local success, msg = bookmarks.remove_bookmark(location)
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
         MiniTest.expect.equality(msg, "removed")
 
         local all_bookmarks = bookmarks.get_all_bookmarks()
@@ -164,7 +167,7 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
 
         local success, msg = bookmarks.clear_all_bookmarks(false)
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
 
         local all_bookmarks = bookmarks.get_all_bookmarks()
         MiniTest.expect.equality(#all_bookmarks, 0)
@@ -183,7 +186,7 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
 
         local success, msg = bookmarks.clear_all_bookmarks(true)
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
 
         local all_bookmarks = bookmarks.get_all_bookmarks()
         MiniTest.expect.equality(#all_bookmarks, 0)
@@ -230,8 +233,8 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
 
         local is_marked, bookmark = bookmarks.is_bookmarked(location)
 
-        MiniTest.expect.truthy(is_marked)
-        MiniTest.expect.truthy(bookmark)
+        expect_truthy(is_marked)
+        expect_truthy(bookmark)
     end,
 
     ["is_bookmarked returns false for non-bookmarked location"] = function()
@@ -255,7 +258,7 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
 
         local success, count = bookmarks.increment_visit_count(location)
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
         MiniTest.expect.equality(count, 1)
 
         -- Increment again
@@ -295,7 +298,7 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
 
         local is_freq, count = bookmarks.is_frequent(location)
 
-        MiniTest.expect.truthy(is_freq)
+        expect_truthy(is_freq)
         MiniTest.expect.equality(count, 3)
     end,
 
@@ -334,11 +337,11 @@ helpers.add = vim.tbl_deep_extend("force", helpers.add or {}, {
 
         local success, msg = bookmarks.update_frequent_locations()
 
-        MiniTest.expect.truthy(success)
+        expect_truthy(success)
 
         -- Check that location1 was auto-bookmarked
         local is_marked, bookmark = bookmarks.is_bookmarked(location1)
-        MiniTest.expect.truthy(is_marked)
+        expect_truthy(is_marked)
         MiniTest.expect.equality(bookmark.is_manual, false)
 
         -- Check that location2 was not auto-bookmarked
