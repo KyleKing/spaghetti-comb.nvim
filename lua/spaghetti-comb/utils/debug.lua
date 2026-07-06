@@ -32,11 +32,11 @@ end
 
 -- Check if logging is enabled for level
 local function should_log(level)
-    if not state.config then
-        return level >= LOG_LEVELS.ERROR -- Always log errors
-    end
-
     local message_level = get_log_level(level)
+
+    if not state.config then
+        return message_level >= LOG_LEVELS.ERROR -- Always log errors
+    end
 
     return state.config.enabled or message_level >= LOG_LEVELS.ERROR
 end
