@@ -221,7 +221,7 @@ function M.navigate_to_entry(entry)
     if not entry or not entry.file_path then return false end
 
     -- Check if file exists and is readable
-    if not vim.fn.filereadable(entry.file_path) then
+    if vim.fn.filereadable(entry.file_path) == 0 then
         debug_utils.warn("Cannot navigate to entry: file not readable", {
             file = entry.file_path,
             position = entry.position,

@@ -297,7 +297,7 @@ function M.prune_project_trail(project_root, max_age_seconds, current_time)
 end
 
 function M.attempt_location_recovery(entry)
-    if not entry or not entry.file_path or not vim.fn.filereadable(entry.file_path) then return false end
+    if not entry or not entry.file_path or vim.fn.filereadable(entry.file_path) == 0 then return false end
 
     -- If the file hasn't changed since last access, no recovery needed
     local file_mtime = vim.fn.getftime(entry.file_path)
@@ -385,7 +385,7 @@ end
 
 -- Location recovery algorithm
 function M.find_shifted_location(entry)
-    if not entry or not entry.file_path or not vim.fn.filereadable(entry.file_path) then return nil end
+    if not entry or not entry.file_path or vim.fn.filereadable(entry.file_path) == 0 then return nil end
 
     -- Read the file content
     local lines = vim.fn.readfile(entry.file_path)

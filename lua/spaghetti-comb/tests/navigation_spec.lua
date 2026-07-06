@@ -198,10 +198,14 @@ T["jumplist"]["enhanced mode toggles"] = function()
     MiniTest.expect.equality(jumplist.is_enhanced_mode(), initial)
 end
 
--- SKIP(source-gap): navigate_to_entry guards unreadable files with
--- `if not vim.fn.filereadable(path)`, but filereadable returns 0 (truthy in Lua),
--- so the guard never fires and the function returns true for missing files.
--- Cannot assert the intended false without fixing the source.
+T["jumplist"]["navigate_to_entry returns false for unreadable file"] = function()
+    local missing_path = vim.fn.tempname() .. "-does-not-exist.lua"
+    local result = jumplist.navigate_to_entry({
+        file_path = missing_path,
+        position = { line = 1, column = 1 },
+    })
+    MiniTest.expect.equality(result, false)
+end
 
 T["jumplist"]["navigate_to_entry moves cursor in real file"] = function()
     local tmp_path = vim.fn.tempname() .. ".lua"
