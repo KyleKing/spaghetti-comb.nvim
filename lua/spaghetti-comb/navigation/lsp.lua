@@ -124,7 +124,9 @@ function M.handle_cursor_movement()
     local current_buf = vim.api.nvim_get_current_buf()
     local current_pos = vim.api.nvim_win_get_cursor(0)
 
-    if not last_position then
+    -- Reset tracking when either buffer was wiped (e.g. closing a scratch UI
+    -- buffer fires BufEnter while the wiped buffer id is still referenced)
+    if not last_position or not vim.api.nvim_buf_is_valid(last_position.buf) then
         last_position = { buf = current_buf, pos = current_pos }
         return
     end

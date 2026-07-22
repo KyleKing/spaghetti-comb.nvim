@@ -106,4 +106,23 @@ T["lsp"]["lsp_result_to_locations handles array of locations"] = function()
     MiniTest.expect.equality(child.lua_get([==[_G.locations[2].uri]==]), "file:///test2.lua")
 end
 
+T["lsp"]["handle_cursor_movement survives wiped last-position buffer"] = function()
+    MiniTest.expect.no_error(
+        function()
+            child.lua([==[
+          lsp_integration.setup({
+            debug = { enabled = false },
+            integration = { lsp = true },
+          })
+          local buf = vim.api.nvim_create_buf(false, true)
+          vim.api.nvim_set_current_buf(buf)
+          lsp_integration.handle_cursor_movement()
+          vim.api.nvim_set_current_buf(vim.api.nvim_create_buf(false, true))
+          vim.api.nvim_buf_delete(buf, { force = true })
+          lsp_integration.handle_cursor_movement()
+        ]==])
+        end
+    )
+end
+
 return T
