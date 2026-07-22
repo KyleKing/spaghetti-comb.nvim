@@ -26,3 +26,6 @@ tags
 
 # For prettier cache
 node_modules
+
+# Test-time clone (mise task deps-mini-nvim)
+deps/mini.nvim/
