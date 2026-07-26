@@ -13,6 +13,15 @@ fi
 '''
 sources = ["deps/mini.nvim"]
 
+[tasks.demo]
+description = "Run all demo scenarios against a throwaway data directory"
+run = '''
+DATA_DIR="$(mktemp -d)"
+trap 'rm -rf "$DATA_DIR"' EXIT
+XDG_DATA_HOME="$DATA_DIR" nvim --headless --noplugin -u ./scripts/minimal_init.lua \
+    -c "lua require('demos.run_all').execute()" -c "qa!"
+'''
+
 [tasks.test]
 depends = ["deps-mini-nvim"]
 description = "Run all test files"
@@ -28,15 +37,15 @@ flag "-f --file"
 
 [tasks.lint]
 description = "Format code using stylua (check mode)"
-run = "stylua scripts/ plugin/ lua/ --check"
+run = "stylua demos/ scripts/ plugin/ lua/ --check"
 
 [tasks.format]
 description = "Format code using stylua (fix mode)"
-run = "stylua scripts/ plugin/ lua/"
+run = "stylua demos/ scripts/ plugin/ lua/"
 
 [tasks.typecheck]
 description = "Check for errors with selene"
-run = "selene scripts/ plugin/ lua/"
+run = "selene demos/ scripts/ plugin/ lua/"
 
 [tasks.docs]
 depends = ["deps-mini-nvim"]
