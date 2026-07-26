@@ -14,6 +14,7 @@ local state = {
     current_reference_index = 0,
     jump_debounce_ms = 100,
 }
+local cursor_jump_timer = nil
 
 -- Initialize the LSP integration module
 function M.setup(config)
@@ -125,7 +126,6 @@ end
 
 -- Handle cursor movement to detect LSP jumps
 local last_position = nil
-local cursor_jump_timer = nil
 function M.handle_cursor_movement()
     if not state.initialized then return end
 
