@@ -65,7 +65,7 @@ local function find_project_root(start_path)
     end
 
     -- If no markers found, use the directory containing the file
-    if start_path and vim.fn.filereadable(start_path) then return dirname(start_path) end
+    if start_path and vim.fn.filereadable(start_path) == 1 then return dirname(start_path) end
 
     return nil
 end
