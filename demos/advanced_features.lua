@@ -1,6 +1,10 @@
 -- Demo Scenario 3: Advanced Features
 -- Showcases intelligent pruning, location recovery, and multi-project workflows
 
+local ui = require("demos.util")
+local history_manager = require("spaghetti-comb.history.manager")
+local bookmarks = require("spaghetti-comb.history.bookmarks")
+
 local demo = {}
 
 function demo.setup()
@@ -20,10 +24,8 @@ end
 
 -- Demo: Inconsequential jump pruning
 function demo.inconsequential_jump_pruning()
-    print("\nInconsequential Jump Pruning Demo")
-    print("=================================\n")
+    ui.section("Inconsequential Jump Pruning Demo")
 
-    local history_manager = require("spaghetti-comb.history.manager")
     history_manager.clear_all_history()
     history_manager.set_current_project(vim.fn.getcwd())
 
@@ -63,10 +65,8 @@ end
 
 -- Demo: Automatic frequent location detection
 function demo.frequent_location_detection()
-    print("\n\nFrequent Location Detection Demo")
-    print("================================\n")
+    ui.section("Frequent Location Detection Demo")
 
-    local bookmarks = require("spaghetti-comb.history.bookmarks")
     bookmarks.clear_all_bookmarks(true)
 
     print("Recording visits to same location...")
@@ -99,10 +99,8 @@ end
 
 -- Demo: Multi-project workflow
 function demo.multi_project_workflow()
-    print("\n\nMulti-Project Workflow Demo")
-    print("===========================\n")
+    ui.section("Multi-Project Workflow Demo")
 
-    local history_manager = require("spaghetti-comb.history.manager")
     history_manager.clear_all_history()
 
     print("Working with multiple projects...")
@@ -167,8 +165,7 @@ end
 
 -- Demo: Location recovery after code changes
 function demo.location_recovery()
-    print("\n\nLocation Recovery Demo")
-    print("======================\n")
+    ui.section("Location Recovery Demo")
 
     print("Simulating location recovery after file edits...")
     print("(In real usage, this handles line shifts from code changes)")
@@ -208,10 +205,8 @@ end
 
 -- Demo: Branch visualization
 function demo.branch_visualization()
-    print("\n\nBranch Visualization Demo")
-    print("=========================\n")
+    ui.section("Branch Visualization Demo")
 
-    local history_manager = require("spaghetti-comb.history.manager")
     history_manager.clear_all_history()
     history_manager.set_current_project(vim.fn.getcwd())
 
@@ -254,10 +249,8 @@ end
 
 -- Demo: Performance metrics
 function demo.performance_metrics()
-    print("\n\nPerformance Metrics Demo")
-    print("========================\n")
+    ui.section("Performance Metrics Demo")
 
-    local history_manager = require("spaghetti-comb.history.manager")
     history_manager.clear_all_history()
     history_manager.set_current_project("/test/performance")
 
@@ -314,11 +307,7 @@ function demo.run_all()
     demo.branch_visualization()
     demo.performance_metrics()
 
-    print([[
-╔════════════════════════════════════════╗
-║   Advanced Demo Complete!             ║
-╚════════════════════════════════════════╝
-]])
+    ui.banner("Advanced Demo Complete!")
 end
 
 return demo

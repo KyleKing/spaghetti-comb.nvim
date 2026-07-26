@@ -1,6 +1,11 @@
 -- Demo Scenario 1: Basic Navigation History Tracking
 -- This demo showcases the core functionality of Spaghetti Comb
 
+local ui = require("demos.util")
+local history_manager = require("spaghetti-comb.history.manager")
+local bookmarks = require("spaghetti-comb.history.bookmarks")
+local storage = require("spaghetti-comb.history.storage")
+
 local demo = {}
 
 -- Initialize the plugin
@@ -24,10 +29,8 @@ end
 
 -- Demo 1: Recording and navigating jumps
 function demo.navigate_between_files()
-    print("Demo 1: Basic Navigation")
-    print("========================")
+    ui.section("Demo 1: Basic Navigation")
 
-    local history_manager = require("spaghetti-comb.history.manager")
     history_manager.set_current_project(vim.fn.getcwd())
 
     -- Simulate jumping between files
@@ -91,10 +94,7 @@ end
 
 -- Demo 2: Branch creation
 function demo.branching_navigation()
-    print("\nDemo 2: Branching Navigation")
-    print("============================")
-
-    local history_manager = require("spaghetti-comb.history.manager")
+    ui.section("Demo 2: Branching Navigation")
 
     print("\nCreating navigation branches...")
     print("  1. Navigate to position 2")
@@ -121,10 +121,7 @@ end
 
 -- Demo 3: Bookmarks
 function demo.bookmark_management()
-    print("\nDemo 3: Bookmark Management")
-    print("===========================")
-
-    local bookmarks = require("spaghetti-comb.history.bookmarks")
+    ui.section("Demo 3: Bookmark Management")
 
     -- Add manual bookmarks
     print("\nAdding bookmarks...")
@@ -159,8 +156,7 @@ end
 
 -- Demo 4: UI Components
 function demo.ui_components()
-    print("\nDemo 4: UI Components")
-    print("=====================")
+    ui.section("Demo 4: UI Components")
 
     print("\nUI components available:")
     print("  1. Breadcrumbs - :SpaghettiCombBreadcrumbs")
@@ -173,12 +169,7 @@ end
 
 -- Demo 5: Persistence
 function demo.persistence()
-    print("\nDemo 5: Persistence")
-    print("===================")
-
-    local history_manager = require("spaghetti-comb.history.manager")
-    local bookmarks = require("spaghetti-comb.history.bookmarks")
-    local storage = require("spaghetti-comb.history.storage")
+    ui.section("Demo 5: Persistence")
 
     -- Save current session
     print("\nSaving navigation history...")
@@ -207,36 +198,27 @@ end
 
 -- Run all demos
 function demo.run_all()
-    print([[
-╔════════════════════════════════════════╗
-║   Spaghetti Comb Demo Scenarios      ║
-╚════════════════════════════════════════╝
-]])
+    ui.banner("Spaghetti Comb Demo Scenarios")
 
     demo.setup()
 
     -- Allow some time between demos
-    local function pause() print("\n" .. string.rep("-", 50)) end
 
     demo.navigate_between_files()
-    pause()
+    ui.rule()
 
     demo.branching_navigation()
-    pause()
+    ui.rule()
 
     demo.bookmark_management()
-    pause()
+    ui.rule()
 
     demo.ui_components()
-    pause()
+    ui.rule()
 
     demo.persistence()
 
-    print([[
-╔════════════════════════════════════════╗
-║   Demo Complete!                      ║
-╚════════════════════════════════════════╝
-]])
+    ui.banner("Demo Complete!")
 end
 
 return demo

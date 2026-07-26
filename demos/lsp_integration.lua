@@ -1,6 +1,9 @@
 -- Demo Scenario 2: LSP Integration
 -- This demo showcases how Spaghetti Comb integrates with LSP navigation
 
+local ui = require("demos.util")
+local history_manager = require("spaghetti-comb.history.manager")
+
 local demo = {}
 
 function demo.setup()
@@ -17,10 +20,8 @@ end
 
 -- Demo: LSP definition tracking
 function demo.lsp_definition_tracking()
-    print("\nLSP Definition Tracking Demo")
-    print("============================\n")
+    ui.section("LSP Definition Tracking Demo")
 
-    local history_manager = require("spaghetti-comb.history.manager")
     history_manager.set_current_project(vim.fn.getcwd())
 
     print("Simulating LSP definition jumps...")
@@ -83,10 +84,7 @@ end
 
 -- Demo: LSP reference tracking
 function demo.lsp_reference_tracking()
-    print("\n\nLSP Reference Tracking Demo")
-    print("===========================\n")
-
-    local history_manager = require("spaghetti-comb.history.manager")
+    ui.section("LSP Reference Tracking Demo")
 
     print("Finding all references to a symbol...")
 
@@ -121,10 +119,7 @@ end
 
 -- Demo: Call hierarchy navigation
 function demo.call_hierarchy()
-    print("\n\nCall Hierarchy Navigation Demo")
-    print("==============================\n")
-
-    local history_manager = require("spaghetti-comb.history.manager")
+    ui.section("Call Hierarchy Navigation Demo")
 
     print("Navigating call hierarchy...")
     print("\nCall chain:")
@@ -166,10 +161,7 @@ end
 
 -- Demo: Symbol search
 function demo.workspace_symbol_search()
-    print("\n\nWorkspace Symbol Search Demo")
-    print("============================\n")
-
-    local history_manager = require("spaghetti-comb.history.manager")
+    ui.section("Workspace Symbol Search Demo")
 
     print("Searching for symbols matching 'manager'...")
 
@@ -206,10 +198,7 @@ end
 
 -- Demo: Showing how exploration state changes
 function demo.exploration_state()
-    print("\n\nExploration State Demo")
-    print("======================\n")
-
-    local history_manager = require("spaghetti-comb.history.manager")
+    ui.section("Exploration State Demo")
 
     print("The plugin tracks your exploration state:")
     print("  - idle: No recent navigation")
@@ -243,11 +232,7 @@ function demo.run_all()
     demo.workspace_symbol_search()
     demo.exploration_state()
 
-    print([[
-╔════════════════════════════════════════╗
-║   LSP Demo Complete!                  ║
-╚════════════════════════════════════════╝
-]])
+    ui.banner("LSP Demo Complete!")
 end
 
 return demo
