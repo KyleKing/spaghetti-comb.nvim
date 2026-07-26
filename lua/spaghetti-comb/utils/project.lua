@@ -1,8 +1,11 @@
 -- Project detection and management
 local M = {}
 
--- Cache for project root detection to avoid repeated file system operations
+-- Cache for project root detection to avoid repeated file system operations.
+-- Paths that resolve to no project are cached as NO_PROJECT so the directory
+-- walk is not repeated on every lookup.
 local project_cache = {}
+local NO_PROJECT = {}
 
 -- Project markers to look for (in order of preference)
 local PROJECT_MARKERS = {
@@ -81,12 +84,13 @@ function M.detect_project_root(file_path)
     -- Cache by containing directory rather than exact file path, so distinct
     -- files (temp files, scratch buffers) in the same directory share a walk.
     local cache_key = dirname(normalize_path(file_path))
-    if project_cache[cache_key] then return project_cache[cache_key] end
+    local cached = project_cache[cache_key]
+    if cached ~= nil then return cached ~= NO_PROJECT and cached or nil end
 
     local project_root = find_project_root(file_path)
 
     -- Cache the result
-    project_cache[cache_key] = project_root
+    project_cache[cache_key] = project_root or NO_PROJECT
 
     return project_root
 end
@@ -116,7 +120,7 @@ end
 function M.get_cached_projects()
     local projects = {}
     for _, project_root in pairs(project_cache) do
-        if project_root then projects[project_root] = true end
+        if project_root ~= NO_PROJECT then projects[project_root] = true end
     end
 
     local result = {}
