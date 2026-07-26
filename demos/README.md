@@ -1,6 +1,6 @@
 # Spaghetti Comb Demo Scenarios
 
-This directory contains comprehensive demo scenarios showcasing all features of Spaghetti Comb.
+Runnable scenarios that exercise the plugin's features from a headless Neovim.
 
 ## Demo Files
 
@@ -45,19 +45,23 @@ Demonstrates intelligent features:
 ```
 
 ### 4. `run_all.lua` - Complete Demo Suite
-Runs all demos sequentially with interactive pauses.
+Runs all demos sequentially. `execute()` runs straight through;
+`execute_interactive()` pauses between sections and needs a real terminal.
 
 **Run:**
-```vim
-:lua require('demos.run_all').execute()
+```bash
+mise run demo
 ```
 
 ## Quick Start
 
-### Option 1: Run All Demos
-```vim
-:lua require('demos.run_all').execute()
+### Option 1: Run All Demos (recommended)
+```bash
+mise run demo
 ```
+
+This runs the full suite headless against a throwaway `XDG_DATA_HOME`, so the
+demos never touch your real navigation history or bookmarks.
 
 ### Option 2: Run Individual Demo
 ```vim
@@ -65,6 +69,11 @@ Runs all demos sequentially with interactive pauses.
 :lua require('demos.lsp_integration').run_all()
 :lua require('demos.advanced_features').run_all()
 ```
+
+The demos save history and bookmarks through the normal storage path, so
+running them from inside Neovim writes to `stdpath("data")` and will overwrite
+entries for whichever project you have open. Start Neovim with
+`XDG_DATA_HOME=$(mktemp -d)` if you want to keep that data intact.
 
 ### Option 3: Run Specific Demo Section
 ```lua
