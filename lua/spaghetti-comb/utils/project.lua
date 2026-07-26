@@ -74,13 +74,19 @@ end
 function M.detect_project_root(file_path)
     if not file_path or file_path == "" then return nil end
 
-    -- Check cache first
-    if project_cache[file_path] then return project_cache[file_path] end
+    -- Non-file buffer names (term://, fugitive://, etc.) can never resolve to
+    -- a real project root, so skip the filesystem walk entirely.
+    if file_path:match("^%w+://") then return nil end
+
+    -- Cache by containing directory rather than exact file path, so distinct
+    -- files (temp files, scratch buffers) in the same directory share a walk.
+    local cache_key = dirname(normalize_path(file_path))
+    if project_cache[cache_key] then return project_cache[cache_key] end
 
     local project_root = find_project_root(file_path)
 
     -- Cache the result
-    project_cache[file_path] = project_root
+    project_cache[cache_key] = project_root
 
     return project_root
 end

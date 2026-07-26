@@ -12,6 +12,7 @@ local state = {
     lsp_available = false,
     reference_locations = {},
     current_reference_index = 0,
+    jump_debounce_ms = 100,
 }
 
 -- Initialize the LSP integration module
@@ -26,6 +27,8 @@ function M.setup(config)
     -- Setup dependencies
     debug_utils.setup(config.debug or {})
     history_manager.setup(config)
+
+    if config.history then state.jump_debounce_ms = config.history.jump_debounce_ms or 100 end
 
     -- Check LSP availability
     M.check_lsp_availability()
@@ -70,6 +73,10 @@ end
 -- Remove LSP autocmds and reset init state. Do not reuse without calling setup again.
 function M.teardown()
     pcall(vim.api.nvim_del_augroup_by_name, "SpaghettiCombLsp")
+    if cursor_jump_timer then
+        vim.fn.timer_stop(cursor_jump_timer)
+        cursor_jump_timer = nil
+    end
     state.initialized = false
 end
 
@@ -118,6 +125,7 @@ end
 
 -- Handle cursor movement to detect LSP jumps
 local last_position = nil
+local cursor_jump_timer = nil
 function M.handle_cursor_movement()
     if not state.initialized then return end
 
@@ -156,13 +164,20 @@ function M.handle_cursor_movement()
             context = M.get_context_at_position(current_buf, current_pos),
         }
 
-        -- Record the jump if we have valid locations
+        -- Record the jump if we have valid locations, debounced so rapid
+        -- cursor churn (e.g. many buffers in a row) doesn't each pay for a
+        -- synchronous record_jump call.
         if from_location.file_path ~= "" and to_location.file_path ~= "" then
-            history_manager.record_jump(from_location, to_location, "lsp_jump")
-            debug_utils.debug("Recorded LSP jump", {
-                from = from_location.file_path .. ":" .. from_location.position.line,
-                to = to_location.file_path .. ":" .. to_location.position.line,
-            })
+            if cursor_jump_timer then vim.fn.timer_stop(cursor_jump_timer) end
+
+            cursor_jump_timer = vim.fn.timer_start(state.jump_debounce_ms, function()
+                history_manager.record_jump(from_location, to_location, "lsp_jump")
+                debug_utils.debug("Recorded LSP jump", {
+                    from = from_location.file_path .. ":" .. from_location.position.line,
+                    to = to_location.file_path .. ":" .. to_location.position.line,
+                })
+                cursor_jump_timer = nil
+            end)
         end
     end
 
