@@ -5,12 +5,12 @@ Comprehensive guide for developers working on Spaghetti Comb. For quick AI refer
 ## Table of Contents
 
 1. [Development Setup](#development-setup)
-2. [Project Structure](#project-structure)
-3. [Testing](#testing)
-4. [Code Organization](#code-organization)
-5. [Development Workflow](#development-workflow)
-6. [Contributing](#contributing)
-7. [Troubleshooting](#troubleshooting)
+1. [Project Structure](#project-structure)
+1. [Testing](#testing)
+1. [Code Organization](#code-organization)
+1. [Development Workflow](#development-workflow)
+1. [Contributing](#contributing)
+1. [Troubleshooting](#troubleshooting)
 
 ## Development Setup
 
@@ -24,28 +24,32 @@ Comprehensive guide for developers working on Spaghetti Comb. For quick AI refer
 ### Initial Setup
 
 1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd spaghetti-comb.nvim
-   ```
 
-2. **Install dependencies**
-   ```bash
-   mise install
-   mise run deps-mini-nvim  # Install mini.nvim for testing
-   ```
+    ```bash
+    git clone <repository-url>
+    cd spaghetti-comb.nvim
+    ```
 
-3. **Verify setup**
-   ```bash
-   mise run test  # Should run tests (may have failures initially)
-   mise run lint  # Should check code formatting
-   ```
+1. **Install dependencies**
+
+    ```bash
+    mise install
+    mise run deps-mini-nvim  # Install mini.nvim for testing
+    ```
+
+1. **Verify setup**
+
+    ```bash
+    mise run test  # Should run tests (may have failures initially)
+    mise run lint  # Should check code formatting
+    ```
 
 ### Development Environment
 
 The project uses `mise` for tool management. All development commands are defined in `mise.toml`.
 
 **Key tools:**
+
 - `stylua` - Code formatter
 - `selene` - Lua linter
 - `mini.nvim` - Testing framework (in `deps/mini.nvim/`)
@@ -74,17 +78,20 @@ spaghetti-comb.nvim/
 ### Module Organization
 
 **Core Modules:**
+
 - `init.lua` - Plugin initialization and public API
 - `config.lua` - Configuration schema and validation
 - `types.lua` - Data model definitions (NavigationEntry, NavigationTrail, etc.)
 
 **History Management:**
+
 - `history/manager.lua` - Core history tracking, branching, pruning
 - `history/storage.lua` - JSON persistence
 - `history/events.lua` - Event handling
 - `history/bookmarks.lua` - Manual and frequency-based bookmarks
 
 **UI Components:**
+
 - `ui/breadcrumbs.lua` - Breadcrumb rendering
 - `ui/floating_tree.lua` - Floating tree window
 - `ui/preview.lua` - Code preview
@@ -92,12 +99,14 @@ spaghetti-comb.nvim/
 - `ui/statusline.lua` - Statusline integration
 
 **Navigation:**
+
 - `navigation/commands.lua` - Navigation commands
 - `navigation/lsp.lua` - LSP integration
 - `navigation/jumplist.lua` - Jumplist enhancement
 - `navigation/events.lua` - Navigation events
 
 **Utilities:**
+
 - `utils/project.lua` - Project detection
 - `utils/debug.lua` - Debug logging
 
@@ -108,6 +117,7 @@ spaghetti-comb.nvim/
 The project uses `mini.test` framework with child Neovim processes for isolated testing.
 
 **Test Structure:**
+
 - Tests are in `lua/spaghetti-comb/tests/`
 - Each test file is a Lua module that returns a test set
 - Test runner is in `lua/spaghetti-comb/tests/init.lua`
@@ -115,25 +125,29 @@ The project uses `mini.test` framework with child Neovim processes for isolated 
 ### Running Tests
 
 **Run all tests:**
+
 ```bash
 mise run test
 ```
 
 **Run specific test file:**
+
 ```bash
 mise run test-file --file=lua/spaghetti-comb/tests/history_spec.lua
 ```
 
 **Run tests manually:**
+
 ```bash
 nvim --headless --noplugin -u ./scripts/minimal_init.lua \
-  -c "lua require('spaghetti-comb.tests.init').run_all()" \
-  -c "qa"
+    -c "lua require('spaghetti-comb.tests.init').run_all()" \
+    -c "qa"
 ```
 
 ### Writing Tests
 
 **Test File Structure:**
+
 ```lua
 local MiniTest = require("mini.test")
 local new_set = MiniTest.new_set
@@ -163,18 +177,19 @@ return T
 ```
 
 **Example Test:**
+
 ```lua
 T["history manager"]["records jumps"] = function()
     local history = require("spaghetti-comb.history.manager")
     history.setup({})
     history.set_current_project("/test/project")
-    
+
     local success, entry = history.record_jump(
         { file_path = "/test/a.lua", position = { line = 1, column = 1 } },
         { file_path = "/test/b.lua", position = { line = 10, column = 5 } },
         "manual"
     )
-    
+
     expect.no_error(function()
         assert(success == true)
         assert(entry ~= nil)
@@ -183,6 +198,7 @@ end
 ```
 
 **Test Patterns:**
+
 - Use `MiniTest.new_child_neovim()` for integration tests
 - Use `child.lua()` and `child.lua_get()` for executing Lua in child Neovim
 - Use `expect.no_error()` for error checking
@@ -201,11 +217,13 @@ end
 ### Architecture Patterns
 
 **Module Pattern:**
+
 - Each module returns a table with public functions
 - Private functions are local
 - State is managed in module-local tables
 
 **Example:**
+
 ```lua
 local M = {}
 
@@ -227,11 +245,13 @@ return M
 ```
 
 **Configuration Pattern:**
+
 - Default config in `config.lua`
 - User config merged with defaults
 - Validation before use
 
 **Error Handling:**
+
 - Use `pcall()` for risky operations
 - Return `success, result` tuples
 - Log errors via debug utilities
@@ -239,21 +259,25 @@ return M
 ### Code Style
 
 **Formatting:**
+
 - Use `stylua` for formatting
 - Run `mise run format` before committing
 - Follow Neovim Lua style conventions
 
 **Linting:**
+
 - Use `selene` for linting
 - Run `mise run typecheck` before committing
 - Fix all warnings
 
 **Naming:**
+
 - Use `snake_case` for functions and variables
 - Use `PascalCase` for types/classes (in comments)
 - Use descriptive names
 
 **Comments:**
+
 - Use `---` for function documentation
 - Use `--` for inline comments
 - Document public APIs
@@ -263,42 +287,49 @@ return M
 ### Making Changes
 
 1. **Create a branch**
-   ```bash
-   git checkout -b feature/my-feature
-   ```
 
-2. **Make changes**
-   - Follow code organization patterns
-   - Write tests for new features
-   - Update documentation if needed
+    ```bash
+    git checkout -b feature/my-feature
+    ```
 
-3. **Run quality checks**
-   ```bash
-   mise run format    # Format code
-   mise run typecheck # Check for errors
-   mise run test      # Run tests
-   ```
+1. **Make changes**
 
-4. **Commit changes**
-   ```bash
-   git add .
-   git commit -m "feat: add feature description"
-   ```
+    - Follow code organization patterns
+    - Write tests for new features
+    - Update documentation if needed
+
+1. **Run quality checks**
+
+    ```bash
+    mise run format    # Format code
+    mise run typecheck # Check for errors
+    mise run test      # Run tests
+    ```
+
+1. **Commit changes**
+
+    ```bash
+    git add .
+    git commit -m "feat: add feature description"
+    ```
 
 ### Code Quality Commands
 
 **Formatting:**
+
 ```bash
 mise run format  # Auto-fix formatting
 mise run lint    # Check formatting (no fix)
 ```
 
 **Type Checking:**
+
 ```bash
 mise run typecheck  # Run selene linter
 ```
 
 **Testing:**
+
 ```bash
 mise run test                    # Run all tests
 mise run test-file --file=...   # Run specific test
@@ -317,11 +348,11 @@ mise run test-file --file=...   # Run specific test
 ### How to Contribute
 
 1. **Fork the repository**
-2. **Create a feature branch**
-3. **Make your changes**
-4. **Add tests** for new functionality
-5. **Run quality checks** (format, lint, test)
-6. **Submit a pull request**
+1. **Create a feature branch**
+1. **Make your changes**
+1. **Add tests** for new functionality
+1. **Run quality checks** (format, lint, test)
+1. **Submit a pull request**
 
 ### Pull Request Guidelines
 
@@ -341,6 +372,7 @@ mise run test-file --file=...   # Run specific test
 ### Issue Reporting
 
 When reporting issues:
+
 - **Describe the problem** clearly
 - **Include steps to reproduce**
 - **Provide environment details** (Neovim version, OS, etc.)
@@ -352,20 +384,24 @@ When reporting issues:
 ### Common Issues
 
 **Tests fail to run:**
+
 - Ensure `mise run deps-mini-nvim` has been run
 - Check that `deps/mini.nvim/` exists
 - Verify Neovim version is 0.10+
 
 **Formatting issues:**
+
 - Run `mise run format` to auto-fix
 - Check `stylua` is installed via mise
 
 **Type checking errors:**
+
 - Review selene warnings
 - Fix type annotations if needed
 - Check for common Lua pitfalls
 
 **Plugin doesn't load:**
+
 - Check `plugin/spaghetti-comb.lua` exists
 - Verify runtime path includes plugin directory
 - Check Neovim version compatibility
@@ -373,6 +409,7 @@ When reporting issues:
 ### Debug Tips
 
 **Enable debug logging:**
+
 ```lua
 require('spaghetti-comb').setup({
     debug = {
@@ -383,12 +420,14 @@ require('spaghetti-comb').setup({
 ```
 
 **Inspect plugin state:**
+
 ```lua
 local config = require('spaghetti-comb').get_config()
 -- Inspect config
 ```
 
 **Test in isolation:**
+
 ```bash
 nvim --headless -u scripts/minimal_init.lua
 ```
@@ -405,4 +444,3 @@ nvim --headless -u scripts/minimal_init.lua
 - **mini.test documentation**: `deps/mini-test.md`
 - **Neovim Lua guide**: `:help lua-guide`
 - **Plugin development**: `:help develop-plugin`
-

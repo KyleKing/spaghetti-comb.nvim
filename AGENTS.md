@@ -18,6 +18,7 @@ Concise reference for AI agents working on this codebase. For detailed human-foc
 **Pattern**: extends built-in Neovim behavior (jumplist, LSP) rather than replacing it. Modular structure under `lua/spaghetti-comb/`: `history/`, `ui/`, `navigation/`, `utils/`, `tests/`. Each module is a table with `setup(config)` and module-local state; most expose `reset()` for tests.
 
 **Key modules**:
+
 - `history/manager.lua` - Trail recording, branching, pruning, exploration state
 - `history/bookmarks.lua` - Manual and frequency-based bookmarks
 - `history/storage.lua` - JSON persistence in `stdpath('data')/spaghetti-comb/`

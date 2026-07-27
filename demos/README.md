@@ -5,7 +5,9 @@ Runnable scenarios that exercise the plugin's features from a headless Neovim.
 ## Demo Files
 
 ### 1. `basic_usage.lua` - Basic Navigation
+
 Demonstrates core functionality:
+
 - Recording and navigating jumps
 - Creating branching paths
 - Bookmark management
@@ -13,12 +15,15 @@ Demonstrates core functionality:
 - Persistence features
 
 **Run:**
+
 ```vim
 :lua require('demos.basic_usage').run_all()
 ```
 
 ### 2. `lsp_integration.lua` - LSP Integration
+
 Shows how Spaghetti Comb enhances LSP navigation:
+
 - Definition tracking
 - Reference finding
 - Call hierarchy navigation
@@ -26,12 +31,15 @@ Shows how Spaghetti Comb enhances LSP navigation:
 - Exploration state tracking
 
 **Run:**
+
 ```vim
 :lua require('demos.lsp_integration').run_all()
 ```
 
 ### 3. `advanced_features.lua` - Advanced Features
+
 Demonstrates intelligent features:
+
 - Inconsequential jump pruning
 - Automatic frequent location detection
 - Multi-project workflows
@@ -40,15 +48,17 @@ Demonstrates intelligent features:
 - Performance metrics
 
 **Run:**
+
 ```vim
 :lua require('demos.advanced_features').run_all()
 ```
 
 ### 4. `run_all.lua` - Complete Demo Suite
-Runs all demos sequentially. `execute()` runs straight through;
-`execute_interactive()` pauses between sections and needs a real terminal.
+
+Runs all demos sequentially. `execute()` runs straight through; `execute_interactive()` pauses between sections and needs a real terminal.
 
 **Run:**
+
 ```bash
 mise run demo
 ```
@@ -56,26 +66,25 @@ mise run demo
 ## Quick Start
 
 ### Option 1: Run All Demos (recommended)
+
 ```bash
 mise run demo
 ```
 
-This runs the full suite headless against a throwaway `XDG_DATA_HOME`, so the
-demos never touch your real navigation history or bookmarks.
+This runs the full suite headless against a throwaway `XDG_DATA_HOME`, so the demos never touch your real navigation history or bookmarks.
 
 ### Option 2: Run Individual Demo
+
 ```vim
 :lua require('demos.basic_usage').run_all()
 :lua require('demos.lsp_integration').run_all()
 :lua require('demos.advanced_features').run_all()
 ```
 
-The demos save history and bookmarks through the normal storage path, so
-running them from inside Neovim writes to `stdpath("data")` and will overwrite
-entries for whichever project you have open. Start Neovim with
-`XDG_DATA_HOME=$(mktemp -d)` if you want to keep that data intact.
+The demos save history and bookmarks through the normal storage path, so running them from inside Neovim writes to `stdpath("data")` and will overwrite entries for whichever project you have open. Start Neovim with `XDG_DATA_HOME=$(mktemp -d)` if you want to keep that data intact.
 
 ### Option 3: Run Specific Demo Section
+
 ```lua
 local demo = require('demos.basic_usage')
 demo.setup()
@@ -88,61 +97,71 @@ demo.bookmark_management()
 Some features require an active Neovim session to see the UI:
 
 1. **Breadcrumbs** - `:SpaghettiCombBreadcrumbs`
-   - Shows navigation trail in floating window
-   - Use `j/k` to navigate, `Enter` to jump
-   - Press `q` to close
 
-2. **Navigation Tree** - `:SpaghettiCombTree`
-   - Unicode tree visualization with preview
-   - Split-screen layout
-   - Vim motions for navigation
+    - Shows navigation trail in floating window
+    - Use `j/k` to navigate, `Enter` to jump
+    - Press `q` to close
 
-3. **Bookmark Picker** - `:SpaghettiCombBookmarks`
-   - Shows all bookmarks
-   - Integrates with mini.pick if available
-   - Quick navigation to bookmarked locations
+1. **Navigation Tree** - `:SpaghettiCombTree`
 
-4. **History Picker** - `:SpaghettiCombHistory`
-   - Browse navigation history
-   - Filter by jump type
-   - Quick access to recent locations
+    - Unicode tree visualization with preview
+    - Split-screen layout
+    - Vim motions for navigation
+
+1. **Bookmark Picker** - `:SpaghettiCombBookmarks`
+
+    - Shows all bookmarks
+    - Integrates with mini.pick if available
+    - Quick navigation to bookmarked locations
+
+1. **History Picker** - `:SpaghettiCombHistory`
+
+    - Browse navigation history
+    - Filter by jump type
+    - Quick access to recent locations
 
 ## Demo Workflow
 
 For the best experience, follow this workflow:
 
 1. **Start Fresh:**
-   ```vim
-   :lua require('spaghetti-comb').setup({})
-   ```
 
-2. **Run Basic Demo:**
-   ```vim
-   :lua require('demos.basic_usage').run_all()
-   ```
+    ```vim
+    :lua require('spaghetti-comb').setup({})
+    ```
 
-3. **Try UI Commands:**
-   ```vim
-   :SpaghettiCombBreadcrumbs
-   :SpaghettiCombTree
-   :SpaghettiCombBookmarks
-   ```
+1. **Run Basic Demo:**
 
-4. **Explore LSP Integration:**
-   - Navigate your actual codebase
-   - Use LSP commands (gd, gr, etc.)
-   - See automatic tracking in `:SpaghettiCombHistory`
+    ```vim
+    :lua require('demos.basic_usage').run_all()
+    ```
 
-5. **Test Persistence:**
-   ```vim
-   :SpaghettiCombSaveHistory
-   :SpaghettiCombSaveBookmarks
-   :SpaghettiCombStorageStats
-   ```
+1. **Try UI Commands:**
+
+    ```vim
+    :SpaghettiCombBreadcrumbs
+    :SpaghettiCombTree
+    :SpaghettiCombBookmarks
+    ```
+
+1. **Explore LSP Integration:**
+
+    - Navigate your actual codebase
+    - Use LSP commands (gd, gr, etc.)
+    - See automatic tracking in `:SpaghettiCombHistory`
+
+1. **Test Persistence:**
+
+    ```vim
+    :SpaghettiCombSaveHistory
+    :SpaghettiCombSaveBookmarks
+    :SpaghettiCombStorageStats
+    ```
 
 ## Expected Output
 
 Each demo produces console output showing:
+
 - ✓ Successful operations
 - ✗ Failed operations (rare in demos)
 - 📊 Statistics and metrics
@@ -173,18 +192,21 @@ local history_manager = require('spaghetti-comb.history.manager')
 These demos cover:
 
 ### Core Features (✓)
+
 - [x] Navigation history recording
 - [x] Branching path creation
 - [x] Forward/backward navigation
 - [x] History statistics
 
 ### Bookmarks (✓)
+
 - [x] Manual bookmarks
 - [x] Automatic frequent locations
 - [x] Bookmark toggle
 - [x] Bookmark persistence
 
 ### LSP Integration (✓)
+
 - [x] Definition tracking
 - [x] Reference tracking
 - [x] Call hierarchy
@@ -192,24 +214,28 @@ These demos cover:
 - [x] Jump type classification
 
 ### Intelligent Features (✓)
+
 - [x] Inconsequential jump pruning
 - [x] Location recovery
 - [x] Exploration state detection
 - [x] Multi-project separation
 
 ### UI Components (✓)
+
 - [x] Breadcrumbs display
 - [x] Tree visualization
 - [x] Picker integration
 - [x] Statusline integration
 
 ### Persistence (✓)
+
 - [x] History save/load
 - [x] Bookmark save/load
 - [x] Storage statistics
 - [x] Cleanup operations
 
 ### Performance (✓)
+
 - [x] Large history handling
 - [x] Navigation performance
 - [x] Memory usage
@@ -218,14 +244,17 @@ These demos cover:
 ## Troubleshooting
 
 **Demo doesn't run:**
+
 - Ensure plugin is installed: `:lua require('spaghetti-comb')`
 - Check for errors: `:messages`
 
 **UI components not showing:**
+
 - Requires active buffers for full demo
 - Some features need LSP attached
 
 **No output visible:**
+
 - Check `:messages` for demo output
 - Some output may be in statusline
 
@@ -234,30 +263,31 @@ These demos cover:
 To add a new demo:
 
 1. Create `demos/your_demo.lua`
-2. Follow the existing structure:
-   ```lua
-   local demo = {}
+1. Follow the existing structure:
+    ```lua
+    local demo = {}
 
-   function demo.setup()
-       -- Setup code
-   end
+    function demo.setup()
+        -- Setup code
+    end
 
-   function demo.your_feature()
-       -- Demo code with print statements
-   end
+    function demo.your_feature()
+        -- Demo code with print statements
+    end
 
-   function demo.run_all()
-       -- Run all demos
-   end
+    function demo.run_all()
+        -- Run all demos
+    end
 
-   return demo
-   ```
-3. Add to `demos/run_all.lua`
-4. Update this README
+    return demo
+    ```
+1. Add to `demos/run_all.lua`
+1. Update this README
 
 ## Next Steps
 
 After exploring the demos:
+
 - Read [SPEC.md](../SPEC.md) for detailed specifications
 - Check [DEVELOPER.md](../DEVELOPER.md) for development guide
 - Review [README.md](../README.md) for usage documentation

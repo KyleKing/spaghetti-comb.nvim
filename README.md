@@ -56,24 +56,24 @@ Navigate as you normally would (LSP go-to-definition, `<C-o>`/`<C-i>`, file swit
 
 ### Commands
 
-| Command | Description |
-| --- | --- |
-| `:SpaghettiCombBreadcrumbs` | Toggle breadcrumb trail view |
-| `:SpaghettiCombTree` | Toggle navigation tree with preview |
-| `:SpaghettiCombHistory` | Navigation history picker |
-| `:SpaghettiCombBookmarks` | Bookmark picker |
-| `:SpaghettiCombBookmarkToggle` | Toggle bookmark at cursor |
-| `:SpaghettiCombBookmarkClear [global]` | Clear bookmarks |
-| `:SpaghettiCombBack` / `:SpaghettiCombForward` | Move through the trail |
-| `:SpaghettiCombJumpTo {index}` | Jump to a trail entry |
-| `:SpaghettiCombHistoryClear [all]` | Clear navigation history |
-| `:SpaghettiCombStatus` | Show navigation status |
-| `:SpaghettiCombSaveHistory` / `:SpaghettiCombLoadHistory` | Persist or restore history for the current project |
-| `:SpaghettiCombSaveBookmarks` / `:SpaghettiCombLoadBookmarks` | Persist or restore bookmarks |
-| `:SpaghettiCombStorageStats` | Persistence storage statistics |
-| `:SpaghettiCombCleanupPersistence [days]` | Delete old persistence files |
-| `:SpaghettiCombListProjects` | List projects with saved data |
-| `:SpaghettiCombDebug` / `:SpaghettiCombLogLevel {level}` | Debug helpers |
+| Command                                                       | Description                                        |
+| ------------------------------------------------------------- | -------------------------------------------------- |
+| `:SpaghettiCombBreadcrumbs`                                   | Toggle breadcrumb trail view                       |
+| `:SpaghettiCombTree`                                          | Toggle navigation tree with preview                |
+| `:SpaghettiCombHistory`                                       | Navigation history picker                          |
+| `:SpaghettiCombBookmarks`                                     | Bookmark picker                                    |
+| `:SpaghettiCombBookmarkToggle`                                | Toggle bookmark at cursor                          |
+| `:SpaghettiCombBookmarkClear [global]`                        | Clear bookmarks                                    |
+| `:SpaghettiCombBack` / `:SpaghettiCombForward`                | Move through the trail                             |
+| `:SpaghettiCombJumpTo {index}`                                | Jump to a trail entry                              |
+| `:SpaghettiCombHistoryClear [all]`                            | Clear navigation history                           |
+| `:SpaghettiCombStatus`                                        | Show navigation status                             |
+| `:SpaghettiCombSaveHistory` / `:SpaghettiCombLoadHistory`     | Persist or restore history for the current project |
+| `:SpaghettiCombSaveBookmarks` / `:SpaghettiCombLoadBookmarks` | Persist or restore bookmarks                       |
+| `:SpaghettiCombStorageStats`                                  | Persistence storage statistics                     |
+| `:SpaghettiCombCleanupPersistence [days]`                     | Delete old persistence files                       |
+| `:SpaghettiCombListProjects`                                  | List projects with saved data                      |
+| `:SpaghettiCombDebug` / `:SpaghettiCombLogLevel {level}`      | Debug helpers                                      |
 
 ## Configuration
 

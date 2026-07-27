@@ -1,6 +1,11 @@
-[tools]
-stylua = "latest"
-"cargo:selene" = "latest"
+[tasks.demo]
+description = "Run all demo scenarios against a throwaway data directory"
+run = '''
+DATA_DIR="$(mktemp -d)"
+trap 'rm -rf "$DATA_DIR"' EXIT
+XDG_DATA_HOME="$DATA_DIR" nvim --headless --noplugin -u ./scripts/minimal_init.lua \
+    -c "lua require('demos.run_all').execute()" -c "qa!"
+'''
 
 [tasks."deps-mini-nvim"]
 description = "Download 'mini.nvim' to use its 'mini.test' testing module"
@@ -13,14 +18,21 @@ fi
 '''
 sources = ["deps/mini.nvim"]
 
-[tasks.demo]
-description = "Run all demo scenarios against a throwaway data directory"
-run = '''
-DATA_DIR="$(mktemp -d)"
-trap 'rm -rf "$DATA_DIR"' EXIT
-XDG_DATA_HOME="$DATA_DIR" nvim --headless --noplugin -u ./scripts/minimal_init.lua \
-    -c "lua require('demos.run_all').execute()" -c "qa!"
-'''
+[tasks.docs]
+depends = ["deps-mini-nvim"]
+description = "Generate vim help tags (help doc not yet written; see ROADMAP.md)"
+run = [
+  "mkdir -p doc",
+  "nvim --headless -c 'helptags doc/' -c 'qa!'",
+]
+
+[tasks.format]
+description = "Format code using stylua (fix mode)"
+run = "stylua demos/ scripts/ plugin/ lua/"
+
+[tasks.lint]
+description = "Format code using stylua (check mode)"
+run = "stylua demos/ scripts/ plugin/ lua/ --check"
 
 [tasks.test]
 depends = ["deps-mini-nvim"]
@@ -35,22 +47,10 @@ usage = '''
 flag "-f --file"
 '''
 
-[tasks.lint]
-description = "Format code using stylua (check mode)"
-run = "stylua demos/ scripts/ plugin/ lua/ --check"
-
-[tasks.format]
-description = "Format code using stylua (fix mode)"
-run = "stylua demos/ scripts/ plugin/ lua/"
-
 [tasks.typecheck]
 description = "Check for errors with selene"
 run = "selene demos/ scripts/ plugin/ lua/"
 
-[tasks.docs]
-depends = ["deps-mini-nvim"]
-description = "Generate vim help tags (help doc not yet written; see ROADMAP.md)"
-run = [
-  "mkdir -p doc",
-  "nvim --headless -c 'helptags doc/' -c 'qa!'",
-]
+[tools]
+"cargo:selene" = "latest"
+stylua = "latest"
