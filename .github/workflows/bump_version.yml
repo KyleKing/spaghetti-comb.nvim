@@ -1,0 +1,37 @@
+---
+name: Bump Version
+
+"on":
+  push:
+    branches: ['main']
+  workflow_dispatch: null # For manual runs
+
+jobs:
+  bump-version:
+    # Ignore the commits from this action
+    if: "!startsWith(github.event.head_commit.message, 'bump:')"
+    runs-on: ubuntu-latest
+    name: Bump version and make release with commitizen
+    # Fix 403 error (https://github.com/softprops/action-gh-release/issues/400)
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Bump version and generate changelog
+        uses: commitizen-tools/commitizen-action@338bbd841b75aaee6bf5340e1fa12f6ab58ff9ff # master
+        with:
+          branch: main
+          changelog_increment_filename: body.md
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # REVISION == PREVIOUS_REVISION means commitizen found no bumpable commits
+      # and cut no tag, so there is nothing to release.
+      - name: Generate GitHub Release Notes
+        if: env.REVISION != env.PREVIOUS_REVISION
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          body_path: body.md
+          tag_name: v${{ env.REVISION }}
