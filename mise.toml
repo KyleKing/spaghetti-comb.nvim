@@ -34,8 +34,8 @@ description = "Format code using stylua (fix mode)"
 run = "stylua demos/ plugin/ lua/ scripts/"
 
 [tasks.lint]
-description = "Format code using stylua (check mode)"
-run = "stylua demos/ plugin/ lua/ scripts/ --check"
+description = "Check formatting with stylua and lint with selene"
+run = ["stylua demos/ plugin/ lua/ scripts/ --check", "selene demos/ plugin/ lua/ scripts/"]
 
 # Note on the -c bodies below: headless Neovim does not exit after a failed -c
 # command, so every Lua entry point is wrapped in pcall with an explicit
@@ -54,8 +54,9 @@ flag "-f --file"
 '''
 
 [tasks.typecheck]
-description = "Check for errors with selene"
-run = "selene demos/ plugin/ lua/ scripts/"
+depends = ["deps-mini-nvim"]
+description = "Type check with emmylua_check"
+run = "emmylua_check --warnings-as-errors ."
 
 [tools]
 hk = "1.53.0"
@@ -64,3 +65,4 @@ stylua = "2.5.2"
 "cargo:selene" = "0.31.0"
 "pipx:commitizen" = "latest"
 "pipx:toml-sort" = "latest"
+"ubi:EmmyLuaLs/emmylua-analyzer-rust[exe=emmylua_check]" = "0.24.0"
