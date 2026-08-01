@@ -1,31 +1,24 @@
-# Created by https://www.toptal.com/developers/gitignore/api/vim
-# Edit at https://www.toptal.com/developers/gitignore?templates=vim
-
-### Vim ###
-# Swap
-[._]*.s[a-v][a-z]
-!*.svg  # comment out if you don't need vector files
-[._]*.sw[a-p]
-[._]s[a-rt-v][a-z]
-[._]ss[a-gi-z]
-[._]sw[a-p]
-
-# Session
-Session.vim
-Sessionx.vim
-
-# Temporary
-.netrwhist
+# OS and Editor
+.DS_Store
+*.swp
+*.swo
 *~
-# Auto-generated tag files
-tags
-# Persistent undo
-[._]*.un~
+.vscode/
+.idea/
 
-# End of https://www.toptal.com/developers/gitignore/api/vim
+# Lua
+luac.out
 
-# For prettier cache
-node_modules
+# Neovim
+lazy-lock.json
+mason-lock.json
+deps/
+# Node (prettier cache)
+node_modules/
 
-# Test-time clone (mise task deps-mini-nvim)
-deps/mini.nvim/
+# mise
+.mise.local.toml
+
+# Git
+*.rej
+*.orig

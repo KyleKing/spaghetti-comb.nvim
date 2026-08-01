@@ -1,18 +1,21 @@
+[tasks.ci]
+description = "Run all CI checks"
+depends = ["lint", "typecheck", "test"]
+
 [tasks.demo]
 description = "Run all demo scenarios against a throwaway data directory"
 run = '''
 DATA_DIR="$(mktemp -d)"
 trap 'rm -rf "$DATA_DIR"' EXIT
 XDG_DATA_HOME="$DATA_DIR" nvim --headless --noplugin -u ./scripts/minimal_init.lua \
-    -c "lua require('demos.run_all').execute()" -c "qa!"
+    -c "lua local ok, err = pcall(function() require('demos.run_all').execute() end) if not ok then io.stderr:write(tostring(err) .. '\n') vim.cmd('cquit 1') end" -c "qa!"
 '''
 
 [tasks."deps-mini-nvim"]
 description = "Download 'mini.nvim' to use its 'mini.test' testing module"
 run = '''
 DIRECTORY="deps/mini.nvim"
-if [ ! -d "$DIRECTORY" ]; then
-    mkdir -p "$DIRECTORY"
+if [ ! -d "$DIRECTORY/lua" ]; then
     git clone --filter=blob:none https://github.com/echasnovski/mini.nvim "$DIRECTORY"
 fi
 '''
@@ -23,34 +26,41 @@ depends = ["deps-mini-nvim"]
 description = "Generate vim help tags (help doc not yet written; see ROADMAP.md)"
 run = [
   "mkdir -p doc",
-  "nvim --headless -c 'helptags doc/' -c 'qa!'",
+  "nvim --headless -c 'helptags doc/' -c 'qa!'"
 ]
 
 [tasks.format]
 description = "Format code using stylua (fix mode)"
-run = "stylua demos/ scripts/ plugin/ lua/"
+run = "stylua demos/ plugin/ lua/ scripts/"
 
 [tasks.lint]
 description = "Format code using stylua (check mode)"
-run = "stylua demos/ scripts/ plugin/ lua/ --check"
+run = "stylua demos/ plugin/ lua/ scripts/ --check"
 
+# Note on the -c bodies below: headless Neovim does not exit after a failed -c
+# command, so every Lua entry point is wrapped in pcall with an explicit
+# `cquit 1`. Without the guard, an error hangs the process until the CI timeout.
 [tasks.test]
 depends = ["deps-mini-nvim"]
 description = "Run all test files"
-run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua require('spaghetti-comb.tests.init').run_all()\" -c \"qa!\""
+run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua local ok, err = pcall(function() require('spaghetti-comb.tests.init').run_all() end) if not ok then io.stderr:write(tostring(err) .. '\\n') vim.cmd('cquit 1') end\""
 
 [tasks.test-file]
 depends = ["deps-mini-nvim"]
 description = "Run test from specified file"
-run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua MiniTest.run_file('{{flag(name='file')}}')\" -c \"qa!\""
+run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua local ok, err = pcall(MiniTest.run_file, vim.fn.fnamemodify('{{flag(name='file')}}', ':p')) if not ok then io.stderr:write(tostring(err) .. '\\n') vim.cmd('cquit 1') end\""
 usage = '''
 flag "-f --file"
 '''
 
 [tasks.typecheck]
 description = "Check for errors with selene"
-run = "selene demos/ scripts/ plugin/ lua/"
+run = "selene demos/ plugin/ lua/ scripts/"
 
 [tools]
-"cargo:selene" = "latest"
-stylua = "latest"
+hk = "1.53.0"
+pkl = "latest"
+stylua = "2.5.2"
+"cargo:selene" = "0.31.0"
+"pipx:commitizen" = "latest"
+"pipx:toml-sort" = "latest"

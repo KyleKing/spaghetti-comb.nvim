@@ -1,0 +1,61 @@
+/// hk configuration for linting and pre-commit hooks
+/// https://github.com/jdx/hk
+amends "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Config.pkl"
+
+import "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Builtins.pkl"
+
+min_hk_version = "1.53.0"
+
+jobs = 0
+fail_fast = true
+exclude = List("lazy-lock.json", "mason-lock.json", "LICENSE.md")
+
+local linters = new Mapping<String, Step> {
+    ["actionlint"] = Builtins.actionlint
+    ["byte-order-marker"] = Builtins.byte_order_marker
+    ["check-added-large-files"] = Builtins.check_added_large_files
+    ["check-executables-have-shebangs"] = Builtins.check_executables_have_shebangs
+    ["check-merge-conflict"] = Builtins.check_merge_conflict
+    ["check-symlinks"] = Builtins.check_symlinks
+    ["copier-forbidden-files"] {
+        glob = List("**/*.rej", "**/*.orig")
+        check = "echo 'Resolve and delete copier conflict files before committing:' && echo '{{ files }}' && exit 1"
+    }
+    ["detect-private-key"] = Builtins.detect_private_key
+    ["jq"] = Builtins.jq
+    ["mixed-line-ending"] = Builtins.mixed_line_ending
+    ["newlines"] = Builtins.newlines
+    ["selene"] = Builtins.selene
+    ["stylua"] = Builtins.stylua
+    ["toml-sort"] {
+        glob = List("**/*.toml")
+        check = "toml-sort --check {{ files }}"
+        fix = "toml-sort --in-place {{ files }}"
+    }
+    ["trailing-whitespace"] = Builtins.trailing_whitespace
+}
+
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps = linters
+    }
+    ["pre-push"] {
+        steps = linters
+    }
+    ["commit-msg"] {
+        steps {
+            ["commitizen"] {
+                check = "cz check --commit-msg-file {{ commit_msg_file }}"
+            }
+        }
+    }
+    ["fix"] {
+        fix = true
+        steps = linters
+    }
+    ["check"] {
+        steps = linters
+    }
+}

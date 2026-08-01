@@ -2,21 +2,53 @@ name: CI
 
 on:
   push:
-    branches: ["*"]
+    branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  test:
-    name: Run Tests
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: jdx/mise-action@v3
+        with:
+          experimental: true
+          cache: true
+
+      - name: Run linters
+        run: mise run lint
+
+      - name: Run type checker
+        run: mise run typecheck
+
+  test-nvim:
+    name: Test (Neovim ${{ matrix.nvim_version }})
+    needs: lint
+    timeout-minutes: 10
     strategy:
+      fail-fast: false
       matrix:
         nvim_version: ["stable", "nightly"]
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: jdx/mise-action@v3
+        with:
+          experimental: true
+          cache: true
 
       - name: Install Neovim
         uses: rhysd/action-setup-vim@v1
@@ -24,51 +56,8 @@ jobs:
           neovim: true
           version: ${{ matrix.nvim_version }}
 
-      - name: Download mini.nvim dependency
-        run: |
-          DIRECTORY="deps/mini.nvim"
-          if [ ! -d "$DIRECTORY" ]; then
-              mkdir -p "$DIRECTORY"
-              git clone --filter=blob:none https://github.com/echasnovski/mini.nvim "$DIRECTORY"
-          fi
+      - name: Download mini.nvim
+        run: mise run deps-mini-nvim
 
       - name: Run tests
-        run: |
-          nvim --version
-          nvim --headless --noplugin -u ./scripts/minimal_init.lua -c "lua require('spaghetti-comb.tests.init').run_all()" || exit 1
-
-  lint:
-    name: Code Quality Checks
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install stylua
-        uses: JohnnyMorganz/stylua-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-          args: --check lua/ plugin/ scripts/
-
-      - name: Install selene
-        uses: NTBBloodbath/selene-action@v1.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --display-style=quiet lua/ plugin/ scripts/
-
-  format-check:
-    name: Format Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check formatting with stylua
-        uses: JohnnyMorganz/stylua-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-          args: --check lua/ plugin/ scripts/
+        run: mise run test
