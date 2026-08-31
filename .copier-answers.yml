@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_commit: v0.2.0
+_commit: v0.3.1
 _src_path: gh:KyleKing/my_lua_template
 author_email: dev.act.kyle@gmail.com
 author_name: Kyle King
@@ -9,7 +9,7 @@ development_branch: main
 include_ci: True
 lua_version: '5.1'
 plugin_slug: spaghetti-comb
-project_description: A Neovim plugin that extends built-in navigation with project-aware history, bookmarks, and visual exploration tools
+project_description: "A Neovim plugin that extends built-in navigation with project-aware history, bookmarks, and visual exploration tools"
 project_name: spaghetti-comb.nvim
 project_type: nvim-plugin
 repository_namespace: kyleking

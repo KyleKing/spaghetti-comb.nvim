@@ -4,7 +4,22 @@ name: Bump Version
 "on":
   push:
     branches: ['main']
-  workflow_dispatch: null # For manual runs
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Cut a prerelease of this kind instead of a full release
+        required: false
+        default: none
+        type: choice
+        options: [none, alpha, beta, rc]
+
+# Two runs on one push (a duplicate webhook delivery is enough) both compute the
+# same next version, and the loser fails pushing a tag that already exists.
+# Queue instead of cancelling: a cancelled run can leave the bump commit pushed
+# without its tag.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   bump-version:
@@ -15,6 +30,10 @@ jobs:
     # Fix 403 error (https://github.com/softprops/action-gh-release/issues/400)
     permissions:
       contents: write
+    outputs:
+      released: ${{ steps.bump.outputs.released }}
+      version: ${{ steps.bump.outputs.version }}
+      tag: ${{ steps.bump.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -25,13 +44,31 @@ jobs:
         with:
           branch: main
           changelog_increment_filename: body.md
+          # Resolves to empty on push events and on the "none" choice, which
+          # commitizen reads as a full release. The condition is written this way
+          # because an expression whose middle operand is falsy falls through to
+          # the right-hand side.
+          prerelease: ${{ inputs.prerelease != 'none' && inputs.prerelease || '' }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       # REVISION == PREVIOUS_REVISION means commitizen found no bumpable commits
       # and cut no tag, so there is nothing to release.
+      - name: Record whether a release was cut
+        id: bump
+        run: |
+          if [ "$REVISION" = "$PREVIOUS_REVISION" ]; then
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$REVISION" >> "$GITHUB_OUTPUT"
+          # commitizen reports a bare version and writes the tag through its own
+          # tag_format, so read the tag back rather than reconstructing the prefix.
+          echo "tag=$(git tag --points-at HEAD | head -n1)" >> "$GITHUB_OUTPUT"
+
       - name: Generate GitHub Release Notes
-        if: env.REVISION != env.PREVIOUS_REVISION
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        if: steps.bump.outputs.released == 'true'
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           body_path: body.md
-          tag_name: v${{ env.REVISION }}
+          tag_name: ${{ steps.bump.outputs.tag }}
