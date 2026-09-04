@@ -1,3 +1,10 @@
+## v0.1.1 (2026-09-04)
+
+### Refactor
+
+- replace the deprecated per-buffer and per-window option API
+- require nvim 0.13 and lean on its filesystem builtins
+
 ## v0.1.0 (2026-08-31)
 
 ### Feat
