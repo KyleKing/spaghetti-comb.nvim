@@ -40,7 +40,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        nvim_version: ["stable", "nightly"]
+        # The plugin requires Neovim 0.13 (vim.fs.mkdir, vim.fs.root priority lists), which
+        # no stable release carries yet. Add "stable" back once 0.13 ships.
+        nvim_version: ["nightly"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

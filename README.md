@@ -19,7 +19,7 @@ When exploring a large or generated codebase, it is easy to lose track of how yo
 
 ## Requirements
 
-- Neovim 0.10+
+- Neovim 0.13+
 - An LSP server for your language (optional; jumplist tracking works without one)
 - [mini.pick](https://github.com/echasnovski/mini.nvim) (optional, for the picker UI)
 

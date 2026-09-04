@@ -7,68 +7,35 @@ local M = {}
 local project_cache = {}
 local NO_PROJECT = {}
 
--- Project markers to look for (in order of preference)
+-- Nested so vim.fs.root treats every marker as equal priority, returning the nearest
+-- ancestor holding any of them. A flat list would instead rank the markers, so a
+-- distant .git would win over the package.json sitting right beside the file.
 local PROJECT_MARKERS = {
-    ".git", -- Git repository
-    ".hg", -- Mercurial repository
-    ".svn", -- Subversion repository
-    "package.json", -- Node.js project
-    "Cargo.toml", -- Rust project
-    "go.mod", -- Go project
-    "pyproject.toml", -- Python project
-    "setup.py", -- Python project
-    "Makefile", -- Generic project marker
-    "CMakeLists.txt", -- C/C++ project
-    ".project", -- Eclipse project
-    "composer.json", -- PHP project
+    {
+        ".git", -- Git repository
+        ".hg", -- Mercurial repository
+        ".svn", -- Subversion repository
+        "package.json", -- Node.js project
+        "Cargo.toml", -- Rust project
+        "go.mod", -- Go project
+        "pyproject.toml", -- Python project
+        "setup.py", -- Python project
+        "Makefile", -- Generic project marker
+        "CMakeLists.txt", -- C/C++ project
+        ".project", -- Eclipse project
+        "composer.json", -- PHP project
+    },
 }
-
--- Check if a path exists and is a directory
-local function is_directory(path)
-    local stat = vim.loop.fs_stat(path)
-    return stat and stat.type == "directory"
-end
-
--- Check if a path exists and is a file
-local function is_file(path)
-    local stat = vim.loop.fs_stat(path)
-    return stat and stat.type == "file"
-end
-
--- Get the directory part of a file path
-local function dirname(path) return vim.fn.fnamemodify(path, ":h") end
-
--- Normalize path separators
-local function normalize_path(path) return vim.fn.fnamemodify(path, ":p") end
 
 -- Find project root by looking for markers
 local function find_project_root(start_path)
     if not start_path or start_path == "" then return nil end
 
-    -- Normalize the starting path
-    start_path = normalize_path(start_path)
-    local current_path = start_path
-
-    -- Walk up the directory tree looking for project markers
-    while current_path and current_path ~= "/" and current_path ~= "" do
-        for _, marker in ipairs(PROJECT_MARKERS) do
-            local marker_path = current_path .. "/" .. marker
-
-            -- Check if marker exists (file or directory)
-            if is_directory(marker_path) or is_file(marker_path) then return current_path end
-        end
-
-        -- Move up one directory
-        local parent = dirname(current_path)
-        if parent == current_path then
-            -- Reached the root
-            break
-        end
-        current_path = parent
-    end
+    local root = vim.fs.root(start_path, PROJECT_MARKERS)
+    if root ~= nil then return root end
 
     -- If no markers found, use the directory containing the file
-    if start_path and vim.fn.filereadable(start_path) == 1 then return dirname(start_path) end
+    if vim.fn.filereadable(start_path) == 1 then return vim.fs.dirname(vim.fs.abspath(start_path)) end
 
     return nil
 end
@@ -83,7 +50,7 @@ function M.detect_project_root(file_path)
 
     -- Cache by containing directory rather than exact file path, so distinct
     -- files (temp files, scratch buffers) in the same directory share a walk.
-    local cache_key = dirname(normalize_path(file_path))
+    local cache_key = vim.fs.dirname(vim.fs.abspath(file_path))
     local cached = project_cache[cache_key]
     if cached ~= nil then return cached ~= NO_PROJECT and cached or nil end
 
@@ -139,7 +106,7 @@ function M.get_project_name(project_root)
     if not project_root then return "unknown" end
 
     -- Use the directory name as project name
-    return vim.fn.fnamemodify(project_root, ":t")
+    return vim.fs.basename(project_root)
 end
 
 return M

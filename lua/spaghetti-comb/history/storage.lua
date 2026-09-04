@@ -20,9 +20,9 @@ local function ensure_storage_dirs()
     local history_dir = get_history_dir()
     local bookmarks_dir = get_bookmarks_dir()
 
-    vim.fn.mkdir(storage_dir, "p")
-    vim.fn.mkdir(history_dir, "p")
-    vim.fn.mkdir(bookmarks_dir, "p")
+    vim.fs.mkdir(storage_dir, { parents = true })
+    vim.fs.mkdir(history_dir, { parents = true })
+    vim.fs.mkdir(bookmarks_dir, { parents = true })
 end
 
 -- Generate project hash for file naming
@@ -215,7 +215,7 @@ function M.cleanup_persistence(max_age_days)
     -- Clean history files
     local history_files = vim.fn.glob(get_history_dir() .. "/*.json", false, true)
     for _, file_path in ipairs(history_files) do
-        local stat = vim.loop.fs_stat(file_path)
+        local stat = vim.uv.fs_stat(file_path)
         if stat and (now - stat.mtime.sec) > max_age_seconds then
             os.remove(file_path)
             cleaned_count = cleaned_count + 1
@@ -225,7 +225,7 @@ function M.cleanup_persistence(max_age_days)
     -- Clean bookmark files
     local bookmark_files = vim.fn.glob(get_bookmarks_dir() .. "/*.json", false, true)
     for _, file_path in ipairs(bookmark_files) do
-        local stat = vim.loop.fs_stat(file_path)
+        local stat = vim.uv.fs_stat(file_path)
         if stat and (now - stat.mtime.sec) > max_age_seconds then
             os.remove(file_path)
             cleaned_count = cleaned_count + 1
@@ -245,7 +245,7 @@ function M.list_saved_projects()
     local history_files = vim.fn.glob(get_history_dir() .. "/*.json", false, true)
     for _, file_path in ipairs(history_files) do
         local filename = vim.fn.fnamemodify(file_path, ":t:r")
-        local stat = vim.loop.fs_stat(file_path)
+        local stat = vim.uv.fs_stat(file_path)
         if stat then
             table.insert(projects, {
                 hash = filename,
@@ -260,7 +260,7 @@ function M.list_saved_projects()
     local bookmark_files = vim.fn.glob(get_bookmarks_dir() .. "/*.json", false, true)
     for _, file_path in ipairs(bookmark_files) do
         local filename = vim.fn.fnamemodify(file_path, ":t:r")
-        local stat = vim.loop.fs_stat(file_path)
+        local stat = vim.uv.fs_stat(file_path)
         if stat then
             -- Check if we already have this project from history
             local found = false
@@ -301,7 +301,7 @@ function M.get_storage_stats()
     local history_files = vim.fn.glob(get_history_dir() .. "/*.json", false, true)
     stats.history_count = #history_files
     for _, file_path in ipairs(history_files) do
-        local stat = vim.loop.fs_stat(file_path)
+        local stat = vim.uv.fs_stat(file_path)
         if stat then stats.total_size = stats.total_size + stat.size end
     end
 
@@ -309,7 +309,7 @@ function M.get_storage_stats()
     local bookmark_files = vim.fn.glob(get_bookmarks_dir() .. "/*.json", false, true)
     stats.bookmark_count = #bookmark_files
     for _, file_path in ipairs(bookmark_files) do
-        local stat = vim.loop.fs_stat(file_path)
+        local stat = vim.uv.fs_stat(file_path)
         if stat then stats.total_size = stats.total_size + stat.size end
     end
 

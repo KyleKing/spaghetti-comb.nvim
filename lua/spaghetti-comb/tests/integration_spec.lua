@@ -13,6 +13,7 @@ local child_preamble = [==[
   _G.lsp = require("spaghetti-comb.navigation.lsp")
   _G.types = require("spaghetti-comb.types")
   _G.debug_utils = require("spaghetti-comb.utils.debug")
+  _G.project = require("spaghetti-comb.utils.project")
 ]==]
 
 local T = MiniTest.new_set({
@@ -442,6 +443,25 @@ T["module setup"]["statusline exposes branch status"] = function()
     ]==])
     local status_type = child.lua_get([==[type(_G.status)]==])
     if status_type ~= "nil" then MiniTest.expect.equality(status_type, "table") end
+end
+
+T["project root"] = MiniTest.new_set()
+
+-- The markers are handed to vim.fs.root as one nested list so they rank equally and the
+-- nearest ancestor holding any of them wins. A flat list ranks the markers instead, which
+-- returns the outer .git for a file whose own directory has a package.json.
+T["project root"]["picks the nearest marker, not the highest-ranked one"] = function()
+    local root = vim.fn.tempname()
+    vim.fs.mkdir(root .. "/outer/inner/sub", { parents = true })
+    vim.fs.mkdir(root .. "/outer/.git", { parents = true })
+    vim.fn.writefile({ "{}" }, root .. "/outer/inner/package.json")
+    vim.fn.writefile({ "" }, root .. "/outer/inner/sub/file.lua")
+
+    child.lua("_G.project.clear_cache()")
+    local detected = child.lua_get("_G.project.detect_project_root(...)", { root .. "/outer/inner/sub/file.lua" })
+
+    MiniTest.expect.equality(detected, vim.fs.abspath(root .. "/outer/inner"))
+    vim.fn.delete(root, "rf")
 end
 
 return T
