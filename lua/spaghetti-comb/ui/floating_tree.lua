@@ -92,8 +92,8 @@ end
 function M._create_tree_window()
     -- Create buffer
     state.tree_buffer = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_option(state.tree_buffer, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(state.tree_buffer, "filetype", "spaghetti-comb-tree")
+    vim.bo[state.tree_buffer].bufhidden = "wipe"
+    vim.bo[state.tree_buffer].filetype = "spaghetti-comb-tree"
 
     -- Calculate window dimensions (left side for tree)
     local width = math.floor(vim.o.columns * 0.5)
@@ -117,8 +117,8 @@ function M._create_tree_window()
     state.tree_window = vim.api.nvim_open_win(state.tree_buffer, true, opts)
 
     -- Set window options
-    vim.api.nvim_win_set_option(state.tree_window, "wrap", false)
-    vim.api.nvim_win_set_option(state.tree_window, "cursorline", true)
+    vim.wo[state.tree_window].wrap = false
+    vim.wo[state.tree_window].cursorline = true
 
     -- Set up key mappings
     M.handle_vim_motions()
@@ -186,9 +186,9 @@ function M.update_tree_display()
     local lines = M.render_unicode_tree(state.current_trail)
 
     -- Update buffer content
-    vim.api.nvim_buf_set_option(state.tree_buffer, "modifiable", true)
+    vim.bo[state.tree_buffer].modifiable = true
     vim.api.nvim_buf_set_lines(state.tree_buffer, 0, -1, false, lines)
-    vim.api.nvim_buf_set_option(state.tree_buffer, "modifiable", false)
+    vim.bo[state.tree_buffer].modifiable = false
 
     -- Highlight active branch
     M.highlight_active_branch()

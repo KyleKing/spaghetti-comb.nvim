@@ -81,9 +81,9 @@ function M.update_display(trail)
     local lines = M._build_breadcrumb_lines(trail)
 
     -- Update buffer content
-    vim.api.nvim_buf_set_option(state.buffer, "modifiable", true)
+    vim.bo[state.buffer].modifiable = true
     vim.api.nvim_buf_set_lines(state.buffer, 0, -1, false, lines)
-    vim.api.nvim_buf_set_option(state.buffer, "modifiable", false)
+    vim.bo[state.buffer].modifiable = false
 
     -- Apply highlighting
     M._apply_highlights(trail)
@@ -93,8 +93,8 @@ end
 function M._create_breadcrumb_window()
     -- Create buffer
     state.buffer = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_option(state.buffer, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(state.buffer, "filetype", "spaghetti-comb-breadcrumbs")
+    vim.bo[state.buffer].bufhidden = "wipe"
+    vim.bo[state.buffer].filetype = "spaghetti-comb-breadcrumbs"
 
     -- Calculate window dimensions with minimum constraints
     local width = math.max(10, math.min(100, vim.o.columns - 4))
@@ -118,8 +118,8 @@ function M._create_breadcrumb_window()
     state.window = vim.api.nvim_open_win(state.buffer, true, opts)
 
     -- Set window options
-    vim.api.nvim_win_set_option(state.window, "wrap", false)
-    vim.api.nvim_win_set_option(state.window, "cursorline", true)
+    vim.wo[state.window].wrap = false
+    vim.wo[state.window].cursorline = true
 
     -- Set up key mappings for the breadcrumb window
     M._setup_keymaps()

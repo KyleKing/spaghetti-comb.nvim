@@ -150,7 +150,7 @@ function M._show_bookmark_preview(buf_id, bookmark)
 
     -- Apply filetype for syntax highlighting
     local filetype = vim.filetype.match({ filename = bookmark.file_path })
-    if filetype then vim.api.nvim_buf_set_option(buf_id, "filetype", filetype) end
+    if filetype then vim.bo[buf_id].filetype = filetype end
 end
 
 -- Toggle bookmark in picker
@@ -313,7 +313,7 @@ function M._show_navigation_preview(buf_id, entry)
 
     -- Apply filetype for syntax highlighting
     local filetype = vim.filetype.match({ filename = entry.file_path })
-    if filetype then vim.api.nvim_buf_set_option(buf_id, "filetype", filetype) end
+    if filetype then vim.bo[buf_id].filetype = filetype end
 end
 
 -- Sort navigation entries by recency

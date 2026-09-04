@@ -105,8 +105,8 @@ function M._create_preview_window(opts)
     -- Create buffer if needed
     if not state.preview_buffer or not vim.api.nvim_buf_is_valid(state.preview_buffer) then
         state.preview_buffer = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_buf_set_option(state.preview_buffer, "bufhidden", "wipe")
-        vim.api.nvim_buf_set_option(state.preview_buffer, "filetype", "spaghetti-comb-preview")
+        vim.bo[state.preview_buffer].bufhidden = "wipe"
+        vim.bo[state.preview_buffer].filetype = "spaghetti-comb-preview"
     end
 
     -- Calculate window dimensions
@@ -131,9 +131,9 @@ function M._create_preview_window(opts)
     state.preview_window = vim.api.nvim_open_win(state.preview_buffer, false, win_opts)
 
     -- Set window options
-    vim.api.nvim_win_set_option(state.preview_window, "wrap", false)
-    vim.api.nvim_win_set_option(state.preview_window, "number", true)
-    vim.api.nvim_win_set_option(state.preview_window, "relativenumber", false)
+    vim.wo[state.preview_window].wrap = false
+    vim.wo[state.preview_window].number = true
+    vim.wo[state.preview_window].relativenumber = false
 
     state.visible = true
 end
@@ -150,13 +150,13 @@ function M._update_preview_content(context)
     end
 
     -- Update buffer
-    vim.api.nvim_buf_set_option(state.preview_buffer, "modifiable", true)
+    vim.bo[state.preview_buffer].modifiable = true
     vim.api.nvim_buf_set_lines(state.preview_buffer, 0, -1, false, lines)
-    vim.api.nvim_buf_set_option(state.preview_buffer, "modifiable", false)
+    vim.bo[state.preview_buffer].modifiable = false
 
     -- Apply syntax highlighting based on file type
     local filetype = vim.filetype.match({ filename = context.file_path })
-    if filetype then vim.api.nvim_buf_set_option(state.preview_buffer, "filetype", filetype) end
+    if filetype then vim.bo[state.preview_buffer].filetype = filetype end
 
     -- Highlight target line
     M._highlight_target_line(context)
