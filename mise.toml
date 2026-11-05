@@ -29,7 +29,7 @@ run = [
 
 [tasks.format]
 description = "Format code using stylua (fix mode)"
-run = "stylua demos/ plugin/ lua/ scripts/"
+run = "stylua plugin/ lua/ scripts/"
 
 [tasks.itest]
 depends = ["deps-mini-nvim"]
@@ -42,7 +42,7 @@ run = "SC_SKIP_PTY=1 bash tests/itest/run.sh"
 
 [tasks.lint]
 description = "Check formatting with stylua and lint with selene"
-run = ["stylua demos/ plugin/ lua/ scripts/ --check", "selene demos/ plugin/ lua/ scripts/"]
+run = ["stylua plugin/ lua/ scripts/ --check", "selene plugin/ lua/ scripts/"]
 
 # Note on the -c bodies below: headless Neovim does not exit after a failed -c
 # command, so every Lua entry point is wrapped in pcall with an explicit

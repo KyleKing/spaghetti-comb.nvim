@@ -1,5 +1,6 @@
 -- Adapter over the codanna CLI for verified call-graph relations. Self-execs
--- `codanna mcp --json` because codanna.nvim drops the error envelope on non-zero exit.
+-- `codanna mcp --json` to keep the adapter independent of codanna.nvim internals
+-- (it surfaces the error envelope, hint, and ambiguity candidates itself).
 local types = require("spaghetti-comb.substrate.types")
 local project = require("spaghetti-comb.utils.project")
 
