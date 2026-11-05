@@ -1,6 +1,7 @@
 -- Adapter over the codanna CLI for verified call-graph relations. Self-execs
 -- `codanna mcp --json` because codanna.nvim drops the error envelope on non-zero exit.
 local types = require("spaghetti-comb.substrate.types")
+local project = require("spaghetti-comb.utils.project")
 
 local M = {}
 
@@ -258,16 +259,19 @@ end
 function M.index_health(callback)
     run("get_index_info", {}, function(data, err)
         if err then return callback(nil, err) end
-        callback(
-            types.index_health({
-                tool = "codanna",
-                indexed_files = data and data.file_count or nil,
-                symbol_count = data and data.symbol_count or nil,
-                edge_count = data and data.relationship_count or nil,
-                message = "codanna index info",
-            }),
-            nil
-        )
+        local health = types.index_health({
+            tool = "codanna",
+            indexed_files = data and data.file_count or nil,
+            symbol_count = data and data.symbol_count or nil,
+            edge_count = data and data.relationship_count or nil,
+            message = "codanna index info",
+        })
+        local root = project.get_current_project_root()
+        if root then
+            local stat = vim.uv.fs_stat(root .. "/.codanna")
+            if stat then health.index_age_seconds = os.time() - stat.mtime.sec end
+        end
+        callback(health, nil)
     end)
 end
 

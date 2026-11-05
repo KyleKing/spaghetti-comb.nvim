@@ -93,6 +93,18 @@ local function run_status()
     health.codanna = codanna_health or { tool = "codanna", error = codanna_err }
     local vera_health, vera_err = M._await(vera.index_health)
     health.vera = vera_health or { tool = "vera", error = vera_err }
+
+    local project_utils = require("spaghetti-comb.utils.project")
+    local root = project_utils.get_current_project_root()
+    for _, tool_health in pairs(health) do
+        if tool_health.index_age_seconds then
+            tool_health.changed_files_newer = project_utils.count_files_newer_than(
+                root,
+                os.time() - tool_health.index_age_seconds,
+                { ".vera", ".codanna", ".codannaignore", ".fastembed_cache" }
+            )
+        end
+    end
     return health
 end
 

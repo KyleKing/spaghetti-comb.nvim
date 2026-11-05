@@ -114,4 +114,37 @@ function M.get_project_name(project_root)
     return vim.fs.basename(project_root)
 end
 
+-- Count worktree files newer than a point in time — the cheapest honest
+-- index-staleness signal; nil when the project has no usable answer. Untracked
+-- dirs in `ignore_prefixes` (the indexers' own output dirs) are skipped so an
+-- index write never reports itself as source drift.
+---@param project_root string|nil
+---@param epoch integer|nil seconds since epoch
+---@param ignore_prefixes string[]|nil path prefixes to skip, e.g. { ".vera" }
+---@return integer|nil
+function M.count_files_newer_than(project_root, epoch, ignore_prefixes)
+    if not project_root or not epoch or vim.fn.executable("git") ~= 1 then return nil end
+
+    local lines = vim.fn.systemlist({ "git", "-C", project_root, "status", "--porcelain" })
+    if vim.v.shell_error ~= 0 then return nil end
+
+    local stale = 0
+    for _, line in ipairs(lines) do
+        local path = line:sub(4):match("^.* %-> (.*)$") or line:sub(4)
+        path = path:gsub('^"(.*)"$', "%1"):gsub("/$", "")
+        local ignored = false
+        for _, prefix in ipairs(ignore_prefixes or {}) do
+            if path == prefix or path:sub(1, #prefix + 1) == prefix .. "/" then
+                ignored = true
+                break
+            end
+        end
+        if not ignored then
+            local stat = vim.uv.fs_stat(project_root .. "/" .. path)
+            if stat and stat.mtime.sec > epoch then stale = stale + 1 end
+        end
+    end
+    return stale
+end
+
 return M

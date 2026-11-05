@@ -237,20 +237,36 @@ function M.status()
 
     local pending = 2
     local results = {}
+    local healths = {}
     local function finish()
         pending = pending - 1
         if pending > 0 then return end
+        local project_utils = require("spaghetti-comb.utils.project")
+        local root = project_utils.get_current_project_root()
         for _, tool in ipairs({ "codanna", "vera" }) do
+            local health = healths[tool]
+            if health and health.index_age_seconds then
+                local stale = project_utils.count_files_newer_than(
+                    root,
+                    os.time() - health.index_age_seconds,
+                    { ".vera", ".codanna", ".codannaignore", ".fastembed_cache" }
+                )
+                if stale and stale > 0 then
+                    results[tool] = results[tool] .. string.format("; %d changed file(s) newer than index", stale)
+                end
+            end
             table.insert(lines, results[tool])
         end
         vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
     end
 
     require("spaghetti-comb.substrate.codanna").index_health(function(health, err)
+        healths.codanna = health
         results.codanna = M._format_index_health("codanna", health, err)
         finish()
     end)
     require("spaghetti-comb.substrate.vera").index_health(function(health, err)
+        healths.vera = health
         results.vera = M._format_index_health("vera", health, err)
         finish()
     end)
