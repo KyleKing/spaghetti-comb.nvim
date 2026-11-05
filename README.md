@@ -53,6 +53,10 @@ Navigate as you normally would (LSP go-to-definition, `<C-o>`/`<C-i>`, file swit
 - `<leader>sm` opens the bookmark picker
 - `<leader>sB` toggles a bookmark at the cursor
 - `<leader>ss` shows the current navigation status
+- `<leader>sk` seeks the codebase with a semantic query
+- `<leader>sr` finds implementations related to the selected code
+- `<leader>sc` shows callers of the symbol under the cursor
+- `<leader>so` shows a high-level orientation map of the project
 
 ### Commands
 
@@ -67,6 +71,12 @@ Navigate as you normally would (LSP go-to-definition, `<C-o>`/`<C-i>`, file swit
 | `:SpaghettiCombBack` / `:SpaghettiCombForward`                | Move through the trail                             |
 | `:SpaghettiCombJumpTo {index}`                                | Jump to a trail entry                              |
 | `:SpaghettiCombHistoryClear [all]`                            | Clear navigation history                           |
+| `:SpaghettiCombSeek [query]`                                  | Semantic codebase search (prompts when omitted)    |
+| `:SpaghettiCombRelated`                                       | Implementations related to the selected code       |
+| `:SpaghettiCombCallers [symbol]`                              | Callers of the symbol in the relations tree        |
+| `:SpaghettiCombCalls [symbol]`                                | Calls made by the symbol in the relations tree     |
+| `:SpaghettiCombImpact [symbol]`                               | Impact graph of the symbol in the relations tree   |
+| `:SpaghettiCombOrient`                                        | High-level project map in the relations tree       |
 | `:SpaghettiCombStatus`                                        | Show navigation status                             |
 | `:SpaghettiCombSaveHistory` / `:SpaghettiCombLoadHistory`     | Persist or restore history for the current project |
 | `:SpaghettiCombSaveBookmarks` / `:SpaghettiCombLoadBookmarks` | Persist or restore bookmarks                       |

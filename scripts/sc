@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Agent-facing CLI over the spaghetti-comb substrate adapters.
+# Usage: sc <seek|related|callers|calls|impact|orient|status> [args]
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+exec nvim --headless --noplugin -l "$SCRIPT_DIR/sc.lua" "$@"

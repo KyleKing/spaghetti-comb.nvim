@@ -49,6 +49,13 @@ type = "string"
 [[describe.args]]
 type = "function"
 
+# lua51 std leaves io's file handles undeclared; nvim -l scripts write results there.
+[io.stderr]
+any = true
+
+[io.stdout]
+any = true
+
 [[it.args]]
 type = "string"
 

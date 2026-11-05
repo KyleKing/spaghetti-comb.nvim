@@ -30,6 +30,59 @@ vim.api.nvim_create_user_command(
     { desc = "Show navigation history picker" }
 )
 
+vim.api.nvim_create_user_command(
+    "SpaghettiCombSeek",
+    function(opts) require("spaghetti-comb.navigation.commands").seek(opts.args) end,
+    {
+        nargs = "?",
+        desc = "Semantic codebase search; choosing a result records a trail jump",
+    }
+)
+
+vim.api.nvim_create_user_command(
+    "SpaghettiCombRelated",
+    function(opts)
+        require("spaghetti-comb.navigation.commands").find_related(vim.api.nvim_buf_get_name(0), opts.line1, opts.line2)
+    end,
+    {
+        range = true,
+        desc = "Find implementations related to the selected code (or current line)",
+    }
+)
+
+vim.api.nvim_create_user_command(
+    "SpaghettiCombCallers",
+    function(opts) require("spaghetti-comb.navigation.relations").callers(opts.args) end,
+    {
+        nargs = "?",
+        desc = "Show callers of a symbol (default: cursor word) in the relations tree",
+    }
+)
+
+vim.api.nvim_create_user_command(
+    "SpaghettiCombCalls",
+    function(opts) require("spaghetti-comb.navigation.relations").calls(opts.args) end,
+    {
+        nargs = "?",
+        desc = "Show calls made by a symbol (default: cursor word) in the relations tree",
+    }
+)
+
+vim.api.nvim_create_user_command(
+    "SpaghettiCombImpact",
+    function(opts) require("spaghetti-comb.navigation.relations").impact(opts.args) end,
+    {
+        nargs = "?",
+        desc = "Show the impact graph of a symbol (default: cursor word) in the relations tree",
+    }
+)
+
+vim.api.nvim_create_user_command(
+    "SpaghettiCombOrient",
+    function() require("spaghetti-comb.navigation.orient").show() end,
+    { desc = "Show a high-level project map (structure, hotspots, overview) in the relations tree" }
+)
+
 -- Bookmark Commands
 vim.api.nvim_create_user_command("SpaghettiCombBookmarkToggle", function()
     local bookmarks = require("spaghetti-comb.history.bookmarks")
@@ -108,24 +161,11 @@ end, {
 })
 
 -- Statusline Integration
-vim.api.nvim_create_user_command("SpaghettiCombStatus", function()
-    local statusline = require("spaghetti-comb.ui.statusline")
-    local status = statusline.get_branch_status()
-    if status then
-        vim.notify(
-            string.format(
-                "Branch: %s, Depth: %d/%d, State: %s",
-                status.branch_id,
-                status.depth,
-                status.total,
-                status.state
-            ),
-            vim.log.levels.INFO
-        )
-    else
-        vim.notify("No active navigation", vim.log.levels.INFO)
-    end
-end, { desc = "Show current navigation status" })
+vim.api.nvim_create_user_command(
+    "SpaghettiCombStatus",
+    function() require("spaghetti-comb.navigation.commands").status() end,
+    { desc = "Show navigation status and substrate index health" }
+)
 
 -- Main setup command (optional manual setup)
 vim.api.nvim_create_user_command("SpaghettiCombSetup", function(opts)
@@ -272,4 +312,9 @@ vim.keymap.set("n", "<leader>sm", "<cmd>SpaghettiCombBookmarks<cr>", { desc = "S
 vim.keymap.set("n", "<leader>sh", "<cmd>SpaghettiCombHistory<cr>", { desc = "Show history" })
 vim.keymap.set("n", "<leader>sB", "<cmd>SpaghettiCombBookmarkToggle<cr>", { desc = "Toggle bookmark" })
 vim.keymap.set("n", "<leader>ss", "<cmd>SpaghettiCombStatus<cr>", { desc = "Show status" })
+vim.keymap.set("n", "<leader>sk", "<cmd>SpaghettiCombSeek<cr>", { desc = "Seek codebase" })
+vim.keymap.set("n", "<leader>sr", "<cmd>SpaghettiCombRelated<cr>", { desc = "Find related implementations" })
+vim.keymap.set("x", "<leader>sr", ":SpaghettiCombRelated<cr>", { desc = "Find related implementations" })
+vim.keymap.set("n", "<leader>sc", "<cmd>SpaghettiCombCallers<cr>", { desc = "Show callers of the cursor word" })
+vim.keymap.set("n", "<leader>so", "<cmd>SpaghettiCombOrient<cr>", { desc = "Show project orientation map" })
 --]]
