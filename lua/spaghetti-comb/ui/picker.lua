@@ -1,6 +1,26 @@
 -- Integration with mini.pick (dual modes)
 local M = {}
 
+-- mini.pick lowers stritems and the query before calling `source.match`; the
+-- parallel search-text arrays must fold the same way to stay comparable.
+local function query_is_ignorecase(query)
+    if not vim.o.ignorecase then return false end
+    if not vim.o.smartcase then return true end
+    local prompt = table.concat(query)
+    return prompt == vim.fn.tolower(prompt)
+end
+
+-- Rebuild the parallel stritem arrays a search matcher matches against.
+local function set_search_items(search_ctx, items)
+    search_ctx.stritems = {}
+    search_ctx.stritems_lower = {}
+    for _, item in ipairs(items) do
+        local text = item.search_text or item.text or ""
+        table.insert(search_ctx.stritems, text)
+        table.insert(search_ctx.stritems_lower, vim.fn.tolower(text))
+    end
+end
+
 -- Module state
 local state = {
     config = nil,
@@ -230,23 +250,79 @@ end
 function M._show_mini_pick_navigation(entries)
     local MiniPick = require("mini.pick")
 
-    -- Format items for picker
+    -- Format items for picker; search_ctx indexes into the same item order and
+    -- is swapped wholesale when <C-o> widens the source to codebase hits
     local items = {}
+    local search_ctx = {}
     for _, entry in ipairs(entries) do
         table.insert(items, M._format_navigation_item(entry))
     end
+    set_search_items(search_ctx, items)
 
     -- Show picker with preview
     MiniPick.start({
         source = {
             items = items,
             name = "Navigation History",
+            match = M._make_search_matcher(search_ctx),
             preview = function(buf_id, item)
-                if not item or not item.entry then return end
-                M._show_navigation_preview(buf_id, item.entry)
+                if not item then return end
+                if item.entry then return M._show_navigation_preview(buf_id, item.entry) end
+                if item.hit then return M._show_hit_preview(buf_id, item.hit) end
+            end,
+            choose = function(item)
+                if item.entry then return M.jump_to_selected_location(item.entry) end
+                if item.hit then return M.jump_to_hit(item.hit, "vera_seek") end
             end,
         },
+        mappings = {
+            widen_to_codebase = {
+                char = "<C-o>",
+                func = function() M._widen_to_codebase(search_ctx) end,
+            },
+        },
     })
+end
+
+-- Widen the navigation picker to codebase search with the current query
+function M._widen_to_codebase(search_ctx)
+    local MiniPick = require("mini.pick")
+    if not MiniPick.is_picker_active() then return end
+
+    local query = table.concat(MiniPick.get_picker_query() or {})
+    if query == "" then
+        vim.notify("Type a query first, then <C-o> widens to codebase search", vim.log.levels.INFO)
+        return
+    end
+
+    require("spaghetti-comb.substrate.vera").search(query, { limit = 20 }, function(hits, err)
+        if err then
+            vim.notify(err, vim.log.levels.WARN)
+            return
+        end
+        if not hits or #hits == 0 then
+            vim.notify("No codebase matches for: " .. query, vim.log.levels.INFO)
+            return
+        end
+
+        local items = {}
+        for _, hit in ipairs(hits) do
+            table.insert(items, M._format_hit_item(hit))
+        end
+        set_search_items(search_ctx, items)
+        MiniPick.set_picker_items(items)
+    end)
+end
+
+-- Match against search_ctx.stritems (item.search_text) instead of item.text
+---@param search_ctx table Mutable stritem state shared with the active picker
+---@return function match Callable for mini.pick `source.match`
+function M._make_search_matcher(search_ctx)
+    return function(_, inds, query)
+        local MiniPick = require("mini.pick")
+        local stritems = query_is_ignorecase(query) and search_ctx.stritems_lower or search_ctx.stritems
+        return MiniPick.default_match(stritems, inds, query)
+    end
 end
 
 -- Show fallback navigation picker
@@ -269,8 +345,29 @@ end
 function M._format_navigation_item(entry)
     return {
         text = M._format_navigation_display(entry),
+        search_text = M._build_search_text(entry),
         entry = entry,
     }
+end
+
+-- Everything an entry can be re-found by, beyond the displayed label
+function M._build_search_text(entry)
+    local parts = {}
+    for _, key in ipairs({ "file_path", "jump_type", "branch_id" }) do
+        if entry[key] then table.insert(parts, entry[key]) end
+    end
+
+    local context = entry.context or {}
+    if context.function_name then table.insert(parts, context.function_name) end
+    for _, key in ipairs({ "before_lines", "after_lines" }) do
+        if type(context[key]) == "table" then
+            for _, line in ipairs(context[key]) do
+                table.insert(parts, line)
+            end
+        end
+    end
+
+    return table.concat(parts, "\n")
 end
 
 -- Format navigation display string
@@ -328,7 +425,7 @@ function M.sort_by_recency(entries)
     return sorted
 end
 
--- Filter navigation entries
+-- Filter navigation entries by anything in their search text
 function M.filter_navigation_entries(entries, query)
     if not query or query == "" then return entries end
 
@@ -336,11 +433,134 @@ function M.filter_navigation_entries(entries, query)
     query = query:lower()
 
     for _, entry in ipairs(entries) do
-        local filename = vim.fn.fnamemodify(entry.file_path, ":t"):lower()
-        if filename:find(query, 1, true) then table.insert(filtered, entry) end
+        if M._build_search_text(entry):lower():find(query, 1, true) then table.insert(filtered, entry) end
     end
 
     return filtered
+end
+
+-- Substrate search results (Seek, Related, widened trail search)
+
+-- Format a SearchHit item for display; content joins the matchable text
+---@param hit SearchHit
+---@return table
+function M._format_hit_item(hit)
+    local text = string.format("%s:%d", hit.file_path, hit.line_start)
+    if hit.symbol_name then text = string.format("%s — %s", text, hit.symbol_name) end
+
+    local search_text = text
+    if hit.content and hit.content ~= "" then search_text = search_text .. "\n" .. hit.content end
+
+    return {
+        text = text,
+        search_text = search_text,
+        hit = hit,
+    }
+end
+
+-- Resolve an index-relative hit path against the current project root
+---@param file_path string
+---@return string
+function M._resolve_hit_path(file_path)
+    if file_path:match("^/") or file_path:match("^%a:[/\\]") then return file_path end
+    local root = require("spaghetti-comb.utils.project").get_current_project_root()
+    return root and (root .. "/" .. file_path) or file_path
+end
+
+-- Show a picker over SearchHit results; choosing jumps and records a trail entry
+---@param hits SearchHit[]
+---@param opts {name: string|nil, jump_type: string|nil}|nil
+---@return boolean success
+---@return string message
+function M.show_search_hits(hits, opts)
+    if not state.initialized then return false, "Picker not initialized" end
+    opts = opts or {}
+
+    if not hits or #hits == 0 then
+        vim.notify("No results", vim.log.levels.INFO)
+        return false, "No results"
+    end
+
+    local jump_type = opts.jump_type or "vera_seek"
+
+    if state.mini_pick_available then
+        local MiniPick = require("mini.pick")
+        local items = {}
+        for _, hit in ipairs(hits) do
+            table.insert(items, M._format_hit_item(hit))
+        end
+        local search_ctx = {}
+        set_search_items(search_ctx, items)
+
+        MiniPick.start({
+            source = {
+                items = items,
+                name = opts.name or "Codebase Search",
+                match = M._make_search_matcher(search_ctx),
+                preview = function(buf_id, item)
+                    if item and item.hit then M._show_hit_preview(buf_id, item.hit) end
+                end,
+                choose = function(item) M.jump_to_hit(item.hit, jump_type) end,
+            },
+        })
+    else
+        local items = {}
+        for _, hit in ipairs(hits) do
+            table.insert(items, { display = M._format_hit_item(hit).text, hit = hit })
+        end
+        M.create_fallback_picker(items, {
+            prompt = (opts.name or "Codebase Search") .. ":",
+            on_choice = function(item) M.jump_to_hit(item.hit, jump_type) end,
+        })
+    end
+
+    return true, "Search results picker displayed"
+end
+
+-- Jump to a search hit and record it as a trail entry
+---@param hit SearchHit
+---@param jump_type string|nil
+function M.jump_to_hit(hit, jump_type)
+    if not hit or not hit.file_path or hit.file_path == "" then return end
+
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local from_location = {
+        file_path = vim.api.nvim_buf_get_name(0),
+        position = { line = cursor[1], column = cursor[2] + 1 },
+    }
+    local to_location = {
+        file_path = M._resolve_hit_path(hit.file_path),
+        position = { line = hit.line_start or 1, column = 1 },
+        context = { function_name = hit.symbol_name },
+    }
+
+    vim.cmd("edit " .. vim.fn.fnameescape(to_location.file_path))
+    vim.api.nvim_win_set_cursor(0, { to_location.position.line, 0 })
+    vim.cmd("normal! zz")
+
+    require("spaghetti-comb.history.manager").record_jump(from_location, to_location, jump_type or "vera_seek")
+end
+
+-- Preview a hit's captured snippet, falling back to file context
+function M._show_hit_preview(buf_id, hit)
+    if hit.content and hit.content ~= "" then
+        vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, vim.split(hit.content, "\n"))
+    else
+        local context = require("spaghetti-comb.ui.preview").extract_code_context(
+            { file_path = M._resolve_hit_path(hit.file_path), position = { line = hit.line_start } },
+            5
+        )
+        if not context then return end
+
+        local lines = {}
+        for _, line_info in ipairs(context.lines) do
+            table.insert(lines, line_info.content)
+        end
+        vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, lines)
+    end
+
+    local filetype = vim.filetype.match({ filename = hit.file_path })
+    if filetype then vim.bo[buf_id].filetype = filetype end
 end
 
 -- Jump to selected location
