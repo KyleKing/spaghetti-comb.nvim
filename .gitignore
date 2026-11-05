@@ -13,6 +13,7 @@ luac.out
 lazy-lock.json
 mason-lock.json
 deps/
+doc/tags
 # Node (prettier cache)
 node_modules/
 

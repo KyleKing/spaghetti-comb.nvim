@@ -35,6 +35,7 @@ Comprehensive guide for developers working on Spaghetti Comb. For quick AI refer
     ```bash
     mise install
     mise run deps-mini-nvim  # Install mini.nvim for testing
+    hk install               # Git hooks (format/lint/commit-msg)
     ```
 
 1. **Verify setup**
@@ -65,13 +66,17 @@ spaghetti-comb.nvim/
 │       ├── init.lua           # Plugin entry point
 │       ├── config.lua         # Configuration management
 │       ├── types.lua          # Core data models
+│       ├── cli.lua            # Headless dispatch behind scripts/sc
 │       ├── history/           # History management
 │       ├── ui/                # UI components
 │       ├── navigation/        # Navigation commands
+│       ├── substrate/         # vera-ai / codanna adapters + normalized types
 │       ├── utils/             # Utility modules
 │       └── tests/             # Test suite
 ├── plugin/                    # Plugin loader (commands, keymaps)
-├── scripts/                   # Utility scripts
+├── scripts/                   # Utility scripts (sc CLI, bench.lua)
+├── tests/itest/               # Integration suite on a pinned flask clone
+├── doc/                       # Vim help (:help spaghetti-comb)
 └── deps/                      # mini.nvim (test framework, git-ignored)
 ```
 
@@ -100,14 +105,23 @@ spaghetti-comb.nvim/
 
 **Navigation:**
 
-- `navigation/commands.lua` - Navigation commands
+- `navigation/commands.lua` - Seek/related/status commands
 - `navigation/lsp.lua` - LSP integration
 - `navigation/jumplist.lua` - Jumplist enhancement
 - `navigation/events.lua` - Navigation events
+- `navigation/relations.lua` - codanna callers/calls/impact queries
+- `navigation/orient.lua` - Project map assembly
+
+**Substrate:**
+
+- `substrate/types.lua` - Normalized SearchHit/RelationItem/IndexHealth types
+- `substrate/vera.lua` - vera-ai CLI adapter (semantic search, related, overview)
+- `substrate/codanna.lua` - codanna adapter (self-execs the CLI; codanna.nvim's async executor drops error envelopes on non-zero exit)
 
 **Utilities:**
 
-- `utils/project.lua` - Project detection
+- `utils/project.lua` - Project detection, index staleness check
+- `utils/symbol.lua` - Treesitter cursor-symbol resolution
 - `utils/debug.lua` - Debug logging
 
 ## Testing
@@ -133,7 +147,7 @@ mise run test
 **Run specific test file:**
 
 ```bash
-mise run test-file --file=lua/spaghetti-comb/tests/history_spec.lua
+mise run test-file -- -f lua/spaghetti-comb/tests/history_spec.lua
 ```
 
 **Run tests manually:**
@@ -206,11 +220,37 @@ end
 
 ### Test Categories
 
-- **History Tests** (`history_spec.lua`) - History manager functionality
-- **UI Tests** (`ui_spec.lua`) - UI component tests
-- **Navigation Tests** (`navigation_spec.lua`) - Navigation command tests
-- **Integration Tests** (`integration_spec.lua`) - End-to-end tests
-- **LSP Tests** (`lsp_spec.lua`) - LSP integration tests
+- **History/bookmarks** (`history_spec.lua`, `bookmarks_spec.lua`) - Trail recording, persistence, bookmark lifecycle
+- **UI** (`ui_spec.lua`) - Picker and tree rendering
+- **Navigation** (`navigation_spec.lua`, `relations_spec.lua`, `seek_spec.lua`, `orient_spec.lua`) - Commands, pickers, trees
+- **Substrate** (`substrate_spec.lua`) - Adapter parsing and error mapping
+- **Integration** (`integration_spec.lua`, `lsp_spec.lua`) - Cross-module and LSP flows
+
+### Integration suite (`tests/itest/`)
+
+`mise run itest` exercises the real DX layer against a pinned clone of
+pallets/flask (`tests/itest/.fixture/`, deleted and restored by
+`fixture.sh`, indexed once with vera-ai + codanna):
+
+- `cli.sh` - the `sc` JSON contract and error behavior
+- `pty.sh` - real nvim in a dedicated tmux socket; picker jumps, the relations
+  tree, history filtering, and error prompts, with frames saved to
+  `tests/itest/artifacts/`
+
+`mise run itest-cli` skips the tmux layer. The codanna scenarios need a
+codanna.nvim checkout (sibling `../codanna.nvim`, or `SC_CODANNA_NVIM`).
+
+### Scale probe
+
+`scripts/bench.lua` times the trail hot paths (1000-entry trail, 100
+bookmarks):
+
+```bash
+XDG_DATA_HOME=$(mktemp -d) nvim --headless --noplugin -u scripts/minimal_init.lua -l scripts/bench.lua
+```
+
+As of the last run every path was under 2ms, so there are no index maps,
+caches, or virtual scrolling to maintain — re-run before adding any.
 
 ## Code Organization
 
@@ -306,7 +346,9 @@ return M
     mise run test      # Run tests
     ```
 
-1. **Commit changes**
+1. **Commit changes** — [Conventional Commits](https://www.conventionalcommits.org/)
+    (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`); the commit-msg
+    hook enforces the format
 
     ```bash
     git add .
@@ -332,7 +374,7 @@ mise run typecheck  # Run selene linter
 
 ```bash
 mise run test                    # Run all tests
-mise run test-file --file=...   # Run specific test
+mise run test-file -- -f <path>  # Run specific spec file
 ```
 
 ### Pre-commit Checklist
@@ -435,7 +477,6 @@ nvim --headless -u scripts/minimal_init.lua
 ### Getting Help
 
 - Check [AGENTS.md](AGENTS.md) for quick reference
-- Review [SPEC.md](SPEC.md) for feature specifications
 - Check existing issues on GitHub
 - Review test files for usage examples
 

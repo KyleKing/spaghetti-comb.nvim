@@ -1,7 +1,5 @@
 # Project guidance
 
-For planned work, see [ROADMAP.md](ROADMAP.md).
-
 ## Commands
 
 - `mise run ci` runs every gate: lint (stylua check + selene), typecheck (emmylua_check), and test
@@ -31,5 +29,5 @@ For planned work, see [ROADMAP.md](ROADMAP.md).
 
 ## Common Tasks
 
-- **Add a feature**: check ROADMAP.md phasing first; write the spec test alongside
+- **Add a feature**: write the spec test alongside; if it touches the substrate adapters, also check the integration suite (`tests/itest/`)
 - **Fix a bug**: add a regression case to the matching `*_spec.lua`

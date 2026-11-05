@@ -1,0 +1,174 @@
+*spaghetti-comb.txt*  Project-aware navigation history with semantic seeding
+
+==============================================================================
+INTRODUCTION                                        *spaghetti-comb*
+
+Spaghetti Comb records where you have been — project-aware navigation history
+that survives the session — and adds two ways to get somewhere new:
+
+- semantic entry points, when you know the concept but not the name
+  (backed by vera-ai: hybrid BM25 + embedding search)
+- verified structure, when you need callers, calls, or impact
+  (backed by codanna's resolved call graph)
+
+The trail extends built-in Neovim behavior (jumplist, LSP jumps) rather than
+replacing it. Every picker jump — including semantic and structural ones —
+records back into the same trail, so exploration compounds.
+
+==============================================================================
+REQUIREMENTS                                        *spaghetti-comb-requirements*
+
+- Neovim 0.10+
+- vera-ai (optional) — semantic features; missing binary errors loudly
+- codanna + codanna.nvim (optional) — relations features
+- mini.pick (optional) — falls back to |inputlist()-style selection
+- a treesitter parser for the buffer's language (optional) — resolves the
+  enclosing symbol for relation commands; falls back to <cword>
+
+==============================================================================
+SETUP                                               *spaghetti-comb-setup*
+
+>lua
+    require("spaghetti-comb").setup({
+        history = { max_entries = 1000 },
+        integration = { lsp = true, mini_pick = true },
+    })
+<
+All fields are optional and validated; invalid values fall back to defaults
+with a single aggregated warning. See |spaghetti-comb-config|.
+
+==============================================================================
+COMMANDS                                            *spaghetti-comb-commands*
+
+Exploration ~
+
+:SpaghettiCombSeek {query}                          *:SpaghettiCombSeek*
+        Natural-language codebase search (vera). Choosing a hit jumps to it
+        and records a `vera_seek` trail entry.
+
+:SpaghettiCombRelated                               *:SpaghettiCombRelated*
+        Find implementations related to the visual selection (or the current
+        line) — the "did something like this already exist" check.
+
+:SpaghettiCombCallers [symbol]                      *:SpaghettiCombCallers*
+:SpaghettiCombCalls [symbol]                        *:SpaghettiCombCalls*
+:SpaghettiCombImpact [symbol]                       *:SpaghettiCombImpact*
+        Verified relations (codanna) in a tree view. With no argument, the
+        symbol is resolved from the cursor: identifiers resolve to themselves;
+        keywords/operators resolve to the enclosing function, method, or
+        class. `<CR>` jumps to the relation; `<C-]>` re-roots the tree on the
+        selected item for deeper exploration.
+
+:SpaghettiCombOrient                                *:SpaghettiCombOrient*
+        High-level project map: routes, env vars, SQL sites, entry points,
+        hotspots (vera) plus codanna index counts.
+
+Trail ~
+
+:SpaghettiCombHistory                               *:SpaghettiCombHistory*
+        Trail picker, ranked by a decay-weighted score (recency x interaction
+        kind x visits x bookmark boost). Matches on file path, jump type,
+        branch, symbol, note, and recorded context lines. `<C-o>` widens the
+        typed query to a vera codebase search — "my memory, then the codebase".
+
+:SpaghettiCombResume [N]                            *:SpaghettiCombResume*
+        Chronological recap of the N most recent trail entries (default 10) —
+        the "where was I" view. Same picker, visit order.
+
+:SpaghettiCombNote [text]                           *:SpaghettiCombNote*
+        Attach a note to the current trail entry; no argument clears it.
+        Notes are shown in the picker and searched by it.
+
+:SpaghettiCombBookmarks                             *:SpaghettiCombBookmarks*
+:SpaghettiCombBookmarkToggle
+:SpaghettiCombBookmarkClear [global]
+        Bookmark picker and management.
+
+:SpaghettiCombTree                                  *:SpaghettiCombTree*
+        Floating branch-history tree with preview.
+
+:SpaghettiCombBreadcrumbs                           *:SpaghettiCombBreadcrumbs*
+        Toggle the breadcrumb trail view.
+
+Status and housekeeping ~
+
+:SpaghettiCombStatus                                *:SpaghettiCombStatus*
+        Navigation state plus vera/codanna index health: symbol/edge/file
+        counts, index age, and how many git-changed files are newer than the
+        index (staleness signal).
+
+:SpaghettiCombSaveHistory / :SpaghettiCombLoadHistory
+:SpaghettiCombSaveAllHistory
+:SpaghettiCombHistoryClear [all]
+:SpaghettiCombSaveBookmarks / :SpaghettiCombLoadBookmarks
+:SpaghettiCombSaveAllBookmarks
+:SpaghettiCombCleanupPersistence [days]
+:SpaghettiCombStorageStats / :SpaghettiCombListProjects
+        Persistence controls. Trails persist per project under
+        |stdpath()|/data/spaghetti-comb/.
+
+:SpaghettiCombDebug [history|bookmarks|config]
+:SpaghettiCombLogLevel {debug|info|warn|error}
+        Debugging.
+
+==============================================================================
+CONFIGURATION                                       *spaghetti-comb-config*
+
+Defaults: >lua
+    {
+        display = { enabled = true, max_items = 10, hotkey_only = true,
+                    collapse_unfocused = true },
+        history = { max_entries = 1000, max_age_minutes = 30,
+                    pruning_debounce_minutes = 2, save_on_exit = false,
+                    exploration_timeout_minutes = 5, gc_stale_days = 90 },
+        integration = { jumplist = true, lsp = true, mini_pick = true,
+                        statusline = true },
+        visual = { use_unicode_tree = true, color_scheme = "subtle",
+                   floating_window_width = 80, floating_window_height = 20 },
+        bookmarks = { frequent_threshold = 3, auto_bookmark_frequent = true },
+        debug = { enabled = false, log_level = "info" },
+    }
+<
+
+==============================================================================
+TRAIL MODEL                                         *spaghetti-comb-trail*
+
+Each trail entry records file, position, timestamp, jump type
+(`manual`, `lsp_*`, `vera_seek`, `vera_related`, `codanna_*`), the surrounding
+context lines, and — when observable — the enclosing symbol, dwell time,
+interaction kind (`read`/`jump`/`edit`), an optional note, and a
+decay-weighted score. Scores rank the history picker only; they never hide or
+evict entries. `history.max_entries` is a hard cap that evicts the oldest
+unprotected entries (bookmarked and frequent entries are kept).
+
+Corrupt or partially invalid persistence files recover what they can and
+report what they dropped. A deferred startup pass deletes persisted
+trails/bookmarks untouched for `history.gc_stale_days` (set it to `false` to
+disable) and drops bookmarks whose files no longer exist.
+
+==============================================================================
+AGENT CLI                                           *spaghetti-comb-cli*
+
+`scripts/sc` exposes the same adapters headlessly — JSON on stdout, errors on
+stderr: >sh
+    sc seek "<query>"        # semantic search
+    sc related <file> <l1> <l2>
+    sc callers <symbol>      # also: calls, impact
+    sc orient                # project map
+    sc status                # trail + index health JSON
+<
+The trail itself is never injected into agent context; agents use the same
+substrate tools and build their own.
+
+==============================================================================
+INDEXING                                            *spaghetti-comb-indexes*
+
+Both substrates index per project, in the project root:
+
+- `vera-ai index .` writes `.vera/` (`vera-ai watch` keeps it fresh)
+- `codanna index .` writes `.codanna/`
+
+|:SpaghettiCombStatus| reports index age and counts worktree files changed
+since the index was built.
+
+vim:tw=78:ts=8:ft=help:norl:

@@ -22,10 +22,8 @@ fi
 sources = ["deps/mini.nvim"]
 
 [tasks.docs]
-depends = ["deps-mini-nvim"]
-description = "Generate vim help tags (help doc not yet written; see ROADMAP.md)"
+description = "Generate vim help tags for doc/spaghetti-comb.txt"
 run = [
-  "mkdir -p doc",
   "nvim --headless -c 'helptags doc/' -c 'qa!'"
 ]
 
