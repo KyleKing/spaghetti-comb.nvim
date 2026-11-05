@@ -300,6 +300,45 @@ T["persistence"]["large trail round-trips through storage"] = function()
     MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[600].is_bookmarked]==]), true)
 end
 
+T["persistence"]["enriched fields round-trip and legacy entries stay valid"] = function()
+    child.lua([==[
+      local enriched = types.create_navigation_entry({
+        file_path = "/test/persist/enriched/a.lua",
+        position = { line = 9, column = 2 },
+        interaction_kind = "edit",
+        dwell_ms = 4500,
+        symbol = "retry_loop",
+        note = "check the backoff math",
+        score = 1.5,
+      })
+      -- A pre-enrichment save carries none of the new fields
+      local legacy = {
+        id = "legacy-1",
+        file_path = "/test/persist/enriched/b.lua",
+        position = { line = 3, column = 1 },
+        timestamp = 1600000000,
+      }
+      local trail = types.create_navigation_trail({
+        project_root = "/test/persist/enriched",
+        entries = { enriched, legacy },
+        current_index = 2,
+      })
+      _G.saved = storage.save_history(trail, "/test/persist/enriched")
+      _G.loaded = { storage.load_history("/test/persist/enriched") }
+    ]==])
+
+    MiniTest.expect.equality(child.lua_get([==[_G.saved]==]), true)
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1] ~= nil]==]), true)
+    MiniTest.expect.equality(child.lua_get([==[#_G.loaded[1].entries]==]), 2)
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[1].interaction_kind]==]), "edit")
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[1].dwell_ms]==]), 4500)
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[1].symbol]==]), "retry_loop")
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[1].note]==]), "check the backoff math")
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[1].score]==]), 1.5)
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[2].id]==]), "legacy-1")
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[2].interaction_kind]==]), vim.NIL)
+end
+
 T["persistence"]["manager save_current and load round-trip through storage"] = function()
     child.lua([==[
       history_manager.set_current_project("/test/persist/manager")

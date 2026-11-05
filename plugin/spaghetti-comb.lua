@@ -127,6 +127,17 @@ end, {
     desc = "Clear navigation history (optional: all)",
 })
 
+-- Annotate the entry at the current trail position; no args clears the note
+vim.api.nvim_create_user_command("SpaghettiCombNote", function(opts)
+    local history_manager = require("spaghetti-comb.history.manager")
+    local text = opts.args ~= "" and opts.args or nil
+    local success, msg = history_manager.set_current_note(text)
+    vim.notify(msg, success and vim.log.levels.INFO or vim.log.levels.WARN)
+end, {
+    nargs = "*",
+    desc = "Set a note on the current trail entry (no args clears it)",
+})
+
 -- Debug Commands
 vim.api.nvim_create_user_command("SpaghettiCombDebug", function(opts)
     local debug = require("spaghetti-comb.utils.debug")

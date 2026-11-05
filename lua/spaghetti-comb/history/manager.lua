@@ -4,6 +4,11 @@ local project_utils = require("spaghetti-comb.utils.project")
 
 local M = {}
 
+-- Score weights: edits are the strongest signal, then deliberate jumps, then reads
+local SCORE_INTERACTION_WEIGHTS = { read = 1.0, jump = 2.0, edit = 3.0 }
+local SCORE_BOOKMARK_BOOST = 2.0
+local SCORE_HALF_LIFE_SECONDS = 24 * 60 * 60
+
 -- Module state
 local state = {
     config = nil,
@@ -12,6 +17,10 @@ local state = {
     current_project = nil,
     last_jump_time = 0,
     exploration_timeout = 5 * 60, -- 5 minutes in seconds (default)
+    -- changedtick snapshots taken when an entry became current; a later advance
+    -- means the buffer was edited while the entry was current. Weak keys so
+    -- evicted entries collect; nothing here persists to disk.
+    entry_ticks = setmetatable({}, { __mode = "k" }),
 }
 
 -- Reset all module state. Do not reuse existing trails after calling.
@@ -22,6 +31,7 @@ function M.reset()
     state.current_project = nil
     state.last_jump_time = 0
     state.exploration_timeout = 5 * 60
+    state.entry_ticks = setmetatable({}, { __mode = "k" })
 end
 
 -- Setup the history manager
@@ -66,12 +76,33 @@ end
 -- Get current project
 function M.get_current_project() return state.current_project end
 
+-- Finalize the entry the trail is leaving behind: backfill dwell_ms and mark
+-- it "edit" if its buffer's changedtick advanced while it was current.
+local function finalize_current_entry(trail, now)
+    local entry = trail and trail.current_index >= 1 and trail.entries[trail.current_index]
+    if not entry then return end
+
+    if type(entry.timestamp) == "number" then entry.dwell_ms = math.max(0, now - entry.timestamp) * 1000 end
+
+    local tick = state.entry_ticks[entry]
+    if
+        tick
+        and vim.api.nvim_buf_is_valid(tick.bufnr)
+        and vim.api.nvim_buf_get_var(tick.bufnr, "changedtick") > tick.tick
+    then
+        entry.interaction_kind = "edit"
+    end
+end
+
 -- Core history tracking
 function M.record_jump(_from_location, to_location, jump_type)
     if not state.initialized then return false, "History manager not initialized" end
 
     jump_type = jump_type or "manual"
     local current_time = os.time()
+
+    -- The outgoing entry lives in the pre-switch trail, so finalize it first
+    finalize_current_entry(state.trails[state.current_project], current_time)
 
     -- Auto-detect project for the destination location
     local detected_project = project_utils.detect_project_root(to_location.file_path)
@@ -83,15 +114,19 @@ function M.record_jump(_from_location, to_location, jump_type)
     local trail = get_current_trail()
     if not trail then return false, "No current project context" end
 
+    local context = to_location.context or {}
+
     -- Create navigation entry for the destination
     local entry = types.create_navigation_entry({
         file_path = to_location.file_path,
         position = to_location.position,
         timestamp = current_time,
         jump_type = jump_type,
-        context = to_location.context or {},
+        context = context,
         project_root = state.current_project,
         branch_id = trail.branches.current or "main",
+        interaction_kind = "jump",
+        symbol = context.function_name,
     })
 
     -- If we're not at the end of the trail, we're creating a new branch
@@ -105,6 +140,16 @@ function M.record_jump(_from_location, to_location, jump_type)
     table.insert(trail.entries, entry)
     trail.current_index = #trail.entries
     trail.last_accessed = current_time
+
+    -- Snapshot the destination buffer's changedtick; finalize_current_entry
+    -- compares against it when this entry is superseded
+    local bufnr = vim.fn.bufnr(to_location.file_path)
+    if bufnr ~= -1 then
+        state.entry_ticks[entry] = {
+            bufnr = bufnr,
+            tick = vim.api.nvim_buf_get_var(bufnr, "changedtick"),
+        }
+    end
 
     local max_entries = state.config.history and state.config.history.max_entries
     if type(max_entries) == "number" and max_entries > 0 then M.enforce_max_entries(trail, max_entries) end
@@ -574,6 +619,43 @@ function M.get_current_entry()
     return trail.entries[trail.current_index]
 end
 
+-- Set or clear (empty/nil text) a note on the entry at the trail position
+---@param text string|nil
+---@return boolean success
+---@return string message
+function M.set_current_note(text)
+    local entry = M.get_current_entry()
+    if not entry then return false, "No current trail entry" end
+
+    if text and text ~= "" then
+        entry.note = text
+        return true, "Note recorded"
+    end
+
+    entry.note = nil
+    return true, "Note cleared"
+end
+
+-- Relevance score for ranking only (e.g. the history picker's default order).
+-- It never filters entries out and never feeds eviction — the max_entries cap
+-- protects bookmarks and frequent entries regardless of score.
+---@param entry NavigationEntry
+---@return number|nil score nil when the entry has no usable timestamp
+function M.entry_score(entry)
+    if type(entry) ~= "table" or type(entry.timestamp) ~= "number" then return nil end
+
+    local kind_weight = SCORE_INTERACTION_WEIGHTS[entry.interaction_kind] or SCORE_INTERACTION_WEIGHTS.read
+    local visit_count = math.max(1, entry.visit_count or 1)
+    local age_seconds = math.max(0, os.time() - entry.timestamp)
+    local recency = 0.5 ^ (age_seconds / SCORE_HALF_LIFE_SECONDS)
+
+    local score = recency * kind_weight * visit_count
+    if entry.is_bookmarked then score = score * SCORE_BOOKMARK_BOOST end
+
+    entry.score = score
+    return score
+end
+
 -- Get all entries for current project
 function M.get_all_entries()
     local trail = get_current_trail()
@@ -718,6 +800,9 @@ function M.save_current_project_history()
 
     if not trail or #trail.entries == 0 then return false, "No history to save" end
 
+    -- Still-current entries get their dwell through save time
+    finalize_current_entry(trail, os.time())
+
     return storage.save_history(trail, state.current_project)
 end
 
@@ -731,6 +816,7 @@ function M.save_all_histories()
 
     for project_root, trail in pairs(state.trails) do
         if trail and #trail.entries > 0 then
+            finalize_current_entry(trail, os.time())
             local success, err = storage.save_history(trail, project_root)
             if success then
                 saved_count = saved_count + 1

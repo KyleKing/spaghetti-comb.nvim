@@ -18,6 +18,11 @@ local M = {}
 ---@field is_active boolean False if location is unrecoverable after pruning
 ---@field line_shifted boolean True if position was recovered after line shift
 ---@field last_pruned number Timestamp of last pruning attempt
+---@field interaction_kind string|nil "read" (default), "jump", or "edit"; optional for pre-enrichment saves
+---@field dwell_ms number|nil Milliseconds the entry stayed current, backfilled when superseded
+---@field symbol string|nil Symbol identity at the location (from context.function_name)
+---@field note string|nil User annotation set via :SpaghettiCombNote
+---@field score number|nil Last computed relevance score; ranks only, never filters or evicts
 
 -- Navigation Trail data structure
 ---@class NavigationTrail
@@ -63,6 +68,11 @@ function M.create_navigation_entry(opts)
         is_active = opts.is_active ~= false, -- Default to true
         line_shifted = opts.line_shifted or false,
         last_pruned = opts.last_pruned or 0,
+        interaction_kind = opts.interaction_kind or "read",
+        dwell_ms = opts.dwell_ms,
+        symbol = opts.symbol,
+        note = opts.note,
+        score = opts.score,
     }
 end
 
@@ -122,6 +132,21 @@ function M.validate_navigation_entry(entry)
     if not entry.position.column or type(entry.position.column) ~= "number" then
         return false, "Entry position must have a numeric column"
     end
+
+    -- Enrichment fields are optional: entries saved before they existed load as-is
+    if entry.interaction_kind ~= nil and type(entry.interaction_kind) ~= "string" then
+        return false, "Entry interaction_kind must be a string"
+    end
+
+    if entry.dwell_ms ~= nil and type(entry.dwell_ms) ~= "number" then
+        return false, "Entry dwell_ms must be a number"
+    end
+
+    if entry.symbol ~= nil and type(entry.symbol) ~= "string" then return false, "Entry symbol must be a string" end
+
+    if entry.note ~= nil and type(entry.note) ~= "string" then return false, "Entry note must be a string" end
+
+    if entry.score ~= nil and type(entry.score) ~= "number" then return false, "Entry score must be a number" end
 
     return true, nil
 end

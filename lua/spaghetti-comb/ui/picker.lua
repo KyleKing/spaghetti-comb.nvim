@@ -233,8 +233,8 @@ function M.show_navigation_mode()
         return false, "No navigation history"
     end
 
-    -- Sort by recency (reverse order)
-    local entries = M.sort_by_recency(trail.entries)
+    -- Default order is relevance score, newest first on ties
+    local entries = M.sort_by_score(trail.entries)
 
     -- Show picker
     if state.mini_pick_available then
@@ -355,7 +355,7 @@ end
 -- Everything an entry can be re-found by, beyond the displayed label
 function M._build_search_text(entry)
     local parts = {}
-    for _, key in ipairs({ "file_path", "jump_type", "branch_id" }) do
+    for _, key in ipairs({ "file_path", "jump_type", "branch_id", "symbol", "note" }) do
         if entry[key] then table.insert(parts, entry[key]) end
     end
 
@@ -379,7 +379,13 @@ function M._format_navigation_display(entry)
     local jump_type = entry.jump_type ~= "manual" and string.format(" (%s)", entry.jump_type) or ""
     local time_ago = M._format_time_ago(entry.timestamp)
 
-    return string.format("%s%s - %s", location, jump_type, time_ago)
+    local note = ""
+    if type(entry.note) == "string" and entry.note ~= "" then
+        local text = entry.note:gsub("%s+", " "):sub(1, 24)
+        note = string.format(" 🗒 %s%s", text, #entry.note > 24 and "…" or "")
+    end
+
+    return string.format("%s%s - %s%s", location, jump_type, time_ago, note)
 end
 
 -- Format time ago string
@@ -413,6 +419,28 @@ function M._show_navigation_preview(buf_id, entry)
     -- Apply filetype for syntax highlighting
     local filetype = vim.filetype.match({ filename = entry.file_path })
     if filetype then vim.bo[buf_id].filetype = filetype end
+end
+
+-- Sort navigation entries by decay-weighted relevance score, newest first on
+-- ties. Entries without a usable score sink below scored ones and order among
+-- themselves by timestamp. Scores rank only; nothing is filtered or evicted.
+function M.sort_by_score(entries)
+    local sorted = {}
+    for _, entry in ipairs(entries) do
+        table.insert(sorted, entry)
+    end
+
+    local history_manager = require("spaghetti-comb.history.manager")
+    table.sort(sorted, function(a, b)
+        local score_a = history_manager.entry_score(a)
+        local score_b = history_manager.entry_score(b)
+        if score_a and score_b and score_a ~= score_b then return score_a > score_b end
+        if score_a and not score_b then return true end
+        if score_b and not score_a then return false end
+        return (a.timestamp or 0) > (b.timestamp or 0)
+    end)
+
+    return sorted
 end
 
 -- Sort navigation entries by recency

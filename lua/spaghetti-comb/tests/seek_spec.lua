@@ -83,6 +83,43 @@ T["trail search"]["filter_navigation_entries matches beyond filename"] = functio
     MiniTest.expect.equality(#picker.filter_navigation_entries(entries, ""), 2)
 end
 
+T["trail search"]["notes mark the display and join search text"] = function()
+    local entry = make_entry({ note = "check the backoff math here" })
+
+    local item = picker._format_navigation_item(entry)
+    expect_contains(item.text, "🗒")
+    expect_contains(item.text, "check the backoff math")
+    expect_contains(item.search_text, "check the backoff math here")
+
+    -- Trail search re-finds entries by their note text
+    local hits = picker.filter_navigation_entries({ entry, make_entry() }, "backoff")
+    MiniTest.expect.equality(#hits, 1)
+
+    -- No note, no marker
+    item = picker._format_navigation_item(make_entry())
+    MiniTest.expect.equality(item.text:find("🗒", 1, true), nil)
+end
+
+T["trail search"]["sort_by_score ranks by score then recency"] = function()
+    local now = os.time()
+    local entries = {
+        make_entry({ file_path = "/proj/old_edit.py", interaction_kind = "edit", timestamp = now - 864000 }),
+        make_entry({ file_path = "/proj/new_read.py", interaction_kind = "read", timestamp = now }),
+        make_entry({ file_path = "/proj/new_jump.py", interaction_kind = "jump", timestamp = now }),
+        { file_path = "/proj/no_timestamp.py" },
+    }
+
+    local sorted = picker.sort_by_score(entries)
+
+    -- Jump outweighs read at equal recency; both beat a stale edit
+    MiniTest.expect.equality(sorted[1].file_path, "/proj/new_jump.py")
+    MiniTest.expect.equality(sorted[2].file_path, "/proj/new_read.py")
+    MiniTest.expect.equality(sorted[3].file_path, "/proj/old_edit.py")
+    -- Unscoreable entries sink to the bottom instead of being dropped
+    MiniTest.expect.equality(sorted[4].file_path, "/proj/no_timestamp.py")
+    MiniTest.expect.equality(#sorted, 4)
+end
+
 T["trail search"]["matcher filters via search text not display text"] = function()
     local items = {
         picker._format_navigation_item(make_entry({ context = { function_name = "authenticate" } })),

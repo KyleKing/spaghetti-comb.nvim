@@ -62,7 +62,7 @@ Make the recorded trail trustworthy and richer before building more UI on it.
 - [x] LSP edge cases: server not running, empty responses, multiple results
 - [x] Enforce `history.max_entries` as a hard cap in `record_jump`
 - [x] Verify persistence round-trips with large datasets and handles corrupt JSON
-- [ ] Trail schema enrichment (`NavigationEntry`): `symbol` (stable identity, survives line shifts), `interaction_kind` (read/edit/jump — edits are the strong relevance signal), `dwell_ms` (enter/leave), `note`, decay-weighted score alongside raw `visit_count` (Mylyn DOI lesson: predictable and user-visible, never auto-hiding). Storage migration for existing entries
+- [x] Trail schema enrichment (`NavigationEntry`): `symbol` (stable identity from `context.function_name`; codanna symbol_id not available at record time), `interaction_kind` (read/edit/jump via buffer-changedtick check), `dwell_ms` (backfilled when the entry is superseded or saved), `note` (`:SpaghettiCombNote`, marked in the history picker and searchable), decay-weighted `score` (`manager.entry_score`: recency decay × kind weight × visits × bookmark boost — ranks the history picker only, never filters or evicts). New fields are optional so pre-enrichment saves load unchanged
 - [ ] Vim help doc (`doc/spaghetti-comb.txt`) generated or written, wired to `mise run docs`
 
 ## Phase 3: Substrate adapters + semantic features

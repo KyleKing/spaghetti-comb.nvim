@@ -381,4 +381,114 @@ T["history manager"]["detects exploration state"] = function()
     MiniTest.expect.equality(history_manager.determine_exploration_state(), "exploring")
 end
 
+T["history manager"]["enriches entries with symbol, kind, dwell, and edit detection"] = function()
+    history_manager.setup({})
+    history_manager.set_current_project("/test/project")
+
+    -- A loaded scratch buffer lets the changedtick check see a real edit;
+    -- tempname files detect their containing dir as the project, so both
+    -- jumps land in one trail.
+    local first_path = vim.fn.tempname() .. ".lua"
+    local second_path = vim.fn.tempname() .. ".lua"
+    vim.fn.writefile({ "local x = 1" }, first_path)
+    vim.fn.writefile({ "local y = 2" }, second_path)
+    local bufnr = vim.fn.bufadd(first_path)
+    vim.fn.bufload(bufnr)
+
+    local _, first = history_manager.record_jump(
+        { file_path = "/test/project/origin.lua", position = { line = 1, column = 1 } },
+        {
+            file_path = first_path,
+            position = { line = 1, column = 1 },
+            context = { function_name = "retry_loop" },
+        },
+        "manual"
+    )
+
+    -- New entries record their arrival: jump kind, symbol lifted out of context
+    MiniTest.expect.equality(first.interaction_kind, "jump")
+    MiniTest.expect.equality(first.symbol, "retry_loop")
+    MiniTest.expect.equality(first.dwell_ms, nil)
+
+    -- Editing the buffer while the entry is current makes it an "edit"
+    first.timestamp = os.time() - 7
+    vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, { "local x = 99" })
+
+    history_manager.record_jump(
+        { file_path = first_path, position = { line = 1, column = 1 } },
+        { file_path = second_path, position = { line = 1, column = 1 } },
+        "manual"
+    )
+
+    MiniTest.expect.equality(first.interaction_kind, "edit")
+    MiniTest.expect.equality(type(first.dwell_ms), "number")
+    MiniTest.expect.equality(first.dwell_ms >= 7000 and first.dwell_ms < 10000, true)
+
+    -- The second entry was never edited; it stays "jump" until superseded
+    local second = history_manager.get_current_trail().entries[2]
+    MiniTest.expect.equality(second.interaction_kind, "jump")
+    MiniTest.expect.equality(second.dwell_ms, nil)
+
+    vim.api.nvim_buf_delete(bufnr, { force = true })
+    vim.fn.delete(first_path)
+    vim.fn.delete(second_path)
+end
+
+T["history manager"]["entry_score weighs kind, recency, visits, and bookmarks"] = function()
+    history_manager.setup({})
+    local now = os.time()
+
+    local function score(kind, timestamp, extra)
+        return history_manager.entry_score(vim.tbl_extend("force", {
+            timestamp = timestamp,
+            interaction_kind = kind,
+            visit_count = 1,
+        }, extra or {}))
+    end
+
+    local read = score("read", now)
+    local jump = score("jump", now)
+    local edit = score("edit", now)
+    MiniTest.expect.equality(read < jump, true)
+    MiniTest.expect.equality(jump < edit, true)
+
+    -- Entries saved before enrichment carry no kind; they score as reads
+    MiniTest.expect.equality(score(nil, now), read)
+
+    MiniTest.expect.equality(score("read", now, { visit_count = 5 }) > read, true)
+    MiniTest.expect.equality(score("read", now, { is_bookmarked = true }) > read, true)
+    MiniTest.expect.equality(score("read", now - 3600) < read, true)
+
+    -- The computed score is cached on the entry so the trail carries it
+    local entry = { timestamp = now, interaction_kind = "jump", visit_count = 1 }
+    MiniTest.expect.equality(history_manager.entry_score(entry), entry.score)
+
+    -- Unscoreable entries return nil so callers can fall back to recency
+    MiniTest.expect.equality(history_manager.entry_score({}), nil)
+    MiniTest.expect.equality(history_manager.entry_score({ timestamp = "soon" }), nil)
+end
+
+T["history manager"]["set_current_note annotates the entry at the trail position"] = function()
+    history_manager.setup({})
+    history_manager.set_current_project("/test/project")
+
+    MiniTest.expect.equality(history_manager.set_current_note("orphan"), false)
+
+    history_manager.record_jump(
+        { file_path = "/test/project/a.lua", position = { line = 1, column = 1 } },
+        { file_path = "/test/project/b.lua", position = { line = 2, column = 1 } },
+        "manual"
+    )
+
+    MiniTest.expect.equality(history_manager.set_current_note("check the retry logic"), true)
+    MiniTest.expect.equality(history_manager.get_current_entry().note, "check the retry logic")
+
+    -- Empty or nil text clears the note
+    MiniTest.expect.equality(history_manager.set_current_note(""), true)
+    MiniTest.expect.equality(history_manager.get_current_entry().note, nil)
+    MiniTest.expect.equality(history_manager.set_current_note("again"), true)
+    MiniTest.expect.equality(history_manager.set_current_note(nil), true)
+    MiniTest.expect.equality(history_manager.get_current_entry().note, nil)
+end
+
 return T
