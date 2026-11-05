@@ -295,35 +295,6 @@ function M.fallback_ctrl_i()
     end
 end
 
--- Get jumplist information for debugging
-function M.get_jumplist_info()
-    local jumplist = vim.fn.getjumplist()
-    return {
-        current_index = jumplist[2],
-        total_entries = #jumplist[1],
-        entries = jumplist[1],
-    }
-end
-
--- Check compatibility with Neovim's jumplist
-function M.check_jumplist_compatibility()
-    -- Test if we can access jumplist
-    local jumplist_success, jumplist = pcall(vim.fn.getjumplist)
-    if not jumplist_success then
-        debug_utils.warn("Cannot access Neovim jumplist", { error = jumplist })
-        return false
-    end
-
-    -- Test if we can set cursor position
-    local cursor_success, _ = pcall(vim.api.nvim_win_set_cursor, 0, { 1, 0 })
-    if not cursor_success then
-        debug_utils.warn("Cannot set cursor position")
-        return false
-    end
-
-    return true
-end
-
 -- Toggle enhanced mode on/off
 function M.toggle_enhanced_mode()
     state.enhanced_mode = not state.enhanced_mode

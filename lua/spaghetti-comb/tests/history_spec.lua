@@ -11,21 +11,6 @@ T["history manager"] = MiniTest.new_set({
     },
 })
 
-T["history manager"]["setup"] = function()
-    -- Test basic setup
-    local config = {
-        history = {
-            exploration_timeout_minutes = 5,
-        },
-    }
-
-    history_manager.setup(config)
-
-    -- Should be able to set current project
-    history_manager.set_current_project("/test/project")
-    MiniTest.expect.equality(history_manager.get_current_project(), "/test/project")
-end
-
 T["history manager"]["records jumps correctly"] = function()
     -- Setup
     history_manager.setup({})
@@ -74,9 +59,15 @@ T["history manager"]["handles branching paths"] = function()
     local loc4 = { file_path = "/test/project/file4.lua", position = { line = 4, column = 4 } }
     history_manager.record_jump(loc2, loc4, "manual")
 
-    -- Check that we have branches
+    -- One branch, forked at the middle entry, holding the new jump
     local branches = history_manager.get_active_branches()
-    MiniTest.expect.equality(#branches > 0, true)
+    MiniTest.expect.equality(#branches, 1)
+    MiniTest.expect.equality(branches[1].from_index, 1)
+
+    local trail = history_manager.get_current_trail()
+    MiniTest.expect.equality(#trail.entries, 3)
+    MiniTest.expect.equality(trail.entries[3].file_path, "/test/project/file4.lua")
+    MiniTest.expect.equality(trail.entries[3].branch_id, branches[1].id)
 end
 
 T["history manager"]["prunes old entries"] = function()
@@ -117,33 +108,10 @@ T["history manager"]["prunes old entries"] = function()
     vim.fn.delete(tmp)
 end
 
-T["history manager"]["prunes inconsequential jumps"] = function()
+T["history manager"]["identifies and prunes inconsequential jumps"] = function()
     -- Setup
     history_manager.setup({})
     history_manager.set_current_project("/test/project")
-
-    -- Create a series of small auto jumps within the same file
-    local file_path = "/test/project/file1.lua"
-    for i = 1, 5 do
-        local from_loc = { file_path = file_path, position = { line = i, column = 1 } }
-        local to_loc = { file_path = file_path, position = { line = i + 1, column = 1 } }
-        history_manager.record_jump(from_loc, to_loc, "auto")
-    end
-
-    local trail = history_manager.get_current_trail()
-    local initial_count = #trail.entries
-    MiniTest.expect.equality(initial_count, 5)
-
-    -- Prune inconsequential jumps
-    local pruned_entries = history_manager.prune_inconsequential_jumps(trail.entries)
-
-    -- Small consecutive auto movements should collapse into fewer entries
-    MiniTest.expect.equality(#pruned_entries < initial_count, true)
-end
-
-T["history manager"]["determines inconsequential jumps"] = function()
-    -- Setup
-    history_manager.setup({})
 
     -- Same file, small distance, auto jump
     local entry1 = {
@@ -175,6 +143,20 @@ T["history manager"]["determines inconsequential jumps"] = function()
     entry2.position.line = 12
     entry2.jump_type = "manual"
     MiniTest.expect.equality(history_manager.is_inconsequential_jump(entry1, entry2), false)
+
+    -- A series of small auto jumps within one file collapses to a single entry
+    local file_path = "/test/project/file1.lua"
+    for i = 1, 5 do
+        local from_loc = { file_path = file_path, position = { line = i, column = 1 } }
+        local to_loc = { file_path = file_path, position = { line = i + 1, column = 1 } }
+        history_manager.record_jump(from_loc, to_loc, "auto")
+    end
+
+    local trail = history_manager.get_current_trail()
+    MiniTest.expect.equality(#trail.entries, 5)
+
+    local pruned_entries = history_manager.prune_inconsequential_jumps(trail.entries)
+    MiniTest.expect.equality(#pruned_entries, 1)
 end
 
 T["history manager"]["recovers shifted locations"] = function()
@@ -225,39 +207,40 @@ T["history manager"]["recovers shifted locations"] = function()
     vim.fn.delete(tmp)
 end
 
-T["history manager"]["debounces pruning operations"] = function()
-    -- Setup
+T["history manager"]["debounces pruning into a single scheduled run"] = function()
     history_manager.setup({})
 
-    local function pending_timer_ids()
-        local ids = {}
-        for _, info in ipairs(vim.fn.timer_info()) do
-            ids[info.id] = true
+    local scheduled, stopped, prunes = {}, {}, 0
+    local real_start, real_stop = vim.fn.timer_start, vim.fn.timer_stop
+    local real_prune = history_manager.prune_with_recovery
+    local ok, err = pcall(function()
+        vim.fn.timer_start = function(_ms, cb)
+            scheduled[#scheduled + 1] = cb
+            return #scheduled
         end
-        return ids
-    end
+        vim.fn.timer_stop = function(id) stopped[id] = true end
+        history_manager.prune_with_recovery = function()
+            prunes = prunes + 1
+            return true, {}
+        end
 
-    local base = pending_timer_ids()
+        history_manager.schedule_pruning()
+        history_manager.schedule_pruning()
+        history_manager.schedule_pruning()
 
-    -- First schedule creates a pending timer
-    MiniTest.expect.equality(history_manager.schedule_pruning(), true)
-    local after_first = pending_timer_ids()
+        -- Earlier schedules are cancelled; only the last one stays pending
+        MiniTest.expect.equality(#scheduled, 3)
+        MiniTest.expect.equality(stopped[1], true)
+        MiniTest.expect.equality(stopped[2], true)
+        MiniTest.expect.equality(stopped[3], nil)
 
-    local first_timer
-    for id in pairs(after_first) do
-        if not base[id] then first_timer = id end
-    end
-    MiniTest.expect.equality(type(first_timer), "number")
-
-    -- Second schedule cancels the first timer (debounce) and creates a new one
-    MiniTest.expect.equality(history_manager.schedule_pruning(), true)
-    local after_second = pending_timer_ids()
-    MiniTest.expect.equality(after_second[first_timer], nil)
-
-    -- Clean up any timers this test created so pruning never fires mid-suite
-    for id in pairs(after_second) do
-        if not base[id] then vim.fn.timer_stop(id) end
-    end
+        scheduled[3]()
+        MiniTest.expect.equality(prunes, 1)
+    end)
+    vim.fn.timer_start = real_start
+    vim.fn.timer_stop = real_stop
+    history_manager.prune_with_recovery = real_prune
+    if not ok then error(err, 0) end
 end
 
 T["history manager"]["navigates backward and forward"] = function()
@@ -276,9 +259,10 @@ T["history manager"]["navigates backward and forward"] = function()
     local trail = history_manager.get_current_trail()
     MiniTest.expect.equality(trail.current_index, 5)
 
-    -- Go back
-    local success = history_manager.go_back(2)
+    -- Go back; the returned entry is where the trail landed
+    local success, entry = history_manager.go_back(2)
     MiniTest.expect.equality(success, true)
+    MiniTest.expect.equality(entry.position.line, 4)
     trail = history_manager.get_current_trail()
     MiniTest.expect.equality(trail.current_index, 3)
 

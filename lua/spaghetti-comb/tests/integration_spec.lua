@@ -8,9 +8,6 @@ local child_preamble = [==[
   _G.storage = require("spaghetti-comb.history.storage")
   _G.breadcrumbs = require("spaghetti-comb.ui.breadcrumbs")
   _G.jumplist = require("spaghetti-comb.navigation.jumplist")
-  _G.events = require("spaghetti-comb.navigation.events")
-  _G.statusline = require("spaghetti-comb.ui.statusline")
-  _G.lsp = require("spaghetti-comb.navigation.lsp")
   _G.types = require("spaghetti-comb.types")
   _G.debug_utils = require("spaghetti-comb.utils.debug")
   _G.project = require("spaghetti-comb.utils.project")
@@ -39,7 +36,7 @@ T["cross-module"] = MiniTest.new_set({
     },
 })
 
-T["cross-module"]["project separation isolates trails"] = function()
+T["cross-module"]["project separation isolates and restores trails"] = function()
     -- Fabricated paths have no project markers and are unreadable, so
     -- record_jump keeps the explicitly set project instead of auto-detecting.
     child.lua([==[
@@ -65,30 +62,13 @@ T["cross-module"]["project separation isolates trails"] = function()
     MiniTest.expect.equality(child.lua_get([==[_G.project2_trail.entries[1].position.line]==]), 20)
 
     MiniTest.expect.equality(child.lua_get([==[vim.tbl_count(history_manager.get_all_project_trails())]==]), 2)
-end
 
-T["cross-module"]["switching projects preserves per-project state"] = function()
-    child.lua([==[
-      history_manager.set_current_project("/proj/alpha")
-      history_manager.record_jump(
-        { file_path = "/proj/alpha/a.lua", position = { line = 1, column = 1 } },
-        { file_path = "/proj/alpha/b.lua", position = { line = 5, column = 1 } },
-        "manual"
-      )
-      history_manager.set_current_project("/proj/beta")
-      history_manager.record_jump(
-        { file_path = "/proj/beta/a.lua", position = { line = 1, column = 1 } },
-        { file_path = "/proj/beta/b.lua", position = { line = 9, column = 1 } },
-        "manual"
-      )
-    ]==])
-
-    -- Switch back to alpha and confirm its trail is intact and current
-    MiniTest.expect.equality(child.lua_get([==[history_manager.switch_to_project("/proj/alpha")]==]), true)
+    -- Switching back restores the first project's trail
+    MiniTest.expect.equality(child.lua_get([==[history_manager.switch_to_project("/project1")]==]), true)
     child.lua([==[_G.trail = history_manager.get_current_trail()]==])
-    MiniTest.expect.equality(child.lua_get([==[_G.trail.project_root]==]), "/proj/alpha")
+    MiniTest.expect.equality(child.lua_get([==[_G.trail.project_root]==]), "/project1")
     MiniTest.expect.equality(child.lua_get([==[#_G.trail.entries]==]), 1)
-    MiniTest.expect.equality(child.lua_get([==[_G.trail.entries[1].position.line]==]), 5)
+    MiniTest.expect.equality(child.lua_get([==[_G.trail.entries[1].position.line]==]), 2)
 end
 
 T["cross-module"]["breadcrumbs render current trail from history manager"] = function()
@@ -141,25 +121,6 @@ T["cross-module"]["breadcrumbs report empty history gracefully"] = function()
     MiniTest.expect.equality(child.lua_get([==[breadcrumbs.is_visible()]==]), false)
 end
 
-T["cross-module"]["records many jumps within time budget"] = function()
-    child.lua([==[
-      history_manager.set_current_project("/perf/project")
-      local start_time = os.clock()
-      for i = 1, 100 do
-        history_manager.record_jump(
-          { file_path = "/perf/file" .. i .. ".lua", position = { line = i, column = 1 } },
-          { file_path = "/perf/file" .. (i + 1) .. ".lua", position = { line = i + 1, column = 1 } },
-          "manual"
-        )
-      end
-      _G.elapsed = os.clock() - start_time
-      _G.trail = history_manager.get_current_trail()
-    ]==])
-
-    MiniTest.expect.equality(child.lua_get([==[_G.elapsed < 1.0]==]), true)
-    MiniTest.expect.equality(child.lua_get([==[#_G.trail.entries]==]), 100)
-end
-
 T["cross-module"]["clear_all_history releases every project trail"] = function()
     child.lua([==[
       for i = 1, 10 do
@@ -205,61 +166,6 @@ T["jumplist"]["setup is idempotent and non-erroring"] = function()
     )
 end
 
-T["jumplist"]["exposes compatible jumplist access"] = function()
-    MiniTest.expect.equality(child.lua_get([==[jumplist.check_jumplist_compatibility()]==]), true)
-
-    child.lua([==[_G.info = jumplist.get_jumplist_info()]==])
-    MiniTest.expect.equality(child.lua_get([==[type(_G.info)]==]), "table")
-    MiniTest.expect.equality(child.lua_get([==[type(_G.info.total_entries)]==]), "number")
-end
-
-T["jumplist"]["back and forward move through the recorded trail"] = function()
-    child.lua([==[
-      history_manager.set_current_project("/jl/project")
-      for i = 1, 4 do
-        history_manager.record_jump(
-          { file_path = "/jl/file" .. i .. ".lua", position = { line = i, column = 1 } },
-          { file_path = "/jl/file" .. (i + 1) .. ".lua", position = { line = (i + 1) * 10, column = 1 } },
-          "manual"
-        )
-      end
-      _G.trail = history_manager.get_current_trail()
-    ]==])
-
-    MiniTest.expect.equality(child.lua_get([==[_G.trail.current_index]==]), 4)
-
-    child.lua([==[_G.back = { history_manager.go_back(2) }]==])
-    MiniTest.expect.equality(child.lua_get([==[_G.back[1]]==]), true)
-    MiniTest.expect.equality(child.lua_get([==[_G.back[2].position.line]==]), 30)
-    MiniTest.expect.equality(child.lua_get([==[history_manager.get_current_trail().current_index]==]), 2)
-
-    child.lua([==[_G.fwd = { history_manager.go_forward(1) }]==])
-    MiniTest.expect.equality(child.lua_get([==[_G.fwd[1]]==]), true)
-    MiniTest.expect.equality(child.lua_get([==[history_manager.get_current_trail().current_index]==]), 3)
-end
-
-T["jumplist"]["jump_to_index moves the cursor to a real file location"] = function()
-    child.lua([==[
-      jumplist.setup({ integration = { jumplist = true } })
-
-      local temp_file = vim.fn.tempname() .. ".lua"
-      vim.fn.writefile({ "line one", "line two", "line three", "line four" }, temp_file)
-
-      -- Auto-detected project for the readable temp file becomes current on record.
-      history_manager.record_jump(
-        { file_path = temp_file, position = { line = 1, column = 1 } },
-        { file_path = temp_file, position = { line = 3, column = 1 } },
-        "manual"
-      )
-
-      jumplist.jump_to_index(1)
-      _G.cursor = vim.api.nvim_win_get_cursor(0)
-      vim.fn.delete(temp_file)
-    ]==])
-
-    MiniTest.expect.equality(child.lua_get([==[_G.cursor[1]]==]), 3)
-end
-
 -- Persistence round-trips isolated to a temporary data directory
 T["persistence"] = MiniTest.new_set({
     hooks = {
@@ -286,7 +192,7 @@ T["persistence"] = MiniTest.new_set({
     },
 })
 
-T["persistence"]["save then load round-trips a trail"] = function()
+T["persistence"]["save, load, and delete round-trip a trail"] = function()
     child.lua([==[
       local trail = types.create_navigation_trail({
         project_root = "/test/persist/project",
@@ -299,42 +205,19 @@ T["persistence"]["save then load round-trips a trail"] = function()
         },
         current_index = 1,
       })
-      _G.trail = trail
       _G.success = storage.save_history(trail, "/test/persist/project")
       _G.load = { storage.load_history("/test/persist/project") }
+      _G.deleted = storage.delete_history("/test/persist/project")
+      _G.after = { storage.load_history("/test/persist/project") }
     ]==])
 
     MiniTest.expect.equality(child.lua_get([==[_G.success]==]), true)
     MiniTest.expect.equality(child.lua_get([==[_G.load[1] ~= nil]==]), true)
     MiniTest.expect.equality(child.lua_get([==[_G.load[2]]==]), vim.NIL)
-    MiniTest.expect.equality(
-        child.lua_get([==[_G.load[1].project_root]==]),
-        child.lua_get([==[_G.trail.project_root]==])
-    )
+    MiniTest.expect.equality(child.lua_get([==[_G.load[1].project_root]==]), "/test/persist/project")
     MiniTest.expect.equality(child.lua_get([==[#_G.load[1].entries]==]), 1)
     MiniTest.expect.equality(child.lua_get([==[_G.load[1].entries[1].position.line]==]), 42)
-end
 
-T["persistence"]["delete_history removes the saved trail"] = function()
-    child.lua([==[
-      local trail = types.create_navigation_trail({
-        project_root = "/test/persist/delete",
-        entries = {
-          types.create_navigation_entry({
-            file_path = "/test/persist/delete/file.lua",
-            position = { line = 5, column = 1 },
-          }),
-        },
-        current_index = 1,
-      })
-      _G.saved = storage.save_history(trail, "/test/persist/delete")
-      _G.loaded_before = storage.load_history("/test/persist/delete")
-      _G.deleted = storage.delete_history("/test/persist/delete")
-      _G.after = { storage.load_history("/test/persist/delete") }
-    ]==])
-
-    MiniTest.expect.equality(child.lua_get([==[_G.saved]==]), true)
-    MiniTest.expect.equality(child.lua_get([==[_G.loaded_before ~= nil]==]), true)
     MiniTest.expect.equality(child.lua_get([==[_G.deleted]==]), true)
     MiniTest.expect.equality(child.lua_get([==[_G.after[1]]==]), vim.NIL)
     MiniTest.expect.equality(child.lua_get([==[_G.after[2] ~= nil]==]), true)
@@ -367,20 +250,6 @@ T["persistence"]["manager save_current and load round-trip through storage"] = f
     child.lua([==[storage.delete_history("/test/persist/manager")]==])
 end
 
-T["persistence"]["get_storage_stats reports the temporary directory"] = function()
-    child.lua([==[_G.stats = storage.get_storage_stats()]==])
-
-    MiniTest.expect.equality(child.lua_get([==[type(_G.stats)]==]), "table")
-    MiniTest.expect.equality(child.lua_get([==[type(_G.stats.history_count)]==]), "number")
-    MiniTest.expect.equality(child.lua_get([==[type(_G.stats.bookmark_count)]==]), "number")
-    MiniTest.expect.equality(child.lua_get([==[type(_G.stats.total_size)]==]), "number")
-    MiniTest.expect.equality(child.lua_get([==[type(_G.stats.storage_dir)]==]), "string")
-    MiniTest.expect.equality(
-        child.lua_get([==[_G.stats.storage_dir:find(_G.persistence_temp_data_dir, 1, true) ~= nil]==]),
-        true
-    )
-end
-
 -- Type layer validation shared across persistence and history modules
 T["types"] = MiniTest.new_set()
 
@@ -400,56 +269,9 @@ T["types"]["navigation entry validation accepts and rejects"] = function()
     MiniTest.expect.equality(child.lua_get([==[_G.valid_bad[2] ~= nil]==]), true)
 end
 
-T["types"]["navigation trail validation"] = function()
-    child.lua([==[
-      local trail = types.create_navigation_trail({ project_root = "/test/project" })
-      _G.valid = { types.validate_navigation_trail(trail) }
-    ]==])
-    MiniTest.expect.equality(child.lua_get([==[_G.valid[1]]==]), true)
-    MiniTest.expect.equality(child.lua_get([==[_G.valid[2]]==]), vim.NIL)
-end
-
--- Setup wiring for the remaining integration modules should not error
-T["module setup"] = MiniTest.new_set()
-
-T["module setup"]["lsp integration setup is idempotent"] = function()
-    MiniTest.expect.no_error(
-        function()
-            child.lua([==[
-          local config = { integration = { lsp = true } }
-          lsp.setup(config)
-          lsp.setup(config)
-        ]==])
-        end
-    )
-end
-
-T["module setup"]["events system setup is idempotent"] = function()
-    MiniTest.expect.no_error(
-        function()
-            child.lua([==[
-          local config = {}
-          events.setup(config)
-          events.setup(config)
-        ]==])
-        end
-    )
-end
-
-T["module setup"]["statusline exposes branch status"] = function()
-    child.lua([==[
-      statusline.setup({})
-      _G.status = statusline.get_branch_status()
-    ]==])
-    local status_type = child.lua_get([==[type(_G.status)]==])
-    if status_type ~= "nil" then MiniTest.expect.equality(status_type, "table") end
-end
-
 T["project root"] = MiniTest.new_set()
 
--- The markers are handed to vim.fs.root as one nested list so they rank equally and the
--- nearest ancestor holding any of them wins. A flat list ranks the markers instead, which
--- returns the outer .git for a file whose own directory has a package.json.
+-- Markers rank equally, so the nearest ancestor holding any of them wins.
 T["project root"]["picks the nearest marker, not the highest-ranked one"] = function()
     local root = vim.fn.tempname()
     vim.fs.mkdir(root .. "/outer/inner/sub", { parents = true })

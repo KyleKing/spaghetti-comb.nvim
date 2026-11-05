@@ -2,6 +2,11 @@
 
 For planned work, see [ROADMAP.md](ROADMAP.md).
 
+## Commands
+
+- `mise run ci` runs every gate: lint (stylua check + selene), typecheck (emmylua_check), and test
+- `mise run itest` runs the integration suite (`tests/itest/`): clones pallets/flask @ a pinned SHA into `tests/itest/.fixture/`, indexes it with vera-ai and codanna, then asserts the `sc` CLI JSON contract and drives real nvim in a dedicated tmux socket (`tests/itest/pty.sh`). `SC_SKIP_PTY=1` or `mise run itest-cli` skips the tmux layer. Pane frames are saved to `tests/itest/artifacts/` (gitignored). The codanna relations scenarios additionally need a codanna.nvim checkout — the sibling `../codanna.nvim` is used automatically, or set `SC_CODANNA_NVIM`.
+
 ## Architecture
 
 **Plugin**: spaghetti-comb.nvim, code exploration via project-aware navigation history and breadcrumbs.

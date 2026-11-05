@@ -21,17 +21,8 @@ end
 
 -- Tests
 helpers["bookmarks"] = MiniTest.new_set({}, {
-    -- Setup and teardown
-    ["setup initializes bookmark manager"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        local state = bookmarks.get_state()
-        expect_truthy(state.initialized)
-    end,
-
     -- Task 5.1: Manual bookmark functionality
-    ["toggle_bookmark adds bookmark when not present"] = function()
+    ["toggle_bookmark adds then removes"] = function()
         bookmarks.reset()
         bookmarks.setup(config.default)
 
@@ -39,66 +30,33 @@ helpers["bookmarks"] = MiniTest.new_set({}, {
         bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
 
         local success, action = bookmarks.toggle_bookmark(location)
-
         expect_truthy(success)
         MiniTest.expect.equality(action, "added")
+        MiniTest.expect.equality(#bookmarks.get_all_bookmarks(), 1)
 
-        local all_bookmarks = bookmarks.get_all_bookmarks()
-        MiniTest.expect.equality(#all_bookmarks, 1)
-    end,
-
-    ["toggle_bookmark removes bookmark when present"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 10, 5)
-        bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
-
-        -- Add bookmark first
-        bookmarks.toggle_bookmark(location)
-
-        -- Toggle again to remove
-        local success, action = bookmarks.toggle_bookmark(location)
-
+        success, action = bookmarks.toggle_bookmark(location)
         expect_truthy(success)
         MiniTest.expect.equality(action, "removed")
-
-        local all_bookmarks = bookmarks.get_all_bookmarks()
-        MiniTest.expect.equality(#all_bookmarks, 0)
+        MiniTest.expect.equality(#bookmarks.get_all_bookmarks(), 0)
     end,
 
-    ["add_bookmark creates manual bookmark"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
+    ["add_bookmark creates manual or automatic bookmarks"] = function()
+        for _, is_manual in ipairs({ true, false }) do
+            bookmarks.reset()
+            bookmarks.setup(config.default)
 
-        local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 15, 8)
-        bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
+            local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 15, 8)
+            bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
 
-        local success, action = bookmarks.add_bookmark(location, true)
+            local success, action = bookmarks.add_bookmark(location, is_manual)
 
-        expect_truthy(success)
-        MiniTest.expect.equality(action, "added")
+            expect_truthy(success)
+            MiniTest.expect.equality(action, "added")
 
-        local all_bookmarks = bookmarks.get_all_bookmarks()
-        MiniTest.expect.equality(#all_bookmarks, 1)
-        expect_truthy(all_bookmarks[1].is_manual)
-    end,
-
-    ["add_bookmark creates automatic bookmark"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 20, 3)
-        bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
-
-        local success, action = bookmarks.add_bookmark(location, false)
-
-        expect_truthy(success)
-        MiniTest.expect.equality(action, "added")
-
-        local all_bookmarks = bookmarks.get_all_bookmarks()
-        MiniTest.expect.equality(#all_bookmarks, 1)
-        MiniTest.expect.equality(all_bookmarks[1].is_manual, false)
+            local all_bookmarks = bookmarks.get_all_bookmarks()
+            MiniTest.expect.equality(#all_bookmarks, 1)
+            MiniTest.expect.equality(all_bookmarks[1].is_manual == true, is_manual)
+        end
     end,
 
     ["add_bookmark updates existing bookmark"] = function()
@@ -122,200 +80,99 @@ helpers["bookmarks"] = MiniTest.new_set({}, {
         expect_truthy(all_bookmarks[1].is_manual)
     end,
 
-    ["remove_bookmark removes existing bookmark"] = function()
+    ["remove_bookmark removes existing and reports missing"] = function()
         bookmarks.reset()
         bookmarks.setup(config.default)
 
         local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 30, 12)
         bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
 
-        -- Add bookmark first
         bookmarks.add_bookmark(location, true)
 
-        -- Remove it
         local success, msg = bookmarks.remove_bookmark(location)
-
         expect_truthy(success)
         MiniTest.expect.equality(msg, "removed")
+        MiniTest.expect.equality(#bookmarks.get_all_bookmarks(), 0)
 
-        local all_bookmarks = bookmarks.get_all_bookmarks()
-        MiniTest.expect.equality(#all_bookmarks, 0)
-    end,
-
-    ["remove_bookmark fails when bookmark not found"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 35, 7)
-        bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
-
-        local success, msg = bookmarks.remove_bookmark(location)
-
+        success, msg = bookmarks.remove_bookmark(location)
         MiniTest.expect.equality(success, false)
         MiniTest.expect.equality(msg, "Bookmark not found")
     end,
 
-    ["clear_all_bookmarks clears project bookmarks"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
+    ["clear_all_bookmarks clears project-only or every bookmark"] = function()
+        for _, include_global in ipairs({ false, true }) do
+            bookmarks.reset()
+            bookmarks.setup(config.default)
 
-        bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
+            bookmarks.set_current_project("/tmp/project1")
+            bookmarks.add_bookmark(create_test_location("/tmp/project1/test.lua", 10, 5), true)
 
-        -- Add multiple bookmarks
-        bookmarks.add_bookmark(create_test_location("/tmp/spaghetti-comb.nvim/test1.lua", 10, 5), true)
-        bookmarks.add_bookmark(create_test_location("/tmp/spaghetti-comb.nvim/test2.lua", 20, 8), true)
+            bookmarks.set_current_project("/tmp/project2")
+            bookmarks.add_bookmark(create_test_location("/tmp/project2/test.lua", 20, 8), true)
 
-        local success, _msg = bookmarks.clear_all_bookmarks(false)
+            local success, _msg = bookmarks.clear_all_bookmarks(include_global)
+            expect_truthy(success)
 
-        expect_truthy(success)
-
-        local all_bookmarks = bookmarks.get_all_bookmarks()
-        MiniTest.expect.equality(#all_bookmarks, 0)
+            local remaining = #bookmarks.get_all_bookmarks("/tmp/project1")
+                + #bookmarks.get_all_bookmarks("/tmp/project2")
+            MiniTest.expect.equality(remaining, include_global and 0 or 1)
+        end
     end,
 
-    ["clear_all_bookmarks clears global bookmarks"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        -- Add bookmarks to multiple projects
-        bookmarks.set_current_project("/tmp/project1")
-        bookmarks.add_bookmark(create_test_location("/tmp/project1/test.lua", 10, 5), true)
-
-        bookmarks.set_current_project("/tmp/project2")
-        bookmarks.add_bookmark(create_test_location("/tmp/project2/test.lua", 20, 8), true)
-
-        local success, _msg = bookmarks.clear_all_bookmarks(true)
-
-        expect_truthy(success)
-
-        local all_bookmarks = bookmarks.get_all_bookmarks()
-        MiniTest.expect.equality(#all_bookmarks, 0)
-    end,
-
-    ["get_all_bookmarks returns current project bookmarks"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
-
-        bookmarks.add_bookmark(create_test_location("/tmp/spaghetti-comb.nvim/test1.lua", 10, 5), true)
-        bookmarks.add_bookmark(create_test_location("/tmp/spaghetti-comb.nvim/test2.lua", 20, 8), true)
-
-        local all_bookmarks = bookmarks.get_all_bookmarks()
-
-        MiniTest.expect.equality(#all_bookmarks, 2)
-    end,
-
-    ["get_all_bookmarks returns specific project bookmarks"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        bookmarks.set_current_project("/tmp/project1")
-        bookmarks.add_bookmark(create_test_location("/tmp/project1/test.lua", 10, 5), true)
-
-        bookmarks.set_current_project("/tmp/project2")
-        bookmarks.add_bookmark(create_test_location("/tmp/project2/test.lua", 20, 8), true)
-
-        local project1_bookmarks = bookmarks.get_all_bookmarks("/tmp/project1")
-
-        MiniTest.expect.equality(#project1_bookmarks, 1)
-        MiniTest.expect.equality(project1_bookmarks[1].file_path, "/tmp/project1/test.lua")
-    end,
-
-    ["is_bookmarked returns true for bookmarked location"] = function()
+    ["is_bookmarked reflects bookmark presence"] = function()
         bookmarks.reset()
         bookmarks.setup(config.default)
 
         local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 10, 5)
         bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
+
+        MiniTest.expect.equality(bookmarks.is_bookmarked(location), false)
 
         bookmarks.add_bookmark(location, true)
 
         local is_marked, bookmark = bookmarks.is_bookmarked(location)
-
         expect_truthy(is_marked)
         expect_truthy(bookmark)
     end,
 
-    ["is_bookmarked returns false for non-bookmarked location"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 10, 5)
-        bookmarks.set_current_project("/tmp/spaghetti-comb.nvim")
-
-        local is_marked, _ = bookmarks.is_bookmarked(location)
-
-        MiniTest.expect.equality(is_marked, false)
-    end,
-
     -- Task 5.2: Frequent location tracking
-    ["increment_visit_count increments count"] = function()
+    ["increment_visit_count drives get_visit_count"] = function()
         bookmarks.reset()
         bookmarks.setup(config.default)
 
         local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 10, 5)
+
+        MiniTest.expect.equality(bookmarks.get_visit_count(location), 0)
 
         local success, count = bookmarks.increment_visit_count(location)
-
         expect_truthy(success)
         MiniTest.expect.equality(count, 1)
 
-        -- Increment again
-        success, count = bookmarks.increment_visit_count(location)
-        MiniTest.expect.equality(count, 2)
+        bookmarks.increment_visit_count(location)
+        bookmarks.increment_visit_count(location)
+
+        MiniTest.expect.equality(bookmarks.get_visit_count(location), 3)
     end,
 
-    ["get_visit_count returns correct count"] = function()
+    ["is_frequent tracks the visit threshold"] = function()
         bookmarks.reset()
         bookmarks.setup(config.default)
 
         local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 10, 5)
 
-        -- Initial count should be 0
-        local count = bookmarks.get_visit_count(location)
-        MiniTest.expect.equality(count, 0)
-
-        -- Increment and check
-        bookmarks.increment_visit_count(location)
-        bookmarks.increment_visit_count(location)
-        bookmarks.increment_visit_count(location)
-
-        count = bookmarks.get_visit_count(location)
-        MiniTest.expect.equality(count, 3)
-    end,
-
-    ["is_frequent returns true when threshold met"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 10, 5)
-
-        -- Increment to threshold (default is 3)
-        bookmarks.increment_visit_count(location)
+        -- Below the threshold (default 3)
         bookmarks.increment_visit_count(location)
         bookmarks.increment_visit_count(location)
 
         local is_freq, count = bookmarks.is_frequent(location)
-
-        expect_truthy(is_freq)
-        MiniTest.expect.equality(count, 3)
-    end,
-
-    ["is_frequent returns false when threshold not met"] = function()
-        bookmarks.reset()
-        bookmarks.setup(config.default)
-
-        local location = create_test_location("/tmp/spaghetti-comb.nvim/test.lua", 10, 5)
-
-        -- Increment below threshold
-        bookmarks.increment_visit_count(location)
-        bookmarks.increment_visit_count(location)
-
-        local is_freq, count = bookmarks.is_frequent(location)
-
         MiniTest.expect.equality(is_freq, false)
         MiniTest.expect.equality(count, 2)
+
+        bookmarks.increment_visit_count(location)
+
+        is_freq, count = bookmarks.is_frequent(location)
+        expect_truthy(is_freq)
+        MiniTest.expect.equality(count, 3)
     end,
 
     ["update_frequent_locations promotes frequent locations"] = function()

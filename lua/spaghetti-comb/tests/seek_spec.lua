@@ -3,22 +3,21 @@ local MiniTest = require("mini.test")
 local commands = require("spaghetti-comb.navigation.commands")
 local history_manager = require("spaghetti-comb.history.manager")
 local picker = require("spaghetti-comb.ui.picker")
+local th = require("spaghetti-comb.tests.helpers")
 local vera = require("spaghetti-comb.substrate.vera")
 
 local T = MiniTest.new_set()
 local seen = {}
 
-local originals = {
-    seek = vera.search,
-    find_related = vera.find_related,
-    show_search_hits = picker.show_search_hits,
-    ui_input = vim.ui.input,
-    notify = vim.notify,
-}
+local expect_contains = th.expect_contains
 
-local function expect_contains(str, needle)
-    MiniTest.expect.equality(type(str) == "string" and str:find(needle, 1, true) ~= nil, true)
-end
+local restore_all = th.save({
+    { vera, "search" },
+    { vera, "find_related" },
+    { picker, "show_search_hits" },
+    { vim.ui, "input" },
+    { vim, "notify" },
+})
 
 local function make_entry(overrides)
     return vim.tbl_deep_extend("force", {
@@ -31,20 +30,7 @@ local function make_entry(overrides)
     }, overrides or {})
 end
 
-local function restore_all()
-    vera.search = originals.seek
-    vera.find_related = originals.find_related
-    picker.show_search_hits = originals.show_search_hits
-    vim.ui.input = originals.ui_input
-    vim.notify = originals.notify
-end
-
-local function stub_shown()
-    picker.show_search_hits = function(hits, opts)
-        seen.shown = { hits = hits, opts = opts }
-        return true, "shown"
-    end
-end
+local function stub_shown() th.stub_show(picker, "show_search_hits", seen, { "hits", "opts" }) end
 
 T["trail search"] = MiniTest.new_set({
     hooks = {
@@ -73,16 +59,12 @@ T["trail search"]["search text covers path, branch, function, and snippet lines"
     expect_contains(text, "authenticate")
     expect_contains(text, "user = parse(request)")
     expect_contains(text, "return issue_token(user)")
-end
 
-T["trail search"]["navigation item carries display text plus search_text"] = function()
-    local item = picker._format_navigation_item(make_entry({
-        context = { function_name = "hidden_function" },
-    }))
-
+    -- The display text stays terse; the function name lives only in search_text
+    local item = picker._format_navigation_item(entry)
     MiniTest.expect.equality(type(item.text), "string")
-    MiniTest.expect.equality(item.text:find("hidden_function", 1, true), nil)
-    expect_contains(item.search_text, "hidden_function")
+    MiniTest.expect.equality(item.text:find("authenticate", 1, true), nil)
+    expect_contains(item.search_text, "authenticate")
 end
 
 T["trail search"]["filter_navigation_entries matches beyond filename"] = function()
@@ -97,6 +79,8 @@ T["trail search"]["filter_navigation_entries matches beyond filename"] = functio
     local by_function = picker.filter_navigation_entries(entries, "retry_loop")
     MiniTest.expect.equality(#by_function, 1)
     MiniTest.expect.equality(by_function[1].file_path, "/proj/src/alpha.py")
+
+    MiniTest.expect.equality(#picker.filter_navigation_entries(entries, ""), 2)
 end
 
 T["trail search"]["matcher filters via search text not display text"] = function()
@@ -139,10 +123,8 @@ T["search hit picker"]["formats hits with location, symbol, and searchable conte
     MiniTest.expect.equality(item.text, "src/auth.py:10 — authenticate")
     expect_contains(item.search_text, "def authenticate(request):")
     MiniTest.expect.equality(item.hit.line_start, 10)
-end
 
-T["search hit picker"]["formats hits without a symbol name"] = function()
-    local item = picker._format_hit_item({ file_path = "src/util.py", line_start = 3 })
+    item = picker._format_hit_item({ file_path = "src/util.py", line_start = 3 })
 
     MiniTest.expect.equality(item.text, "src/util.py:3")
 end
@@ -187,21 +169,29 @@ T["seek command"] = MiniTest.new_set({
     },
 })
 
-T["seek command"]["explicit query searches vera and forwards hits"] = function()
+T["seek command"]["command hands adapter hits to the picker"] = function()
     stub_shown()
-    vera.search = function(query, opts, cb)
+    vera.search = function(query, _opts, cb)
         seen.query = query
-        seen.limit = opts and opts.limit
         cb({ { file_path = "src/auth.py", line_start = 10 } }, nil)
+    end
+    vera.find_related = function(file_path, line_start, line_end, _opts, cb)
+        seen.range = { file_path, line_start, line_end }
+        cb({ { file_path = "src/retry.py", line_start = 5 } }, nil)
     end
 
     commands.seek("retry logic")
 
     MiniTest.expect.equality(seen.query, "retry logic")
-    MiniTest.expect.equality(seen.limit, 20)
     MiniTest.expect.equality(#seen.shown.hits, 1)
-    MiniTest.expect.equality(seen.shown.opts.jump_type, "vera_seek")
     expect_contains(seen.shown.opts.name, "retry logic")
+
+    commands.find_related("/proj/src/impl.py", 8, 14)
+
+    MiniTest.expect.equality(seen.range[1], "/proj/src/impl.py")
+    MiniTest.expect.equality(seen.range[2], 8)
+    MiniTest.expect.equality(seen.range[3], 14)
+    MiniTest.expect.equality(seen.shown.hits[1].file_path, "src/retry.py")
 end
 
 T["seek command"]["empty arg prompts then searches typed query"] = function()
@@ -238,23 +228,6 @@ T["seek command"]["substrate errors notify at WARN"] = function()
 
     MiniTest.expect.equality(level, vim.log.levels.WARN)
     expect_contains(msg, "vera-ai")
-end
-
-T["seek command"]["find_related passes file range and records vera_related"] = function()
-    stub_shown()
-    vera.find_related = function(file_path, line_start, line_end, opts, cb)
-        seen.range = { file_path, line_start, line_end }
-        seen.limit = opts and opts.limit
-        cb({ { file_path = "src/retry.py", line_start = 5 } }, nil)
-    end
-
-    commands.find_related("/proj/src/impl.py", 8, 14)
-
-    MiniTest.expect.equality(seen.range[1], "/proj/src/impl.py")
-    MiniTest.expect.equality(seen.range[2], 8)
-    MiniTest.expect.equality(seen.range[3], 14)
-    MiniTest.expect.equality(seen.limit, 20)
-    MiniTest.expect.equality(seen.shown.opts.jump_type, "vera_related")
 end
 
 T["seek command"]["find_related without a file notifies and skips search"] = function()

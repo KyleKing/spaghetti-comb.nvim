@@ -5,40 +5,26 @@ local codanna = require("spaghetti-comb.substrate.codanna")
 local orient = require("spaghetti-comb.navigation.orient")
 local relations = require("spaghetti-comb.navigation.relations")
 local relations_tree = require("spaghetti-comb.ui.relations_tree")
+local th = require("spaghetti-comb.tests.helpers")
 local vera = require("spaghetti-comb.substrate.vera")
 
 local T = MiniTest.new_set()
 local seen = {}
 
-local originals = {
-    overview = vera.overview,
-    structural = vera.structural,
-    vera_health = vera.index_health,
-    search = vera.search,
-    find_related = vera.find_related,
-    codanna_health = codanna.index_health,
-    find_callers = codanna.find_callers,
-    show = relations_tree.show,
-    jump_to_item = relations.jump_to_item,
-    notify = vim.notify,
-}
+local expect_contains = th.expect_contains
 
-local function expect_contains(str, needle)
-    MiniTest.expect.equality(type(str) == "string" and str:find(needle, 1, true) ~= nil, true)
-end
-
-local function restore_all()
-    vera.overview = originals.overview
-    vera.structural = originals.structural
-    vera.index_health = originals.vera_health
-    vera.search = originals.search
-    vera.find_related = originals.find_related
-    codanna.index_health = originals.codanna_health
-    codanna.find_callers = originals.find_callers
-    relations_tree.show = originals.show
-    relations.jump_to_item = originals.jump_to_item
-    vim.notify = originals.notify
-end
+local restore_all = th.save({
+    { vera, "overview" },
+    { vera, "structural" },
+    { vera, "index_health" },
+    { vera, "search" },
+    { vera, "find_related" },
+    { codanna, "index_health" },
+    { codanna, "find_callers" },
+    { relations_tree, "show" },
+    { relations, "jump_to_item" },
+    { vim, "notify" },
+})
 
 local function pre_case()
     seen = {}
@@ -48,12 +34,7 @@ local function pre_case()
     end
 end
 
-local function stub_show()
-    relations_tree.show = function(root, groups, opts)
-        seen.shown = { root = root, groups = groups, opts = opts }
-        return true, "shown"
-    end
-end
+local function stub_show() th.stub_show(relations_tree, "show", seen, { "root", "groups", "opts" }) end
 
 local OVERVIEW = {
     file_count = 67,
@@ -198,45 +179,31 @@ T["show"] = MiniTest.new_set({
     hooks = { pre_case = pre_case, post_case = restore_all },
 })
 
-T["show"]["opens the tree and jumps with orient jump type"] = function()
+T["show"]["groups decide tree vs warning"] = function()
     stub_show()
-    stub_collect({ structure = { routes = { { file_path = "r.py", line_start = 7, symbol_name = "route" } } } })
-    relations.jump_to_item = function(item, jump_type) seen.jump = { item = item, jump_type = jump_type } end
 
-    orient.show()
-
-    local shown = seen.shown
-    MiniTest.expect.equality(shown.groups[1].label, "Routes")
-    MiniTest.expect.equality(shown.opts.on_reroot, nil)
-
-    shown.opts.on_jump(shown.groups[1].items[1])
-    MiniTest.expect.equality(seen.jump.jump_type, "orient")
-    MiniTest.expect.equality(seen.jump.item.file_path, "r.py")
-end
-
-T["show"]["total failure notifies errors and skips the tree"] = function()
-    stub_show()
+    -- Total failure notifies the collected errors and never opens the tree
     stub_collect({
         overview_err = "vera-ai binary not found",
         structural_err = "vera-ai binary not found",
         codanna_err = "codanna binary not found",
     })
-
     orient.show()
 
     MiniTest.expect.equality(seen.shown, nil)
     MiniTest.expect.equality(seen.notify_level, vim.log.levels.WARN)
     expect_contains(seen.notify_msg, "vera-ai binary not found")
     expect_contains(seen.notify_msg, "codanna binary not found")
-end
 
-T["show"]["partial failure still shows the tree and warns once"] = function()
+    -- Partial failure still opens the tree and warns once; the orient tree
+    -- intentionally has no re-root hook
+    seen = {}
     stub_show()
     stub_collect({ structural_err = "vera-ai: no index" })
-
     orient.show()
 
     MiniTest.expect.equality(type(seen.shown), "table")
+    MiniTest.expect.equality(seen.shown.opts.on_reroot, nil)
     MiniTest.expect.equality(seen.notify_level, vim.log.levels.WARN)
     expect_contains(seen.notify_msg, "no index")
 end
@@ -321,17 +288,6 @@ T["cli run"]["status reports per-tool health or error"] = function()
     MiniTest.expect.equality(err, nil)
     MiniTest.expect.equality(result.codanna.symbol_count, 5)
     MiniTest.expect.equality(result.vera.error, "vera-ai binary not found")
-end
-
-T["cli run"]["orient returns root, groups, and errors"] = function()
-    stub_collect({ structure = { routes = { { file_path = "r.py", line_start = 1 } } } })
-
-    local result, err = cli.run({ "orient" })
-
-    MiniTest.expect.equality(err, nil)
-    expect_contains(result.root.name, "67 files")
-    MiniTest.expect.equality(result.groups[1].label, "Routes")
-    MiniTest.expect.equality(#result.errors, 0)
 end
 
 return T

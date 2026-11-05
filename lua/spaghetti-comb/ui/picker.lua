@@ -502,7 +502,9 @@ function M.show_search_hits(hits, opts)
                 preview = function(buf_id, item)
                     if item and item.hit then M._show_hit_preview(buf_id, item.hit) end
                 end,
-                choose = function(item) M._in_target_window(function() M.jump_to_hit(item.hit, jump_type) end) end,
+                choose = function(item)
+                    M._in_target_window(function() M.jump_to_hit(item.hit, jump_type) end)
+                end,
             },
         })
     else

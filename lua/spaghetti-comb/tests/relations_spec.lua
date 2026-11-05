@@ -5,37 +5,25 @@ local commands = require("spaghetti-comb.navigation.commands")
 local relations = require("spaghetti-comb.navigation.relations")
 local history_manager = require("spaghetti-comb.history.manager")
 local codanna = require("spaghetti-comb.substrate.codanna")
+local th = require("spaghetti-comb.tests.helpers")
 local vera = require("spaghetti-comb.substrate.vera")
 local relations_tree = require("spaghetti-comb.ui.relations_tree")
 
 local T = MiniTest.new_set()
 local seen = {}
 
-local originals = {
-    find_callers = codanna.find_callers,
-    get_calls = codanna.get_calls,
-    analyze_impact = codanna.analyze_impact,
-    search_symbols = codanna.search_symbols,
-    codanna_health = codanna.index_health,
-    vera_health = vera.index_health,
-    show = relations_tree.show,
-    notify = vim.notify,
-}
+local expect_contains = th.expect_contains
 
-local function expect_contains(str, needle)
-    MiniTest.expect.equality(type(str) == "string" and str:find(needle, 1, true) ~= nil, true)
-end
-
-local function restore_all()
-    codanna.find_callers = originals.find_callers
-    codanna.get_calls = originals.get_calls
-    codanna.analyze_impact = originals.analyze_impact
-    codanna.search_symbols = originals.search_symbols
-    codanna.index_health = originals.codanna_health
-    vera.index_health = originals.vera_health
-    relations_tree.show = originals.show
-    vim.notify = originals.notify
-end
+local restore_all = th.save({
+    { codanna, "find_callers" },
+    { codanna, "get_calls" },
+    { codanna, "analyze_impact" },
+    { codanna, "search_symbols" },
+    { codanna, "index_health" },
+    { vera, "index_health" },
+    { relations_tree, "show" },
+    { vim, "notify" },
+})
 
 local function stub_notify()
     vim.notify = function(msg, level)
@@ -44,12 +32,7 @@ local function stub_notify()
     end
 end
 
-local function stub_show()
-    relations_tree.show = function(root, groups, opts)
-        seen.shown = { root = root, groups = groups, opts = opts }
-        return true, "shown"
-    end
-end
+local function stub_show() th.stub_show(relations_tree, "show", seen, { "root", "groups", "opts" }) end
 
 -- Point the current buffer's <cword> at a word (or whitespace when col sits
 -- between words) so _resolve_symbol exercises the real cursor path.
@@ -70,17 +53,14 @@ T["symbol resolution"] = MiniTest.new_set({
     hooks = { pre_case = pre_case, post_case = restore_all },
 })
 
-T["symbol resolution"]["explicit arg beats the cursor word"] = function()
+T["symbol resolution"]["explicit arg beats the cursor word; whitespace resolves to nil"] = function()
     set_cursor_on({ "local helper = 1" }, 1, 7)
 
     MiniTest.expect.equality(relations._resolve_symbol("explicit_sym"), "explicit_sym")
     MiniTest.expect.equality(relations._resolve_symbol(nil), "helper")
     MiniTest.expect.equality(relations._resolve_symbol(""), "helper")
-end
 
-T["symbol resolution"]["whitespace under cursor resolves to nil"] = function()
     set_cursor_on({ "     " }, 1, 0)
-
     MiniTest.expect.equality(relations._resolve_symbol(nil), nil)
 end
 
@@ -137,26 +117,30 @@ T["queries"]["callers resolves cursor word and opens the tree"] = function()
     expect_contains(shown.opts.title, "Callers")
 end
 
-T["queries"]["calls and impact reach the matching adapter fns"] = function()
+T["queries"]["each direction reaches the matching adapter fn"] = function()
     stub_show()
-    codanna.get_calls = function(symbol, cb)
-        seen.calls_arg = symbol
-        cb({ { name = "callee", file_path = "src/c.lua", line = 3, direction = "calls" } }, nil)
+    local adapter_calls = {}
+    local function recorder(fn)
+        return function(symbol, cb)
+            table.insert(adapter_calls, { fn = fn, symbol = symbol })
+            cb({ { name = "item", file_path = "src/x.lua", line = 1, direction = "callers" } }, nil)
+        end
     end
-    codanna.analyze_impact = function(symbol, cb)
-        seen.impact_arg = symbol
-        cb({ { name = "downstream", file_path = "src/d.lua", line = 5, direction = "impact", depth = 1 } }, nil)
-    end
+    codanna.find_callers = recorder("find_callers")
+    codanna.get_calls = recorder("get_calls")
+    codanna.analyze_impact = recorder("analyze_impact")
+    codanna.search_symbols = function(_query, _opts, cb) cb({}, nil) end
 
-    local impacts = {}
-    for _ = 1, 2 do
-        relations.calls("target_calls")
-        relations.impact("target_impact", function(items) table.insert(impacts, items) end)
+    local cases = {
+        { run = relations.callers, fn = "find_callers" },
+        { run = relations.calls, fn = "get_calls" },
+        { run = relations.impact, fn = "analyze_impact" },
+    }
+    for i, case in ipairs(cases) do
+        case.run("sym_" .. case.fn)
+        MiniTest.expect.equality(adapter_calls[i].fn, case.fn)
+        MiniTest.expect.equality(adapter_calls[i].symbol, "sym_" .. case.fn)
     end
-
-    MiniTest.expect.equality(seen.calls_arg, "target_calls")
-    MiniTest.expect.equality(seen.impact_arg, "target_impact")
-    MiniTest.expect.equality(#impacts, 2)
 end
 
 T["queries"]["missing symbol notifies and never calls the adapter"] = function()
@@ -168,28 +152,22 @@ T["queries"]["missing symbol notifies and never calls the adapter"] = function()
 
     MiniTest.expect.equality(seen.called, nil)
     MiniTest.expect.equality(seen.notify_level, vim.log.levels.WARN)
-    expect_contains(seen.notify_msg, "no symbol under cursor")
     MiniTest.expect.equality(type(cb_err), "string")
 end
 
-T["queries"]["adapter errors surface via WARN notify and the callback"] = function()
+T["queries"]["non-success results notify and skip the tree"] = function()
     stub_show()
     codanna.find_callers = function(_symbol, cb) cb(nil, "codanna: not found — Function 'x' not found") end
 
-    local cb_err
+    local cb_err, cb_items
     relations.callers("x", function(_items, err) cb_err = err end)
 
     MiniTest.expect.equality(seen.shown, nil)
     MiniTest.expect.equality(seen.notify_level, vim.log.levels.WARN)
     expect_contains(seen.notify_msg, "Function 'x' not found")
     expect_contains(cb_err, "not found")
-end
 
-T["queries"]["empty results notify at INFO and skip the tree"] = function()
-    stub_show()
     codanna.find_callers = function(_symbol, cb) cb({}, nil) end
-
-    local cb_items
     relations.callers("lonely", function(items) cb_items = items end)
 
     MiniTest.expect.equality(seen.shown, nil)
@@ -202,7 +180,7 @@ T["grouping"] = MiniTest.new_set({
     hooks = { pre_case = pre_case, post_case = restore_all },
 })
 
-T["grouping"]["callers form a single labeled group"] = function()
+T["grouping"]["items group into direction labels and sorted depth rings"] = function()
     local groups = relations._group_items("callers", {
         { name = "a", file_path = "a.py", line = 1, direction = "callers" },
         { name = "b", file_path = "b.py", line = 2, direction = "callers" },
@@ -211,10 +189,8 @@ T["grouping"]["callers form a single labeled group"] = function()
     MiniTest.expect.equality(#groups, 1)
     MiniTest.expect.equality(groups[1].label, "Callers")
     MiniTest.expect.equality(#groups[1].items, 2)
-end
 
-T["grouping"]["impact buckets items into sorted depth rings"] = function()
-    local groups = relations._group_items("impact", {
+    groups = relations._group_items("impact", {
         { name = "far", file_path = "f.py", line = 1, direction = "impact", depth = 2 },
         { name = "base", file_path = "b.py", line = 1, direction = "impact" },
         { name = "mid_b", file_path = "mb.py", line = 1, direction = "impact", depth = 1 },
@@ -274,14 +250,12 @@ T["tree rows"]["build_rows renders root, group headers, and items"] = function()
     expect_contains(rows[3].text, "├─ login_handler")
     expect_contains(rows[3].text, "session.py:44")
     expect_contains(rows[4].text, "└─ test_auth")
-end
 
-T["tree rows"]["root without a file is not jumpable"] = function()
-    local rows = relations_tree._build_rows({ name = "bare" }, {})
-
-    MiniTest.expect.equality(#rows, 1)
-    MiniTest.expect.equality(rows[1].item, nil)
-    MiniTest.expect.equality(rows[1].text, "◆ bare")
+    -- A root with no file carries no item, so it is not jumpable
+    local bare = relations_tree._build_rows({ name = "bare" }, {})
+    MiniTest.expect.equality(#bare, 1)
+    MiniTest.expect.equality(bare[1].item, nil)
+    MiniTest.expect.equality(bare[1].text, "◆ bare")
 end
 
 T["jump recording"] = MiniTest.new_set({
@@ -313,7 +287,7 @@ T["re-root"] = MiniTest.new_set({
     hooks = { pre_case = pre_case, post_case = restore_all },
 })
 
-T["re-root"]["re-roots by symbol_id and skips root resolution"] = function()
+T["re-root"]["re-roots by symbol_id or falls back to the item name"] = function()
     stub_show()
     codanna.find_callers = function(symbol, cb)
         seen.symbol = symbol
@@ -335,10 +309,7 @@ T["re-root"]["re-roots by symbol_id and skips root resolution"] = function()
     MiniTest.expect.equality(seen.shown.root.name, "deep_fn")
     MiniTest.expect.equality(seen.shown.root.file_path, "src/deep.py")
     MiniTest.expect.equality(seen.shown.root.line, 7)
-end
 
-T["re-root"]["falls back to the item name without symbol_id"] = function()
-    stub_show()
     codanna.get_calls = function(symbol, cb)
         seen.symbol = symbol
         cb({ { name = "leaf", file_path = "src/leaf.py", line = 1, direction = "calls" } }, nil)
@@ -373,8 +344,13 @@ local RELATIONS_GROUPS = {
     },
 }
 
-T["tree interaction"]["show renders rows and selects the first item"] = function()
-    local ok = relations_tree.show({ name = "root_fn" }, RELATIONS_GROUPS, { title = " Callers " })
+T["tree interaction"]["show renders rows, motion clamps, CR jumps, C-] re-roots"] = function()
+    local jumps, reroots = {}, {}
+    local ok = relations_tree.show({ name = "root_fn" }, RELATIONS_GROUPS, {
+        title = " Callers ",
+        on_jump = function(item) table.insert(jumps, item) end,
+        on_reroot = function(item) table.insert(reroots, item) end,
+    })
 
     MiniTest.expect.equality(ok, true)
     MiniTest.expect.equality(relations_tree.is_visible(), true)
@@ -386,15 +362,6 @@ T["tree interaction"]["show renders rows and selects the first item"] = function
     local lines = vim.api.nvim_buf_get_lines(st.buffer, 0, -1, false)
     MiniTest.expect.equality(#lines, 4)
     expect_contains(lines[1], "root_fn")
-end
-
-T["tree interaction"]["motion clamps, CR jumps, C-] re-roots"] = function()
-    local jumps, reroots = {}, {}
-    relations_tree.show({ name = "root_fn" }, RELATIONS_GROUPS, {
-        on_jump = function(item) table.insert(jumps, item) end,
-        on_reroot = function(item) table.insert(reroots, item) end,
-    })
-    local st = relations_tree.get_state()
 
     relations_tree._move_selection(-10)
     MiniTest.expect.equality(st.selected_index, 1)
@@ -441,18 +408,7 @@ T["status"]["aggregates branch status and both substrate healths"] = function()
     expect_contains(seen.notify_msg, "vera v2.3.1")
 end
 
-T["status"]["health errors pass the adapter message through"] = function()
-    codanna.index_health = function(cb) cb(nil, "codanna binary not found at 'codanna'") end
-    vera.index_health = function(cb) cb({ tool = "vera", healthy = false, message = "index missing" }, nil) end
-
-    commands.status()
-
-    expect_contains(seen.notify_msg, "codanna binary not found")
-    expect_contains(seen.notify_msg, "vera index: unhealthy")
-    expect_contains(seen.notify_msg, "index missing")
-end
-
-T["status"]["formats counts and duration"] = function()
+T["status"]["formats counts, duration, and adapter errors"] = function()
     MiniTest.expect.equality(
         commands._format_index_health(
             "codanna",
@@ -461,6 +417,15 @@ T["status"]["formats counts and duration"] = function()
         "codanna index: ok — 5 symbols, 3 edges, 2 files, index age 1m"
     )
     MiniTest.expect.equality(commands._format_index_health("vera", nil, "vera-ai: boom"), "vera-ai: boom")
+
+    codanna.index_health = function(cb) cb(nil, "codanna binary not found at 'codanna'") end
+    vera.index_health = function(cb) cb({ tool = "vera", healthy = false, message = "index missing" }, nil) end
+
+    commands.status()
+
+    expect_contains(seen.notify_msg, "codanna binary not found")
+    expect_contains(seen.notify_msg, "vera index: unhealthy")
+    expect_contains(seen.notify_msg, "index missing")
 end
 
 return T

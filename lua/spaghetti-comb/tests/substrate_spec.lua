@@ -1,12 +1,11 @@
 -- Substrate adapter tests (Vera + codanna): parsing, mapping, and error paths
 local MiniTest = require("mini.test")
 local helpers = MiniTest.new_set()
+local th = require("spaghetti-comb.tests.helpers")
 local vera = require("spaghetti-comb.substrate.vera")
 local codanna = require("spaghetti-comb.substrate.codanna")
 
-local function expect_contains(str, needle)
-    MiniTest.expect.equality(type(str) == "string" and str:find(needle, 1, true) ~= nil, true)
-end
+local expect_contains = th.expect_contains
 
 -- Install an exec stub on the module. `responder` is either a result table
 -- or a function(argv) -> result table; calls are recorded in `calls`.
@@ -109,14 +108,26 @@ helpers["substrate"] = MiniTest.new_set({}, {
 
         vera.search("auth logic", { limit = 5 }, function() end)
 
-        MiniTest.expect.equality(calls[1][1], "vera-ai")
-        MiniTest.expect.equality(calls[1][2], "search")
-        MiniTest.expect.equality(calls[1][4], "5")
-        MiniTest.expect.equality(calls[1][#calls[1] - 1], "--")
-        MiniTest.expect.equality(calls[1][#calls[1]], "auth logic")
+        local argv = calls[1]
+        MiniTest.expect.equality(argv[1], "vera-ai")
+        MiniTest.expect.equality(argv[2], "search")
+
+        -- Assertions are relative to the `--` separator so added flags don't shift them
+        local sep
+        for i, arg in ipairs(argv) do
+            if arg == "--" then sep = i end
+        end
+        MiniTest.expect.equality(argv[sep + 1], "auth logic")
+        MiniTest.expect.equality(argv[sep], "--")
+
+        local limit_idx
+        for i, arg in ipairs(argv) do
+            if arg == "--limit" then limit_idx = i end
+        end
+        MiniTest.expect.equality(argv[limit_idx + 1], "5")
     end,
 
-    ["vera search returns error on non-zero exit"] = function()
+    ["vera search surfaces non-zero exit and invalid JSON"] = function()
         use_fake_vera()
         stub_exec(vera, { code = 1, stdout = "", stderr = "no index found" })
 
@@ -128,13 +139,9 @@ helpers["substrate"] = MiniTest.new_set({}, {
 
         MiniTest.expect.equality(hits, nil)
         expect_contains(err, "no index found")
-    end,
 
-    ["vera search returns error on invalid JSON"] = function()
-        use_fake_vera()
         stub_exec(vera, { code = 0, stdout = "definitely not json", stderr = "" })
 
-        local hits, err
         vera.search("x", {}, function(h, e)
             hits = h
             err = e
@@ -144,7 +151,7 @@ helpers["substrate"] = MiniTest.new_set({}, {
         expect_contains(err, "JSON")
     end,
 
-    ["vera missing binary errors loudly"] = function()
+    ["missing adapter binaries error loudly"] = function()
         vera.reset()
         vera._is_executable = function() return 0 end
 
@@ -156,9 +163,16 @@ helpers["substrate"] = MiniTest.new_set({}, {
 
         MiniTest.expect.equality(hits, nil)
         expect_contains(err, "vera-ai binary not found")
+
+        use_fake_codanna()
+        codanna._is_executable = function() return 0 end
+
+        codanna.find_callers("x", function(_i, e) err = e end)
+
+        expect_contains(err, "codanna binary not found")
     end,
 
-    ["vera find_related reads range and queries with snippet"] = function()
+    ["vera find_related queries with the range snippet"] = function()
         use_fake_vera()
         local file_path = vim.fn.tempname()
         vim.fn.writefile({ "alpha", "beta line", "gamma", "delta" }, file_path)
@@ -175,12 +189,7 @@ helpers["substrate"] = MiniTest.new_set({}, {
         MiniTest.expect.equality(#hits, 2)
         MiniTest.expect.equality(calls[1][#calls[1]], "beta line\ngamma")
         os.remove(file_path)
-    end,
 
-    ["vera find_related errors on unreadable file"] = function()
-        use_fake_vera()
-
-        local hits, err
         vera.find_related("/nonexistent/path/file.lua", 1, 5, {}, function(h, e)
             hits = h
             err = e
@@ -211,7 +220,7 @@ helpers["substrate"] = MiniTest.new_set({}, {
         expect_contains(err4, "takes no query")
     end,
 
-    ["vera structural env runs with or without a query"] = function()
+    ["vera structural builds argv and maps hits"] = function()
         use_fake_vera()
         local calls = {}
         stub_exec(vera, { code = 0, stdout = "[]", stderr = "" }, calls)
@@ -225,23 +234,18 @@ helpers["substrate"] = MiniTest.new_set({}, {
         vera.structural("env", "DATABASE_URL", function() end)
         MiniTest.expect.equality(calls[2][3], "env")
         MiniTest.expect.equality(calls[2][4], "DATABASE_URL")
-    end,
 
-    ["vera structural maps results to SearchHit list"] = function()
-        use_fake_vera()
-        local calls = {}
         stub_exec(vera, { code = 0, stdout = json(VERA_HITS), stderr = "" }, calls)
 
-        local hits
         vera.structural("impls", "Loader", function(h) hits = h end)
 
-        MiniTest.expect.equality(calls[1][2], "structural")
-        MiniTest.expect.equality(calls[1][3], "impls")
-        MiniTest.expect.equality(calls[1][4], "Loader")
+        MiniTest.expect.equality(calls[3][2], "structural")
+        MiniTest.expect.equality(calls[3][3], "impls")
+        MiniTest.expect.equality(calls[3][4], "Loader")
         MiniTest.expect.equality(#hits, 2)
     end,
 
-    ["vera overview returns parsed table"] = function()
+    ["vera overview parses JSON or falls back to raw text"] = function()
         use_fake_vera()
         stub_exec(vera, { code = 0, stdout = json({ file_count = 42, chunk_count = 100 }), stderr = "" })
 
@@ -249,13 +253,9 @@ helpers["substrate"] = MiniTest.new_set({}, {
         vera.overview(function(o) overview = o end)
 
         MiniTest.expect.equality(overview.file_count, 42)
-    end,
 
-    ["vera overview falls back to raw text"] = function()
-        use_fake_vera()
         stub_exec(vera, { code = 0, stdout = "Project overview: 42 files", stderr = "" })
 
-        local overview
         vera.overview(function(o) overview = o end)
 
         MiniTest.expect.equality(overview, "Project overview: 42 files")
@@ -322,7 +322,7 @@ helpers["substrate"] = MiniTest.new_set({}, {
         MiniTest.expect.equality(item.symbol_id, 623198)
     end,
 
-    ["codanna get_calls uses range start line without call_line"] = function()
+    ["codanna get_calls and analyze_impact map direction, line, and depth"] = function()
         use_fake_codanna()
         local callee = {
             id = 5,
@@ -338,10 +338,7 @@ helpers["substrate"] = MiniTest.new_set({}, {
 
         MiniTest.expect.equality(items[1].line, 42)
         MiniTest.expect.equality(items[1].direction, "calls")
-    end,
 
-    ["codanna analyze_impact maps direction and depth"] = function()
-        use_fake_codanna()
         local impacted = {
             id = 9,
             name = "downstream",
@@ -352,7 +349,6 @@ helpers["substrate"] = MiniTest.new_set({}, {
         }
         stub_exec(codanna, { code = 0, stdout = codanna_envelope({ impacted }), stderr = "" })
 
-        local items
         codanna.analyze_impact("core_fn", function(i) items = i end)
 
         MiniTest.expect.equality(items[1].direction, "impact")
@@ -404,54 +400,67 @@ helpers["substrate"] = MiniTest.new_set({}, {
         MiniTest.expect.equality(#items, 1)
     end,
 
-    ["codanna exit code 1 surfaces not found"] = function()
+    ["codanna surfaces envelope errors by exit code"] = function()
         use_fake_codanna()
-        local stdout = codanna_error_envelope("not_found", 1, "Function 'foo' not found")
-        stub_exec(codanna, { code = 1, stdout = stdout, stderr = "" })
-
-        local items, err
-        codanna.find_callers("foo", function(i, e)
-            items = i
-            err = e
-        end)
-
-        MiniTest.expect.equality(items, nil)
-        expect_contains(err, "not found")
-        expect_contains(err, "Function 'foo' not found")
-    end,
-
-    ["codanna exit code 7 surfaces index force hint"] = function()
-        use_fake_codanna()
-        local stdout = codanna_error_envelope("error", 7, "Index version mismatch")
-        stub_exec(codanna, { code = 7, stdout = stdout, stderr = "" })
-
-        local err
-        codanna.get_calls("foo", function(_i, e) err = e end)
-
-        expect_contains(err, "codanna index --force")
-    end,
-
-    ["codanna exit code 2 includes hint and candidates"] = function()
-        use_fake_codanna()
-        local stdout = codanna_error_envelope(
-            "error",
-            2,
-            "Ambiguous: found 2 symbol(s)",
-            "re-run with symbol_id:<id>",
+        local cases = {
             {
-                { id = 221, name = "url_for", kind = "Function", file_path = "src/helpers.py", range = { start_line = 194 } },
-                { id = 786, name = "url_for", kind = "Method", file_path = "src/app.py", range = { start_line = 1002 } },
-            }
-        )
-        stub_exec(codanna, { code = 2, stdout = stdout, stderr = "" })
+                code = 1,
+                status = "not_found",
+                message = "Function 'foo' not found",
+                call = codanna.find_callers,
+                want = { "not found", "Function 'foo' not found" },
+            },
+            {
+                code = 7,
+                status = "error",
+                message = "Index version mismatch",
+                call = codanna.get_calls,
+                want = { "codanna index --force" },
+            },
+            {
+                code = 2,
+                status = "error",
+                message = "Ambiguous: found 2 symbol(s)",
+                hint = "re-run with symbol_id:<id>",
+                data = {
+                    {
+                        id = 221,
+                        name = "url_for",
+                        kind = "Function",
+                        file_path = "src/helpers.py",
+                        range = { start_line = 194 },
+                    },
+                    {
+                        id = 786,
+                        name = "url_for",
+                        kind = "Method",
+                        file_path = "src/app.py",
+                        range = { start_line = 1002 },
+                    },
+                },
+                call = codanna.find_callers,
+                want = { "Ambiguous", "symbol_id:221", "src/helpers.py:195", "symbol_id:786" },
+            },
+        }
 
-        local err
-        codanna.find_callers("url_for", function(_i, e) err = e end)
+        for _, case in ipairs(cases) do
+            stub_exec(codanna, {
+                code = case.code,
+                stdout = codanna_error_envelope(case.status, case.code, case.message, case.hint, case.data),
+                stderr = "",
+            })
 
-        expect_contains(err, "Ambiguous")
-        expect_contains(err, "symbol_id:221")
-        expect_contains(err, "src/helpers.py:195")
-        expect_contains(err, "symbol_id:786")
+            local items, err
+            case.call("x", function(i, e)
+                items = i
+                err = e
+            end)
+
+            MiniTest.expect.equality(items, nil)
+            for _, needle in ipairs(case.want) do
+                expect_contains(err, needle)
+            end
+        end
     end,
 
     ["codanna non-JSON output surfaces stderr"] = function()
@@ -476,16 +485,6 @@ helpers["substrate"] = MiniTest.new_set({}, {
 
         MiniTest.expect.equality(items, nil)
         expect_contains(err, "codanna.nvim")
-    end,
-
-    ["codanna missing binary errors loudly"] = function()
-        use_fake_codanna()
-        codanna._is_executable = function() return 0 end
-
-        local err
-        codanna.find_callers("x", function(_i, e) err = e end)
-
-        expect_contains(err, "codanna binary not found")
     end,
 
     ["codanna index_health maps get_index_info"] = function()

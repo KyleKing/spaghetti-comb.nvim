@@ -100,6 +100,7 @@ Thin adapters normalize both substrates into one internal type set; human picker
 
 ## Later ideas
 
+- UX papercuts found by PTY testing: cursor on a keyword (`def`) resolves `<cword>` to the keyword, not the enclosing symbol — relations commands should resolve the symbol *containing* the cursor via the index, or hint "move to the symbol name"; a pending hit-enter prompt can swallow the next typed command
 - wavez-facing: expose adapters through wavez's socket/MCP when wavez M3's Neovim pickers land (wavez's own SQLite code-intel store is a future comparable provider)
 - `find_related` for second-look review flow: "agent invented an Nth implementation of X" as a review check
 - Semantic trail search via embeddings — only if keyword search measurably fails (trail corpus is small; lexical-first per re-finding research)

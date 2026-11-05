@@ -144,9 +144,7 @@ end
 ---@param query string Natural-language or symbol query
 ---@param opts {limit: integer|nil, lang: string|nil, path: string|nil, scope: string|nil}|nil
 ---@param callback fun(hits: SearchHit[]|nil, err: string|nil)
-function M.search(query, opts, callback)
-    cli_search(query, opts or {}, callback)
-end
+function M.search(query, opts, callback) cli_search(query, opts or {}, callback) end
 
 ---@param file_path string
 ---@param line_start integer
