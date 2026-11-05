@@ -1,3 +1,23 @@
+## v0.2.0 (2026-11-05)
+
+### Feat
+
+- garbage-collect stale persistence and dead-file bookmarks at startup
+- report files changed since index in status and sc
+- add :SpaghettiCombResume recap of recent trail entries
+- resolve the enclosing symbol for relation commands
+- enrich trail entries with dwell, interaction kind, note, and score
+- harden trail persistence, config, and rendering against bad data
+- sc CLI and command registrations
+- relations tree and orientation views
+- seek, related, and index-health commands
+- content-addressed history search with codebase widening
+- add substrate adapters for Vera and codanna
+
+### Fix
+
+- run picker jumps in the target window and surface ambiguity candidates
+
 ## v0.1.1 (2026-09-04)
 
 ### Refactor
