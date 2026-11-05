@@ -246,8 +246,38 @@ function M.show_navigation_mode()
     return true, "Navigation picker displayed"
 end
 
+-- Recap of the most recent entries in visit order — the "where was I" view.
+---@param count integer|nil Max entries to list (default 10)
+function M.show_resume(count)
+    if not state.initialized then return false, "Picker not initialized" end
+
+    state.current_mode = "navigation"
+
+    local history_manager = require("spaghetti-comb.history.manager")
+    local trail = history_manager.get_current_trail()
+
+    if not trail or #trail.entries == 0 then
+        vim.notify("No navigation history available", vim.log.levels.INFO)
+        return false, "No navigation history"
+    end
+
+    local entries = M.sort_by_recency(trail.entries)
+    local recent = {}
+    for i = 1, math.min(count or 10, #entries) do
+        recent[i] = entries[i]
+    end
+
+    if state.mini_pick_available then
+        M._show_mini_pick_navigation(recent, { name = "Resume — last " .. #recent })
+    else
+        M._show_fallback_navigation(recent)
+    end
+
+    return true, "Resume picker displayed"
+end
+
 -- List navigation history (mini.pick integration)
-function M._show_mini_pick_navigation(entries)
+function M._show_mini_pick_navigation(entries, opts)
     local MiniPick = require("mini.pick")
 
     -- Format items for picker; search_ctx indexes into the same item order and
@@ -263,7 +293,7 @@ function M._show_mini_pick_navigation(entries)
     MiniPick.start({
         source = {
             items = items,
-            name = "Navigation History",
+            name = (opts and opts.name) or "Navigation History",
             match = M._make_search_matcher(search_ctx),
             preview = function(buf_id, item)
                 if not item then return end

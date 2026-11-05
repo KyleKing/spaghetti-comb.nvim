@@ -83,6 +83,15 @@ vim.api.nvim_create_user_command(
     { desc = "Show a high-level project map (structure, hotspots, overview) in the relations tree" }
 )
 
+vim.api.nvim_create_user_command(
+    "SpaghettiCombResume",
+    function(opts) require("spaghetti-comb.ui.picker").show_resume(opts.args ~= "" and tonumber(opts.args) or nil) end,
+    {
+        nargs = "?",
+        desc = "Recap the most recent trail entries in visit order (optional count, default 10)",
+    }
+)
+
 -- Bookmark Commands
 vim.api.nvim_create_user_command("SpaghettiCombBookmarkToggle", function()
     local bookmarks = require("spaghetti-comb.history.bookmarks")
