@@ -47,6 +47,7 @@ local function pre_case()
     history_manager.reset()
     history_manager.setup({})
     vim.api.nvim_buf_set_lines(0, 0, -1, false, { "" })
+    vim.bo.filetype = ""
 end
 
 T["symbol resolution"] = MiniTest.new_set({
@@ -62,6 +63,26 @@ T["symbol resolution"]["explicit arg beats the cursor word; whitespace resolves 
 
     set_cursor_on({ "     " }, 1, 0)
     MiniTest.expect.equality(relations._resolve_symbol(nil), nil)
+end
+
+T["symbol resolution"]["keyword or statement under cursor resolves the enclosing definition"] = function()
+    vim.bo.filetype = "lua"
+    set_cursor_on({ "local function helper()", "  return call(x)", "end" }, 1, 6)
+
+    -- `function` keyword, `return` statement, and the name itself all resolve to
+    -- helper; an identifier still resolves to itself
+    MiniTest.expect.equality(relations._resolve_symbol(nil), "helper")
+    set_cursor_on({ "local function helper()", "  return call(x)", "end" }, 2, 2)
+    MiniTest.expect.equality(relations._resolve_symbol(nil), "helper")
+    set_cursor_on({ "local function helper()", "  return call(x)", "end" }, 2, 10)
+    MiniTest.expect.equality(relations._resolve_symbol(nil), "call")
+end
+
+T["symbol resolution"]["no treesitter parser falls back to the cursor word"] = function()
+    vim.bo.filetype = "not-a-real-filetype"
+    set_cursor_on({ "def helper():", "    pass" }, 1, 0)
+
+    MiniTest.expect.equality(relations._resolve_symbol(nil), "def")
 end
 
 T["queries"] = MiniTest.new_set({

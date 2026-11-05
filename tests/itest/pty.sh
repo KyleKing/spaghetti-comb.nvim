@@ -15,9 +15,18 @@ export SC_PLUGIN_ROOT
 FIXTURE="${SC_FIXTURE_DIR:-$HERE/.fixture/flask}"
 
 # Throwaway data dir so trail persistence never touches real user state.
+REAL_XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 export XDG_DATA_HOME
 XDG_DATA_HOME="$(mktemp -d)"
 trap 'nvim_stop; rm -rf "$XDG_DATA_HOME"' EXIT
+
+# Treesitter parsers live under the user's real site dir, which XDG_DATA_HOME
+# isolation hides. Expose only parser/ so relations commands can resolve
+# enclosing symbols; absence degrades to cword fallback, not a failure.
+if [ -d "$REAL_XDG_DATA_HOME/nvim/site/parser" ]; then
+    mkdir -p "$XDG_DATA_HOME/nvim/site"
+    ln -s "$REAL_XDG_DATA_HOME/nvim/site/parser" "$XDG_DATA_HOME/nvim/site/parser"
+fi
 
 HAS_CODANNA=0
 if command -v codanna >/dev/null 2>&1 &&
@@ -114,6 +123,25 @@ if [ "$HAS_CODANNA" -eq 1 ]; then
     send q
     sleep 1
     nvim_stop
+
+    # Cursor on the `def` keyword of `def wsgi_app(` (app.py:1479): the query
+    # must resolve the enclosing symbol, not the literal cword "def". Requires
+    # a python treesitter parser; without one the query degrades to "def" and
+    # codanna reports not-found instead — the assertion separates the two.
+    nvim_start "$FIXTURE" src/flask/app.py
+    send_lit ":call cursor(1479, 1)"
+    send Enter
+    send_lit ":SpaghettiCombCallers"
+    send Enter
+    if wait_pane "Callers: wsgi_app" 60; then
+        check "callers resolves enclosing symbol on keyword" 0
+    else
+        check "callers resolves enclosing symbol on keyword" 1 "$(pane_text | tail -5)"
+    fi
+    save_frame callers_enclosing_symbol
+    send q
+    sleep 1
+    nvim_stop
 fi
 
 # --- history: content search filters, <C-o> widens to codebase -------------
@@ -142,6 +170,29 @@ else
     check "C-o widens history query to codebase" 1 "$(pane_text | tail -5)"
 fi
 save_frame history_widen
+send Escape
+nvim_stop
+
+# --- resume: chronological recap of recent trail entries -------------------
+# One vera_seek entry is seeded, a second manual jump (gd) adds another, then
+# the recap must list them in the "Resume — last N" picker.
+nvim_start "$FIXTURE" src/flask/sessions.py
+send_lit ":SpaghettiCombSeek session signing"
+send Enter
+wait_pane "Seek: session signing" 90
+send Enter
+wait_pane "323,1" 15
+send_lit "gd"
+sleep 3
+send_lit ":SpaghettiCombResume"
+send Enter
+if wait_pane "Resume — last" 15; then
+    check "resume recap opens" 0
+else
+    check "resume recap opens" 1 "$(pane_text | tail -5)"
+fi
+check_contains "resume lists a trail entry" "$(pane_text)" "vera_seek"
+save_frame resume_picker
 send Escape
 nvim_stop
 

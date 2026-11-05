@@ -2,6 +2,7 @@
 -- under cursor. Results open in ui.relations_tree; choosing a node records a
 -- trail jump with a codanna_* jump type.
 local codanna = require("spaghetti-comb.substrate.codanna")
+local symbol_util = require("spaghetti-comb.utils.symbol")
 
 local M = {}
 
@@ -11,15 +12,11 @@ local DIRECTIONS = {
     impact = { fn = "analyze_impact", jump_type = "codanna_impact", title = "Impact" },
 }
 
--- Resolve the symbol to query: an explicit argument beats the cursor word.
+-- Resolve the symbol to query: an explicit argument wins; on a keyword or
+-- operator the enclosing definition's name beats the literal cursor word.
 ---@param symbol string|nil
 ---@return string|nil
-function M._resolve_symbol(symbol)
-    if symbol and symbol ~= "" then return symbol end
-    local word = vim.fn.expand("<cword>")
-    if word and word ~= "" then return word end
-    return nil
-end
+function M._resolve_symbol(symbol) return symbol_util.resolve(symbol) end
 
 -- search_symbols can't take `symbol_id:` refs, and re-rooted items already
 -- carry kind/file — only bare-name queries get the extra root-resolution call.
