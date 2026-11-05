@@ -33,6 +33,15 @@ run = [
 description = "Format code using stylua (fix mode)"
 run = "stylua demos/ plugin/ lua/ scripts/"
 
+[tasks.itest]
+depends = ["deps-mini-nvim"]
+description = "Integration tests on a pinned flask clone (cli contract + tmux PTY)"
+run = "bash tests/itest/run.sh"
+
+[tasks.itest-cli]
+description = "Integration tests: sc CLI contract only (no tmux)"
+run = "SC_SKIP_PTY=1 bash tests/itest/run.sh"
+
 [tasks.lint]
 description = "Check formatting with stylua and lint with selene"
 run = ["stylua demos/ plugin/ lua/ scripts/ --check", "selene demos/ plugin/ lua/ scripts/"]
@@ -44,15 +53,6 @@ run = ["stylua demos/ plugin/ lua/ scripts/ --check", "selene demos/ plugin/ lua
 depends = ["deps-mini-nvim"]
 description = "Run all test files"
 run = "nvim --headless --noplugin -u ./scripts/minimal_init.lua -c \"lua local ok, err = pcall(function() require('spaghetti-comb.tests.init').run_all() end) if not ok then io.stderr:write(tostring(err) .. '\\n') vim.cmd('cquit 1') end\""
-
-[tasks.itest]
-depends = ["deps-mini-nvim"]
-description = "Integration tests on a pinned flask clone (cli contract + tmux PTY)"
-run = "bash tests/itest/run.sh"
-
-[tasks.itest-cli]
-description = "Integration tests: sc CLI contract only (no tmux)"
-run = "SC_SKIP_PTY=1 bash tests/itest/run.sh"
 
 [tasks.test-file]
 depends = ["deps-mini-nvim"]

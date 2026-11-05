@@ -100,6 +100,32 @@ function M.load_history(project_root)
     local valid, err = types.validate_navigation_trail(trail)
     if not valid then return nil, "Invalid saved trail: " .. (err or "unknown error") end
 
+    -- A partially-corrupt save still loads: drop malformed entries instead of
+    -- failing the whole trail, then clamp trail bookkeeping to what survived.
+    local valid_entries = {}
+    local dropped = 0
+    for _, entry in ipairs(trail.entries) do
+        if types.validate_navigation_entry(entry) then
+            table.insert(valid_entries, entry)
+        else
+            dropped = dropped + 1
+        end
+    end
+    -- Non-array members can never be valid entries
+    dropped = dropped + (vim.tbl_count(trail.entries) - #trail.entries)
+    trail.entries = valid_entries
+
+    if type(trail.branches) ~= "table" then trail.branches = {} end
+    if type(trail.current_index) ~= "number" or trail.current_index < 0 then trail.current_index = 0 end
+    if trail.current_index > #trail.entries then trail.current_index = #trail.entries end
+
+    if dropped > 0 then
+        vim.notify(
+            string.format("spaghetti-comb: dropped %d corrupted history entries for %s", dropped, project_root),
+            vim.log.levels.WARN
+        )
+    end
+
     return trail, nil
 end
 

@@ -37,8 +37,8 @@ T["cross-module"] = MiniTest.new_set({
 })
 
 T["cross-module"]["project separation isolates and restores trails"] = function()
-    -- Fabricated paths have no project markers and are unreadable, so
-    -- record_jump keeps the explicitly set project instead of auto-detecting.
+    -- Fabricated paths have no project markers, so detection falls back to the
+    -- containing directory — which is the explicitly set project here.
     child.lua([==[
       history_manager.set_current_project("/project1")
       history_manager.record_jump(
@@ -223,6 +223,83 @@ T["persistence"]["save, load, and delete round-trip a trail"] = function()
     MiniTest.expect.equality(child.lua_get([==[_G.after[2] ~= nil]==]), true)
 end
 
+T["persistence"]["load drops malformed entries and keeps the valid ones"] = function()
+    child.lua([==[
+      local trail = types.create_navigation_trail({
+        project_root = "/test/persist/corrupt",
+        entries = {
+          types.create_navigation_entry({ file_path = "/a/one.lua", position = { line = 1, column = 1 } }),
+          { id = "bad", file_path = 42, position = { line = 1, column = 1 } },
+          types.create_navigation_entry({ file_path = "/a/two.lua", position = { line = 2, column = 2 } }),
+          { id = "worse" },
+        },
+        current_index = 4,
+      })
+      storage.save_history(trail, "/test/persist/corrupt")
+      _G.notifies = {}
+      local real_notify = vim.notify
+      vim.notify = function(msg, level) table.insert(_G.notifies, { msg = msg, level = level }) end
+      _G.loaded = { storage.load_history("/test/persist/corrupt") }
+      vim.notify = real_notify
+    ]==])
+
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1] ~= nil]==]), true)
+    MiniTest.expect.equality(child.lua_get([==[#_G.loaded[1].entries]==]), 2)
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[1].file_path]==]), "/a/one.lua")
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[2].file_path]==]), "/a/two.lua")
+    -- current_index is clamped to the surviving entries
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].current_index]==]), 2)
+
+    -- A single WARN notification reports the dropped count
+    MiniTest.expect.equality(child.lua_get([==[#_G.notifies]==]), 1)
+    MiniTest.expect.equality(child.lua_get([==[_G.notifies[1].level]==]), vim.log.levels.WARN)
+    MiniTest.expect.equality(child.lua_get([==[_G.notifies[1].msg:find("2") ~= nil]==]), true)
+end
+
+T["persistence"]["corrupt JSON reports a load error instead of a trail"] = function()
+    child.lua([==[
+      local dir = _G.persistence_temp_data_dir .. "/spaghetti-comb/history"
+      vim.fs.mkdir(dir, { parents = true })
+      local file = io.open(dir .. "/_test_persist_broken.json", "w")
+      file:write("{ this is not json")
+      file:close()
+      _G.broken = { storage.load_history("/test/persist/broken") }
+    ]==])
+
+    MiniTest.expect.equality(child.lua_get([==[_G.broken[1]]==]), vim.NIL)
+    MiniTest.expect.equality(child.lua_get([==[type(_G.broken[2])]==]), "string")
+end
+
+T["persistence"]["large trail round-trips through storage"] = function()
+    child.lua([==[
+      local entries = {}
+      for i = 1, 600 do
+        entries[i] = types.create_navigation_entry({
+          file_path = "/test/big/file" .. (i % 25) .. ".lua",
+          position = { line = i, column = (i % 80) + 1 },
+          jump_type = "manual",
+          timestamp = 1700000000 + i,
+          is_bookmarked = i % 100 == 0,
+        })
+      end
+      local trail = types.create_navigation_trail({
+        project_root = "/test/big",
+        entries = entries,
+        current_index = 600,
+      })
+      _G.saved = storage.save_history(trail, "/test/big")
+      _G.loaded = { storage.load_history("/test/big") }
+    ]==])
+
+    MiniTest.expect.equality(child.lua_get([==[_G.saved]==]), true)
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1] ~= nil]==]), true)
+    MiniTest.expect.equality(child.lua_get([==[#_G.loaded[1].entries]==]), 600)
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].current_index]==]), 600)
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[1].file_path]==]), "/test/big/file1.lua")
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[600].position.line]==]), 600)
+    MiniTest.expect.equality(child.lua_get([==[_G.loaded[1].entries[600].is_bookmarked]==]), true)
+end
+
 T["persistence"]["manager save_current and load round-trip through storage"] = function()
     child.lua([==[
       history_manager.set_current_project("/test/persist/manager")
@@ -283,6 +360,30 @@ T["project root"]["picks the nearest marker, not the highest-ranked one"] = func
     local detected = child.lua_get("_G.project.detect_project_root(...)", { root .. "/outer/inner/sub/file.lua" })
 
     MiniTest.expect.equality(detected, vim.fs.abspath(root .. "/outer/inner"))
+    vim.fn.delete(root, "rf")
+end
+
+-- With no markers anywhere (plain dir, tarball checkout), the containing
+-- directory is the project — detection never errors or returns nil.
+T["project root"]["falls back to the containing directory without markers"] = function()
+    local root = vim.fn.tempname()
+    vim.fs.mkdir(root .. "/plain/sub", { parents = true })
+    vim.fn.writefile({ "x = 1" }, root .. "/plain/sub/file.lua")
+
+    child.lua("_G.project.clear_cache()")
+    local detected = child.lua_get("_G.project.detect_project_root(...)", { root .. "/plain/sub/file.lua" })
+    MiniTest.expect.equality(detected, vim.fs.abspath(root .. "/plain/sub"))
+
+    -- A file not yet written to disk still resolves to its directory
+    child.lua("_G.project.clear_cache()")
+    detected = child.lua_get("_G.project.detect_project_root(...)", { root .. "/plain/sub/not_written.lua" })
+    MiniTest.expect.equality(detected, vim.fs.abspath(root .. "/plain/sub"))
+
+    -- A directory path resolves to itself
+    child.lua("_G.project.clear_cache()")
+    detected = child.lua_get("_G.project.detect_project_root(...)", { root .. "/plain/sub" })
+    MiniTest.expect.equality(detected, vim.fs.abspath(root .. "/plain/sub"))
+
     vim.fn.delete(root, "rf")
 end
 

@@ -106,6 +106,9 @@ function M.record_jump(_from_location, to_location, jump_type)
     trail.current_index = #trail.entries
     trail.last_accessed = current_time
 
+    local max_entries = state.config.history and state.config.history.max_entries
+    if type(max_entries) == "number" and max_entries > 0 then M.enforce_max_entries(trail, max_entries) end
+
     -- Update jump timing for exploration state detection
     state.last_jump_time = current_time
 
@@ -381,6 +384,29 @@ function M.is_inconsequential_jump(from_entry, to_entry)
     if to_entry.jump_type == "manual" then return false end
 
     return true
+end
+
+-- Enforce history.max_entries as a hard cap by evicting the oldest entries.
+-- Bookmarked and frequent entries are never evicted, so a trail can stay over
+-- the cap when everything in it is protected.
+function M.enforce_max_entries(trail, max_entries)
+    local excess = #trail.entries - max_entries
+    if excess <= 0 then return 0 end
+
+    local evicted = 0
+    local kept = {}
+    for _, entry in ipairs(trail.entries) do
+        if evicted < excess and not entry.is_bookmarked and not entry.is_frequent then
+            evicted = evicted + 1
+        else
+            table.insert(kept, entry)
+        end
+    end
+
+    trail.entries = kept
+    trail.current_index = math.max(1, trail.current_index - evicted)
+
+    return evicted
 end
 
 -- Location recovery algorithm

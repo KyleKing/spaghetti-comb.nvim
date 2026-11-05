@@ -243,6 +243,44 @@ T["history manager"]["debounces pruning into a single scheduled run"] = function
     if not ok then error(err, 0) end
 end
 
+T["history manager"]["enforces max_entries as a hard cap without losing bookmarks"] = function()
+    history_manager.setup({
+        history = { max_entries = 5 },
+    })
+    history_manager.set_current_project("/test/project")
+
+    local function record(i)
+        history_manager.record_jump(
+            { file_path = "/test/project/file" .. i .. ".lua", position = { line = i, column = 1 } },
+            { file_path = "/test/project/file" .. i .. ".lua", position = { line = i + 1, column = 1 } },
+            "manual"
+        )
+    end
+
+    for i = 1, 7 do
+        record(i)
+    end
+
+    local trail = history_manager.get_current_trail()
+    MiniTest.expect.equality(#trail.entries, 5)
+    -- The oldest two entries were evicted; the current index tracks the shift
+    MiniTest.expect.equality(trail.entries[1].file_path, "/test/project/file3.lua")
+    MiniTest.expect.equality(trail.current_index, 5)
+
+    -- Bookmarked and frequent entries are never evicted
+    trail.entries[1].is_bookmarked = true
+    trail.entries[2].is_frequent = true
+    for i = 8, 10 do
+        record(i)
+    end
+
+    trail = history_manager.get_current_trail()
+    MiniTest.expect.equality(#trail.entries, 5)
+    MiniTest.expect.equality(trail.entries[1].file_path, "/test/project/file3.lua")
+    MiniTest.expect.equality(trail.entries[2].file_path, "/test/project/file4.lua")
+    MiniTest.expect.equality(trail.entries[3].file_path, "/test/project/file8.lua")
+end
+
 T["history manager"]["navigates backward and forward"] = function()
     -- Setup
     history_manager.setup({})

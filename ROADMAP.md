@@ -57,11 +57,11 @@ Exit criteria met: CI green on stable and nightly, no placeholder tests in core 
 
 Make the recorded trail trustworthy and richer before building more UI on it.
 
-- [ ] Error handling: corrupted trail recovery in `history/manager.lua`, invalid entries in `ui/floating_tree.lua`, missing `.git` in `utils/project.lua`
-- [ ] Config validation for all sections (`visual.color_scheme`, negative thresholds, keymap types) with actionable error messages
-- [ ] LSP edge cases: server not running, empty responses, multiple results
-- [ ] Enforce `history.max_entries` as a hard cap in `record_jump`
-- [ ] Verify persistence round-trips with large datasets and handles corrupt JSON
+- [x] Error handling: corrupted trail recovery in `history/manager.lua`, invalid entries in `ui/floating_tree.lua`, missing `.git` in `utils/project.lua`
+- [x] Config validation for all sections (`visual.color_scheme`, negative thresholds, keymap types) with actionable error messages
+- [x] LSP edge cases: server not running, empty responses, multiple results
+- [x] Enforce `history.max_entries` as a hard cap in `record_jump`
+- [x] Verify persistence round-trips with large datasets and handles corrupt JSON
 - [ ] Trail schema enrichment (`NavigationEntry`): `symbol` (stable identity, survives line shifts), `interaction_kind` (read/edit/jump — edits are the strong relevance signal), `dwell_ms` (enter/leave), `note`, decay-weighted score alongside raw `visit_count` (Mylyn DOI lesson: predictable and user-visible, never auto-hiding). Storage migration for existing entries
 - [ ] Vim help doc (`doc/spaghetti-comb.txt`) generated or written, wired to `mise run docs`
 

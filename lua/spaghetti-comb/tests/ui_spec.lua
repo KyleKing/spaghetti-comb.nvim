@@ -132,6 +132,36 @@ T["floating tree"]["renders unicode tree from trail"] = function()
     MiniTest.expect.equality(lines, { "No navigation history" })
 end
 
+T["floating tree"]["malformed entries render a placeholder and cannot be jumped to"] = function()
+    child.lua([==[
+      _G.bad_trail = make_trail()
+      -- Missing file_path/position entirely, and a bad position shape
+      table.insert(_G.bad_trail.entries, 2, { jump_type = "manual" })
+      table.insert(_G.bad_trail.entries, 3, { file_path = "/test/x.lua", position = "nowhere" })
+      _G.lines = floating_tree.render_unicode_tree(_G.bad_trail)
+    ]==])
+
+    -- Rows stay 1:1 with entries so selection indexes still line up
+    MiniTest.expect.equality(child.lua_get([==[#_G.lines]==]), 4)
+    MiniTest.expect.equality(child.lua_get([==[_G.lines[2]:find("invalid entry") ~= nil]==]), true)
+    MiniTest.expect.equality(child.lua_get([==[_G.lines[3]:find("invalid entry") ~= nil]==]), true)
+    MiniTest.expect.equality(child.lua_get([==[_G.lines[1]:find("alpha.lua") ~= nil]==]), true)
+
+    -- Selecting a malformed row no-ops instead of erroring
+    MiniTest.expect.no_error(
+        function()
+            child.lua([==[
+          local s = floating_tree.get_state()
+          s.current_trail = _G.bad_trail
+          s.selected_index = 2
+          floating_tree._jump_to_selected()
+          floating_tree.update_preview_pane(2)
+          floating_tree.update_preview_pane(3)
+        ]==])
+        end
+    )
+end
+
 T["floating tree"]["show and hide toggles visibility"] = function()
     child.lua([==[seed_history()]==])
 

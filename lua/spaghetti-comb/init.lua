@@ -5,7 +5,8 @@ local M = {}
 M.version = "0.1.0"
 
 -- Default configuration
-local default_config = require("spaghetti-comb.config").default
+local config = require("spaghetti-comb.config")
+local default_config = config.default
 
 -- Plugin state
 local state = {
@@ -17,8 +18,18 @@ local state = {
 function M.setup(opts)
     if state.initialized then return end
 
+    -- Strip invalid user values so each falls back to its default, and report
+    -- every offending key in a single notification rather than failing setup.
+    local clean_opts, config_errors = config.sanitize(opts)
+    if #config_errors > 0 then
+        vim.notify(
+            "spaghetti-comb: invalid config values replaced with defaults:\n- " .. table.concat(config_errors, "\n- "),
+            vim.log.levels.ERROR
+        )
+    end
+
     -- Merge user config with defaults
-    state.config = vim.tbl_deep_extend("force", default_config, opts or {})
+    state.config = vim.tbl_deep_extend("force", default_config, clean_opts)
 
     -- Initialize core components
     local history_manager = require("spaghetti-comb.history.manager")

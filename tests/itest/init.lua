@@ -10,8 +10,6 @@ vim.opt.runtimepath:prepend(root)
 -- substrate works end-to-end, when absent those commands surface the
 -- missing-plugin error (itself a valid DX check).
 local codanna_nvim = vim.env.SC_CODANNA_NVIM or (root .. "/../codanna.nvim")
-if vim.uv.fs_stat(codanna_nvim .. "/lua/codanna/core.lua") then
-    vim.opt.runtimepath:prepend(codanna_nvim)
-end
+if vim.uv.fs_stat(codanna_nvim .. "/lua/codanna/core.lua") then vim.opt.runtimepath:prepend(codanna_nvim) end
 
 require("spaghetti-comb").setup()

@@ -34,10 +34,13 @@ local function find_project_root(start_path)
     local root = vim.fs.root(start_path, PROJECT_MARKERS)
     if root ~= nil then return root end
 
-    -- If no markers found, use the directory containing the file
-    if vim.fn.filereadable(start_path) == 1 then return vim.fs.dirname(vim.fs.abspath(start_path)) end
-
-    return nil
+    -- No markers (plain directory, tarball checkout, file not yet on disk):
+    -- the project is the directory itself, or the one containing the file.
+    if vim.fn.isdirectory(start_path) == 1 then
+        local dir = vim.fs.abspath(start_path):gsub("[/\\]$", "")
+        return dir ~= "" and dir or "/"
+    end
+    return vim.fs.dirname(vim.fs.abspath(start_path))
 end
 
 -- Detect project root for a given file path
@@ -50,7 +53,9 @@ function M.detect_project_root(file_path)
 
     -- Cache by containing directory rather than exact file path, so distinct
     -- files (temp files, scratch buffers) in the same directory share a walk.
-    local cache_key = vim.fs.dirname(vim.fs.abspath(file_path))
+    -- A directory start path caches under itself, not its parent.
+    local start_dir = vim.fn.isdirectory(file_path) == 1 and file_path or vim.fs.dirname(file_path)
+    local cache_key = vim.fs.abspath(start_dir)
     local cached = project_cache[cache_key]
     if cached ~= nil then return cached ~= NO_PROJECT and cached or nil end
 

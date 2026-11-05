@@ -144,6 +144,16 @@ function M.render_unicode_tree(trail)
     return lines
 end
 
+-- An entry needs this much to render and to be jumped/previewed safely;
+-- anything less (e.g. surviving a partially-corrupt load) gets a placeholder.
+local function is_renderable(entry)
+    return type(entry) == "table"
+        and type(entry.file_path) == "string"
+        and type(entry.position) == "table"
+        and type(entry.position.line) == "number"
+        and type(entry.position.column) == "number"
+end
+
 -- Format a single tree entry
 function M._format_tree_entry(entry, index, current_index, bookmarks)
     local prefix = ""
@@ -156,6 +166,10 @@ function M._format_tree_entry(entry, index, current_index, bookmarks)
     else
         prefix = TREE_CHARS.branch .. TREE_CHARS.horizontal .. " "
     end
+
+    -- Malformed entries keep a row so rendered lines stay aligned with
+    -- trail.entries indexes (selection and jump map 1:1 onto entries).
+    if not is_renderable(entry) then return prefix .. "  [invalid entry]" end
 
     -- Add entry type icon
     local icon = "  "
@@ -222,7 +236,7 @@ function M.mark_bookmarked_nodes()
     local bookmarks = require("spaghetti-comb.history.bookmarks")
 
     for i, entry in ipairs(state.current_trail.entries) do
-        if entry.is_bookmarked or (bookmarks.is_bookmarked and bookmarks.is_bookmarked(entry)) then
+        if is_renderable(entry) and (entry.is_bookmarked or bookmarks.is_bookmarked(entry)) then
             vim.api.nvim_buf_add_highlight(
                 state.tree_buffer,
                 state.namespace,
@@ -242,7 +256,7 @@ function M.mark_important_nodes()
     local bookmarks = require("spaghetti-comb.history.bookmarks")
 
     for i, entry in ipairs(state.current_trail.entries) do
-        if entry.is_frequent or (bookmarks.is_frequent and bookmarks.is_frequent(entry)) then
+        if is_renderable(entry) and (entry.is_frequent or bookmarks.is_frequent(entry)) then
             vim.api.nvim_buf_add_highlight(
                 state.tree_buffer,
                 state.namespace,
@@ -304,7 +318,7 @@ function M._jump_to_selected()
     if not state.current_trail or not state.selected_index then return end
 
     local entry = state.current_trail.entries[state.selected_index]
-    if not entry then return end
+    if not is_renderable(entry) then return end
 
     -- Hide tree view
     M.hide()
@@ -329,7 +343,7 @@ function M.update_preview_pane(index)
     if not state.current_trail or not state.preview_module then return end
 
     local entry = state.current_trail.entries[index]
-    if not entry then return end
+    if not is_renderable(entry) then return end
 
     -- Calculate preview window position (right side)
     local tree_width = math.floor(vim.o.columns * 0.5)
