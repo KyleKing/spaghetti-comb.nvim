@@ -22,3 +22,7 @@ node_modules/
 # Git
 *.rej
 *.orig
+
+# Integration test fixture and captured frames
+tests/itest/.fixture/
+tests/itest/artifacts/
