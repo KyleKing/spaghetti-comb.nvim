@@ -73,6 +73,16 @@ function M.setup(opts)
         bookmarks.setup_auto_save()
     end
 
+    -- Deferred startup GC: stale persistence files and bookmarks whose files
+    -- were deleted since the last session. Deferred so setup never blocks on it.
+    local gc_days = state.config.history and state.config.history.gc_stale_days
+    if gc_days then
+        vim.defer_fn(function()
+            require("spaghetti-comb.history.storage").cleanup_persistence(gc_days)
+            bookmarks.prune_dead_bookmarks()
+        end, 5000)
+    end
+
     state.initialized = true
 end
 

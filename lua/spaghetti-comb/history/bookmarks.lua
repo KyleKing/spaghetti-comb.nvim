@@ -188,6 +188,24 @@ function M.get_all_bookmarks(project_root)
     end
 end
 
+-- Drop bookmarks whose file no longer exists. The storage layer filters these
+-- at load, so this only clears what a mid-session or between-session delete
+-- leaves behind. Returns the number removed.
+function M.prune_dead_bookmarks()
+    if not state.initialized then return 0 end
+
+    local removed = 0
+    for _, list in pairs(state.bookmarks) do
+        for i = #list, 1, -1 do
+            if vim.fn.filereadable(list[i].file_path) ~= 1 then
+                table.remove(list, i)
+                removed = removed + 1
+            end
+        end
+    end
+    return removed
+end
+
 -- Check if location is bookmarked
 function M.is_bookmarked(location)
     if not state.initialized then return false end

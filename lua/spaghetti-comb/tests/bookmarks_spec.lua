@@ -135,6 +135,25 @@ helpers["bookmarks"] = MiniTest.new_set({}, {
         expect_truthy(bookmark)
     end,
 
+    ["prune_dead_bookmarks drops bookmarks whose file is gone"] = function()
+        bookmarks.reset()
+        bookmarks.setup(config.default)
+
+        local live = vim.fn.tempname() .. ".lua"
+        vim.fn.writefile({ "x" }, live)
+        bookmarks.set_current_project(vim.fn.fnamemodify(live, ":h"))
+
+        bookmarks.add_bookmark(create_test_location(live, 1, 1), true)
+        bookmarks.add_bookmark(create_test_location(live .. ".gone", 1, 1), true)
+
+        MiniTest.expect.equality(bookmarks.prune_dead_bookmarks(), 1)
+
+        local remaining = bookmarks.get_all_bookmarks()
+        MiniTest.expect.equality(#remaining, 1)
+        MiniTest.expect.equality(remaining[1].file_path, live)
+        os.remove(live)
+    end,
+
     -- Task 5.2: Frequent location tracking
     ["increment_visit_count drives get_visit_count"] = function()
         bookmarks.reset()

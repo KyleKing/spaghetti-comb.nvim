@@ -18,6 +18,7 @@ M.default = {
         pruning_debounce_minutes = 2,
         save_on_exit = false, -- Optional persistence
         exploration_timeout_minutes = 5, -- For statusline state
+        gc_stale_days = 90, -- Delete persisted trails/bookmarks untouched this long; false disables
     },
 
     -- Integration settings
@@ -76,6 +77,11 @@ local FIELD_RULES = {
     { "history.pruning_debounce_minutes", positive_number, "must be a positive number" },
     { "history.save_on_exit", is_boolean, "must be a boolean" },
     { "history.exploration_timeout_minutes", positive_number, "must be a positive number" },
+    {
+        "history.gc_stale_days",
+        function(value) return value == false or positive_number(value) end,
+        "must be a positive number or false",
+    },
     { "history.jump_debounce_ms", positive_number, "must be a positive number" },
     { "integration", is_table, "must be a table" },
     { "integration.jumplist", is_boolean, "must be a boolean" },
