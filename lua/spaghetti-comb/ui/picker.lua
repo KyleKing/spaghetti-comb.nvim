@@ -271,8 +271,10 @@ function M._show_mini_pick_navigation(entries)
                 if item.hit then return M._show_hit_preview(buf_id, item.hit) end
             end,
             choose = function(item)
-                if item.entry then return M.jump_to_selected_location(item.entry) end
-                if item.hit then return M.jump_to_hit(item.hit, "vera_seek") end
+                M._in_target_window(function()
+                    if item.entry then return M.jump_to_selected_location(item.entry) end
+                    if item.hit then return M.jump_to_hit(item.hit, "vera_seek") end
+                end)
             end,
         },
         mappings = {
@@ -500,7 +502,7 @@ function M.show_search_hits(hits, opts)
                 preview = function(buf_id, item)
                     if item and item.hit then M._show_hit_preview(buf_id, item.hit) end
                 end,
-                choose = function(item) M.jump_to_hit(item.hit, jump_type) end,
+                choose = function(item) M._in_target_window(function() M.jump_to_hit(item.hit, jump_type) end) end,
             },
         })
     else
@@ -515,6 +517,23 @@ function M.show_search_hits(hits, opts)
     end
 
     return true, "Search results picker displayed"
+end
+
+-- mini.pick calls `choose` with the picker window current and closes it right
+-- after; a jump that edits there is lost. Run the jump in the target window.
+---@param fn function
+function M._in_target_window(fn)
+    local ok, MiniPick = pcall(require, "mini.pick")
+    local target
+    if ok then
+        local picker_state = MiniPick.get_picker_state()
+        target = picker_state and picker_state.windows and picker_state.windows.target
+    end
+    if target and vim.api.nvim_win_is_valid(target) then
+        vim.api.nvim_win_call(target, fn)
+    else
+        fn()
+    end
 end
 
 -- Jump to a search hit and record it as a trail entry
@@ -535,7 +554,8 @@ function M.jump_to_hit(hit, jump_type)
     }
 
     vim.cmd("edit " .. vim.fn.fnameescape(to_location.file_path))
-    vim.api.nvim_win_set_cursor(0, { to_location.position.line, 0 })
+    local line = math.min(to_location.position.line, vim.api.nvim_buf_line_count(0))
+    vim.api.nvim_win_set_cursor(0, { line, 0 })
     vim.cmd("normal! zz")
 
     require("spaghetti-comb.history.manager").record_jump(from_location, to_location, jump_type or "vera_seek")
@@ -563,12 +583,17 @@ function M._show_hit_preview(buf_id, hit)
     if filetype then vim.bo[buf_id].filetype = filetype end
 end
 
--- Jump to selected location
+-- Jump to selected location. Positions recorded against stale files (deleted,
+-- shifted, non-file buffers) can be out of range, so line and column are
+-- clamped rather than trusted.
 function M.jump_to_selected_location(location)
     if not location or not location.file_path then return end
 
-    vim.cmd(string.format("edit +%d %s", location.position.line, location.file_path))
-    vim.api.nvim_win_set_cursor(0, { location.position.line, location.position.column - 1 })
+    vim.cmd("edit " .. vim.fn.fnameescape(location.file_path))
+    local line = math.min(math.max(1, location.position.line or 1), vim.api.nvim_buf_line_count(0))
+    local line_text = vim.api.nvim_buf_get_lines(0, line - 1, line, false)[1] or ""
+    local col = math.min(math.max(0, (location.position.column or 1) - 1), #line_text)
+    vim.api.nvim_win_set_cursor(0, { line, col })
 end
 
 -- Switch between picker modes

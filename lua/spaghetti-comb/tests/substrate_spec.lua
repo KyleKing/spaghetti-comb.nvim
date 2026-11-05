@@ -54,7 +54,7 @@ local function codanna_envelope(data)
     return json({ type = "result", status = "success", code = "OK", exit_code = 0, data = data })
 end
 
-local function codanna_error_envelope(status, exit_code, message, hint)
+local function codanna_error_envelope(status, exit_code, message, hint, data)
     return json({
         type = "error",
         status = status,
@@ -62,7 +62,7 @@ local function codanna_error_envelope(status, exit_code, message, hint)
         exit_code = exit_code,
         message = message,
         hint = hint,
-        data = vim.NIL,
+        data = data or vim.NIL,
     })
 end
 
@@ -431,16 +431,27 @@ helpers["substrate"] = MiniTest.new_set({}, {
         expect_contains(err, "codanna index --force")
     end,
 
-    ["codanna exit code 2 includes hint"] = function()
+    ["codanna exit code 2 includes hint and candidates"] = function()
         use_fake_codanna()
-        local stdout = codanna_error_envelope("error", 2, "Ambiguous: found 3 symbol(s)", "re-run with symbol_id:<id>")
+        local stdout = codanna_error_envelope(
+            "error",
+            2,
+            "Ambiguous: found 2 symbol(s)",
+            "re-run with symbol_id:<id>",
+            {
+                { id = 221, name = "url_for", kind = "Function", file_path = "src/helpers.py", range = { start_line = 194 } },
+                { id = 786, name = "url_for", kind = "Method", file_path = "src/app.py", range = { start_line = 1002 } },
+            }
+        )
         stub_exec(codanna, { code = 2, stdout = stdout, stderr = "" })
 
         local err
-        codanna.find_callers("setup", function(_i, e) err = e end)
+        codanna.find_callers("url_for", function(_i, e) err = e end)
 
         expect_contains(err, "Ambiguous")
-        expect_contains(err, "symbol_id:")
+        expect_contains(err, "symbol_id:221")
+        expect_contains(err, "src/helpers.py:195")
+        expect_contains(err, "symbol_id:786")
     end,
 
     ["codanna non-JSON output surfaces stderr"] = function()

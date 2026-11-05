@@ -47,6 +47,26 @@ local function codanna_path()
     return "codanna"
 end
 
+-- Ambiguity envelopes carry the candidate symbols in data; surface their
+-- symbol_id values so the "re-run with symbol_id:<id>" hint is actionable.
+---@param env table
+---@return string|nil
+local function ambiguity_candidates(env)
+    if type(env.data) ~= "table" or not vim.islist(env.data) then return nil end
+    local candidates = {}
+    for _, item in ipairs(env.data) do
+        if item.id and item.file_path then
+            local line = type(item.range) == "table" and (item.range.start_line or 0) + 1 or item.line
+            table.insert(
+                candidates,
+                string.format("symbol_id:%s %s:%s %s", item.id, item.file_path, line or "?", item.kind or "")
+            )
+        end
+    end
+    if #candidates == 0 then return nil end
+    return table.concat(candidates, "; ")
+end
+
 ---@param env table Parsed JSON envelope
 ---@param process_code integer Process exit code
 ---@return string err
@@ -55,8 +75,10 @@ local function exit_error(env, process_code)
     local message = env.message or "codanna command failed"
     if code == 7 then return "codanna: index version mismatch — run `codanna index --force`" end
     if code == 1 then return string.format("codanna: not found — %s", message) end
-    if code == 2 and env.hint then return string.format("codanna: %s (%s)", message, env.hint) end
-    return string.format("codanna: error (exit %s): %s", tostring(code), message)
+    local detail = env.hint and string.format("%s (%s)", message, env.hint) or message
+    local candidates = ambiguity_candidates(env)
+    if candidates then detail = detail .. "\ncandidates: " .. candidates end
+    return string.format("codanna: error (exit %s): %s", tostring(code), detail)
 end
 
 -- codanna prints index progress lines to stdout before the JSON envelope,
